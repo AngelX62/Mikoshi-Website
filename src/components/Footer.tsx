@@ -9,7 +9,7 @@ export default function Footer() {
       className="relative z-10 border-t border-edge px-6 py-20 md:px-10 md:py-28"
     >
       <div className="mx-auto max-w-6xl">
-        <span className="mb-12 block font-mono text-[11px] uppercase tracking-[0.22em] text-ink-faint">
+        <span className="mb-12 block font-mono text-[11px] uppercase tracking-[0.22em] text-ink-dim">
           {waitlistCopy.label}
         </span>
 
@@ -50,7 +50,7 @@ export default function Footer() {
           </div>
         </Reveal>
 
-        <div className="mt-20 flex flex-col gap-2 border-t border-edge pt-8 font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint md:flex-row md:justify-between">
+        <div className="mt-20 flex flex-col gap-2 border-t border-edge pt-8 font-mono text-[11px] uppercase tracking-[0.18em] text-ink-dim md:flex-row md:justify-between">
           <span>{footer.copyright}</span>
           <span>{site.tagline}</span>
         </div>

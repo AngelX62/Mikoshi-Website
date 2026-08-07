@@ -73,7 +73,10 @@ export default function Hero() {
 
           <div
             data-intro
-            className="flex shrink-0 items-center gap-3 font-mono text-[11px] uppercase tracking-[0.22em] text-ink-faint opacity-0"
+            // Brighter than the other instrumentation on purpose: this sits in
+            // the bottom-right corner, where the vignette is heaviest, and it's
+            // wayfinding rather than decoration — it has to clear AA there.
+            className="flex shrink-0 items-center gap-3 font-mono text-[11px] uppercase tracking-[0.22em] text-ink-soft opacity-0"
           >
             <span>{hero.scrollCue}</span>
             <span className="block h-px w-10 origin-left animate-pulse bg-ink-faint" />

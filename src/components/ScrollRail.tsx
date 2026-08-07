@@ -69,7 +69,7 @@ export default function ScrollRail() {
       </div>
       <span
         ref={readoutRef}
-        className="font-mono text-[10px] tabular-nums tracking-[0.18em] text-ink-faint"
+        className="font-mono text-[10px] tabular-nums tracking-[0.18em] text-ink-dim"
       >
         00
       </span>

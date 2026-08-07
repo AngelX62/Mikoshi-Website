@@ -156,32 +156,6 @@ body {
   }
 }
 
-/* Cursor spotlight on the capability panels. `--mx`/`--my` are written by the
-   card's pointer handler; everything else here is static CSS. */
-.spotlight::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  transition: opacity 0.45s ease;
-  background: radial-gradient(
-    22rem circle at var(--mx, 50%) var(--my, 50%),
-    color-mix(in srgb, var(--color-accent) 13%, transparent),
-    transparent 70%
-  );
-  pointer-events: none;
-}
-
-.spotlight:hover::before {
-  opacity: 1;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .spotlight::before {
-    display: none;
-  }
-}
-
 /* Lines that wipe up into place on scroll. The mask is what makes the reveal
    read as a wipe rather than a fade. */
 .line-mask {

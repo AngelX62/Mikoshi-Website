@@ -1,6 +1,6 @@
 import Hero from "@/components/Hero";
 import Statement from "@/components/Statement";
-import Capabilities from "@/components/Capabilities";
+import Passage from "@/components/Passage";
 import Footer from "@/components/Footer";
 
 export default function Home() {
@@ -12,7 +12,7 @@ export default function Home() {
         the fixed dither canvas rather than letting it show through.
       */}
       <Statement />
-      <Capabilities />
+      <Passage />
       <Footer />
     </main>
   );

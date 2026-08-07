@@ -27,7 +27,9 @@ export const hero = {
 } as const;
 
 export const statement = {
-  label: "01 / Premise",
+  // No numerals. With only two labelled sections an index carries nothing, and
+  // the 01 / 02 / 03 device is the tell of a templated landing page.
+  label: "Premise",
   /** Rendered one line at a time, each wiping up into place. Keep lines short. */
   lines: [
     "Machines perceive the world",
@@ -38,32 +40,24 @@ export const statement = {
   ],
 } as const;
 
-export const capabilities = {
-  label: "02 / Capability",
-  items: [
-    {
-      index: "01",
-      key: "Perception",
-      title: "Sense",
-      body: "Turning raw sensor noise into a stable, continuous picture of the world.",
-    },
-    {
-      index: "02",
-      key: "Reasoning",
-      title: "Decide",
-      body: "Closing the gap between what a machine observes and what it should do next.",
-    },
-    {
-      index: "03",
-      key: "Control",
-      title: "Act",
-      body: "Motion that stays precise when conditions refuse to stay predictable.",
-    },
+/**
+ * The wordless passage.
+ *
+ * There is no prose here on purpose. Until the positioning is settled, any
+ * capability copy would be invented — which is exactly what made the section
+ * this replaced ring false. The readouts below are instrumentation, not claims:
+ * they name what the field is doing, nothing more.
+ */
+export const passage = {
+  shots: [
+    { at: 0.0, readout: "Scan" },
+    { at: 0.38, readout: "Volume" },
+    { at: 0.74, readout: "Sample" },
   ],
 } as const;
 
 export const waitlist = {
-  label: "03 / Contact",
+  label: "Contact",
   heading: "Early access",
   body: "We're building quietly. Leave an address and we'll be in touch when there's something worth showing.",
   placeholder: "you@company.com",

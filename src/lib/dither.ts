@@ -250,6 +250,24 @@ export type FrameState = {
   altGain: number;
   /** Momentary brightening, 0..1 — used to pulse on waitlist submit. */
   pulse: number;
+  /**
+   * 0..1 opening title sequence. Gates the field behind a front expanding from
+   * the centre, so the page opens on a point of light rather than a full grid.
+   */
+  open: number;
+  /** Scan band: centre in CSS pixels, and its strength. */
+  bandY: number;
+  bandGain: number;
+  /** Point-cloud sphere: radius in CSS pixels, and its strength. */
+  orbR: number;
+  orbGain: number;
+  /**
+   * 0 = solid sphere, 1 = hollow shell.
+   *
+   * Ramped toward 1 as the sphere expands, so it breaks up into a thinning ring
+   * rather than inflating into a uniform wash of dots.
+   */
+  orbRing: number;
   lightX: number;
   lightY: number;
   /** Radius of the cursor light in CSS pixels. */
@@ -271,8 +289,22 @@ export function renderFrame(
 ): void {
   ctx.clearRect(0, 0, width, height);
 
-  const { intro, scroll, altGain, pulse, lightX, lightY, lightRadius, time } =
-    state;
+  const {
+    intro,
+    scroll,
+    altGain,
+    pulse,
+    open,
+    bandY,
+    bandGain,
+    orbR,
+    orbGain,
+    orbRing,
+    lightX,
+    lightY,
+    lightRadius,
+    time,
+  } = state;
 
   // The wordmark fades out over the first 60% of the scroll, while the field
   // itself keeps drifting for the full range.
@@ -296,6 +328,27 @@ export function renderFrame(
   // illuminates the grid. Without this the field is invisible past the hero.
   const bareLight = 0.13 + 0.34 * (1 - Math.min(1, maskGain + altGain));
   const scatter = 1 - intro;
+
+  // Opening title sequence: a front expanding from the centre. Cells only light
+  // once it has passed them, so the page opens on a point of light rather than
+  // a grid that is simply already there. `open` at 1 puts the front past every
+  // corner, which switches the gate off for the rest of the session.
+  const halfW = width / 2;
+  const halfH = height / 2;
+  const diagonal = Math.hypot(halfW, halfH);
+  const frontR = open * diagonal * 1.25;
+  const gated = open < 0.999;
+  /** Width of the soft edge on the expanding front, in CSS pixels. */
+  const FRONT_FEATHER = 190;
+
+  // Passage shapes are computed here rather than rasterised into a mask: they
+  // move every frame, and a getImageData per frame is orders of magnitude too
+  // slow. A band is an abs and a compare; the sphere is one sqrt.
+  const bandActive = bandGain > 0.002;
+  const orbActive = orbGain > 0.002;
+  /** Falloff of the scan band either side of its centre, in CSS pixels. */
+  const BAND_HALF = 74;
+  const invOrbR = orbR > 0 ? 1 / orbR : 0;
   const invRadius = 1 / lightRadius;
   const invRadius2 = invRadius * invRadius;
   const ambient = 0.055 * intro;
@@ -311,6 +364,14 @@ export function renderFrame(
 
     // Cheap early-out: skip anything already off-canvas.
     if (px < -8 || py < -8 || px > width + 8 || py > height + 8) continue;
+
+    // Opening gate. Only paid for while the intro is running.
+    let gate = 1;
+    if (gated) {
+      const gr = Math.hypot(px - halfW, py - halfH);
+      if (gr > frontR) continue;
+      gate = clamp((frontR - gr) / FRONT_FEATHER, 0, 1);
+    }
 
     // Light falloff. Squared distance avoids a sqrt in the hot loop.
     const dx = px - lightX;
@@ -330,7 +391,31 @@ export function renderFrame(
     // field cells barely catch the light at all. Without that asymmetry the
     // letterforms wash out inside the halo and the wordmark disappears.
     // `maskAlt` is the footer bookend, gained in as the footer arrives.
-    const m = grid.mask[i] * maskGain + grid.maskAlt[i] * altGain;
+    let m = grid.mask[i] * maskGain + grid.maskAlt[i] * altGain;
+
+    if (bandActive) {
+      const d = Math.abs(py - bandY);
+      if (d < BAND_HALF) {
+        const f = 1 - d / BAND_HALF;
+        m += f * f * bandGain;
+      }
+    }
+
+    if (orbActive) {
+      const ox = px - halfW;
+      const oy = py - halfH;
+      const r = Math.hypot(ox, oy);
+      if (r < orbR) {
+        // Projected point density on a sphere goes as 1/sqrt(1-(r/R)^2), which
+        // is what gives a point cloud its bright rim and makes it read as a
+        // sphere rather than a flat disc. It diverges at the edge, so clamp it.
+        const u = r * invOrbR;
+        const shell = Math.min(1 / Math.sqrt(1 - u * u + 0.0001), 3.4) / 3.4;
+        // Interior fades out as `orbRing` rises, leaving only the rim.
+        m += (0.25 * (1 - orbRing) + shell * 0.9) * orbGain;
+      }
+    }
+
     const base = m * (0.34 + lit * 0.85) + lit * bareLight;
 
     // Shimmer can only ever add `ambient`, so anything that still falls under
@@ -341,7 +426,7 @@ export function renderFrame(
 
     // Ambient shimmer keeps the dark field alive without reading as noise.
     const shimmer = SIN_LUT[(tIdx + grid.phase[i]) & (SIN_STEPS - 1)];
-    const intensity = (base + ambient * shimmer) * globalFade;
+    const intensity = (base + ambient * shimmer) * globalFade * gate;
 
     // Ordered dither: the Bayer threshold biases the quantisation per cell,
     // turning smooth gradients into the crosshatch of the reference images.

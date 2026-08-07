@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
   buildGrid,
   createBuckets,
@@ -10,11 +11,14 @@ import {
   type Buckets,
   type Grid,
 } from "@/lib/dither";
+import { fieldState } from "@/lib/fieldState";
 import { clamp, prefersReducedMotion } from "@/lib/motion";
 
 const MAX_DPR = 2;
 /** Length of the intro resolve, in milliseconds. */
 const RESOLVE_MS = 1900;
+/** Length of the opening title sequence, in milliseconds. */
+const OPEN_MS = 2600;
 
 /** Dispatch on `window` to flare the field. See `pulseField`. */
 export const FIELD_PULSE_EVENT = "mikoshi:field-pulse";
@@ -56,6 +60,8 @@ export default function DitherField({ text }: Props) {
     let lastPointer = -Infinity;
     /** Momentary brightening, decayed each frame. See `onPulse`. */
     let pulse = 0;
+    /** Set by any visitor input; collapses the opening sequence immediately. */
+    let skipOpen = reduced;
 
     const fontFamily = () => {
       const v = getComputedStyle(document.documentElement)
@@ -91,6 +97,12 @@ export default function DitherField({ text }: Props) {
         ? el.getBoundingClientRect().top + window.scrollY
         : Infinity;
     }
+
+    // The pinned sections insert spacing, which pushes the footer down the
+    // document. Measuring once at mount reads a position from before those pins
+    // exist, and the bookend then fires while the passage is still on screen.
+    // ScrollTrigger recomputes on refresh, so re-measure with it.
+    ScrollTrigger.addEventListener("refresh", measureFooter);
 
     /**
      * 0..1 as the footer arrives.
@@ -145,6 +157,12 @@ export default function DitherField({ text }: Props) {
           scroll: scrollProgress(),
           altGain: footerGain(),
           pulse: 0,
+          open: 1,
+          bandY: fieldState.bandY,
+          bandGain: fieldState.bandGain,
+          orbR: fieldState.orbR,
+          orbGain: fieldState.orbGain,
+          orbRing: fieldState.orbRing,
           lightX: width / 2,
           lightY: height * 0.46,
           lightRadius: Math.max(width, height) * 0.42,
@@ -163,6 +181,12 @@ export default function DitherField({ text }: Props) {
       // Expo-out, so the field snaps into legibility then settles.
       const t = clamp(elapsed / RESOLVE_MS, 0, 1);
       const intro = 1 - Math.pow(2, -10 * t);
+
+      // Opening title sequence: the front expands from a point at the centre.
+      // Eased so it leaves quickly and decelerates into the corners; `skipOpen`
+      // collapses it instantly when the visitor does anything at all.
+      const ot = skipOpen ? 1 : clamp(elapsed / OPEN_MS, 0, 1);
+      const open = ot >= 1 ? 1 : 1 - Math.pow(1 - ot, 3);
 
       // With no pointer for a moment, the light drifts on a slow Lissajous so
       // the field stays alive on touch devices and while idle.
@@ -190,6 +214,12 @@ export default function DitherField({ text }: Props) {
           scroll: scrollProgress(),
           altGain: footerGain(),
           pulse,
+          open,
+          bandY: fieldState.bandY,
+          bandGain: fieldState.bandGain,
+          orbR: fieldState.orbR,
+          orbGain: fieldState.orbGain,
+          orbRing: fieldState.orbRing,
           lightX,
           lightY,
           lightRadius: Math.min(Math.max(width, height) * 0.3, 420),
@@ -217,7 +247,19 @@ export default function DitherField({ text }: Props) {
       start();
     }
 
+    /**
+     * Any input at all ends the opening sequence.
+     *
+     * Someone returning to the site should never be made to sit through a title
+     * card again, and a visitor who starts scrolling has told you they're ready.
+     */
+    function onSkip() {
+      skipOpen = true;
+      start();
+    }
+
     function onScroll() {
+      skipOpen = true;
       if (reduced) drawStatic();
       else start();
     }
@@ -275,6 +317,10 @@ export default function DitherField({ text }: Props) {
 
     window.addEventListener("pointermove", onPointerMove, { passive: true });
     window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("pointerdown", onSkip, { passive: true });
+    window.addEventListener("wheel", onSkip, { passive: true });
+    window.addEventListener("touchstart", onSkip, { passive: true });
+    window.addEventListener("keydown", onSkip);
     window.addEventListener("resize", onResize);
     window.addEventListener(FIELD_PULSE_EVENT, onPulse);
     document.addEventListener("visibilitychange", onVisibility);
@@ -283,8 +329,13 @@ export default function DitherField({ text }: Props) {
       disposed = true;
       cancelAnimationFrame(raf);
       clearTimeout(resizeTimer);
+      ScrollTrigger.removeEventListener("refresh", measureFooter);
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("pointerdown", onSkip);
+      window.removeEventListener("wheel", onSkip);
+      window.removeEventListener("touchstart", onSkip);
+      window.removeEventListener("keydown", onSkip);
       window.removeEventListener("resize", onResize);
       window.removeEventListener(FIELD_PULSE_EVENT, onPulse);
       document.removeEventListener("visibilitychange", onVisibility);

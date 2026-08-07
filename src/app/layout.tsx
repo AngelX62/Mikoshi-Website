@@ -6,6 +6,7 @@ import SmoothScroll from "@/components/SmoothScroll";
 import Cursor from "@/components/Cursor";
 import Grain from "@/components/Grain";
 import ScrollRail from "@/components/ScrollRail";
+import Vignette from "@/components/Vignette";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -46,6 +47,7 @@ export default function RootLayout({
       <body className="bg-void antialiased">
         <SmoothScroll />
         {children}
+        <Vignette />
         <ScrollRail />
         <Grain />
         <Cursor />

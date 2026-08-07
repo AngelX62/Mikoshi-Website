@@ -64,7 +64,7 @@ export default function Statement() {
       className="relative z-10 flex min-h-screen items-center px-6 py-32 md:px-10 md:py-48"
     >
       <div ref={textRef} className="mx-auto w-full max-w-4xl">
-        <span className="mb-10 block font-mono text-[11px] uppercase tracking-[0.22em] text-ink-faint">
+        <span className="mb-10 block font-mono text-[11px] uppercase tracking-[0.22em] text-ink-dim">
           {statement.label}
         </span>
 

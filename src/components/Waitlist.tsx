@@ -73,7 +73,7 @@ export default function Waitlist() {
             }}
             aria-invalid={status === "error"}
             aria-describedby="waitlist-status"
-            className="w-full bg-transparent py-4 pr-4 text-base text-ink outline-none placeholder:text-ink-faint disabled:opacity-50"
+            className="w-full bg-transparent py-4 pr-4 text-base text-ink outline-none placeholder:text-ink-dim disabled:opacity-50"
           />
 
           <button
@@ -107,7 +107,7 @@ export default function Waitlist() {
           role="status"
           aria-live="polite"
           className={`mt-3 min-h-5 font-mono text-[11px] uppercase tracking-[0.16em] ${
-            status === "error" ? "text-accent-soft" : "text-ink-faint"
+            status === "error" ? "text-accent-soft" : "text-ink-dim"
           }`}
         >
           {message}
