@@ -23,6 +23,53 @@ const BAYER_4 = [
 export const LEVELS = 8;
 
 /**
+ * The level ramp — where the site's colour lives.
+ *
+ * A dither ramp is a palette, so the tint belongs here rather than in a wash
+ * laid over the page. Dim samples sit at an ashy violet and bright ones burn
+ * out to near-white, which makes the colour a *consequence of light*: the
+ * ambient field reads dusty, and anything the light touches — the wordmark
+ * included — goes white. That's also what preserves the high-contrast
+ * black-and-white dither of the reference images.
+ *
+ * Baked into strings once at module load, so the draw loop still costs one
+ * fillStyle assignment per level and builds nothing per frame.
+ *
+ * `RAMP_DIM` is more saturated than the tint actually wanted, on purpose. Cells
+ * are drawn with alpha proportional to level, and compositing scales all three
+ * channels together — so the channel *spread* that carries the hue shrinks with
+ * it, and a colour picked to look right at full strength turns to neutral grey
+ * by the time it's painted at 0.4. Both endpoints are chosen to read correctly
+ * after that compositing, not before it.
+ */
+const RAMP_DIM = [126, 94, 190];
+const RAMP_BRIGHT = [247, 245, 250];
+/** >1 holds the violet through the midtones instead of racing to white. */
+const RAMP_BIAS = 1.35;
+
+/**
+ * Alpha is deliberately *not* linear in level.
+ *
+ * Compositing scales all three channels together, so the channel spread that
+ * carries hue shrinks with luminance — and below about luminance 24 there is no
+ * room left in 8-bit sRGB to see any colour at all. With a linear curve roughly
+ * four fifths of the drawn field landed in exactly that band: present, but
+ * neither visible nor violet. Lifting the low and middle levels puts the
+ * populated part of the ramp where chroma has headroom, which is what makes
+ * the ambient field read as dusty rather than as black-on-black.
+ */
+const ALPHA_BIAS = 0.7;
+
+const LEVEL_FILL: string[] = Array.from({ length: LEVELS }, (_, level) => {
+  const v = level / (LEVELS - 1);
+  const t = Math.pow(v, RAMP_BIAS);
+  const c = (i: number) =>
+    Math.round(RAMP_DIM[i] + (RAMP_BRIGHT[i] - RAMP_DIM[i]) * t);
+  const alpha = Math.pow(v, ALPHA_BIAS) * 0.95;
+  return `rgba(${c(0)},${c(1)},${c(2)},${alpha.toFixed(3)})`;
+});
+
+/**
  * Precomputed sine, already mapped to 0..1, for the ambient shimmer.
  * A Math.sin per cell per frame is tens of thousands of transcendental calls a
  * second for an effect that only needs to look irregular — a table lookup is
@@ -263,10 +310,30 @@ export type FrameState = {
    * rather than inflating into a uniform wash of dots.
    */
   orbRing: number;
+  /**
+   * Shockwaves from the premise, each an expanding pair of horizontal fronts.
+   * `rippleY` holds origins in CSS pixels and `rippleR` how far each front has
+   * travelled; live entries are compacted into the first `rippleCount` slots,
+   * so the draw loop never walks dead ones. The caller owns the clock — this
+   * just draws where it's told, same split as the orb.
+   */
+  rippleY: Float32Array;
+  rippleR: Float32Array;
+  rippleGain: Float32Array;
+  rippleCount: number;
   lightX: number;
   lightY: number;
   /** Radius of the cursor light in CSS pixels. */
   lightRadius: number;
+  /**
+   * Signed scroll velocity, -1..1, where 1 is a hard flick downward.
+   *
+   * A sampling system smears when the scene moves fast — this is the field's
+   * rolling shutter. Cells stretch along the direction of travel and the whole
+   * grid flares, so every scroll on the page has a physical response rather
+   * than just the two sections that drive the field explicitly.
+   */
+  velocity: number;
   time: number;
 };
 
@@ -295,25 +362,55 @@ export function renderFrame(
     orbR,
     orbGain,
     orbRing,
+    rippleY,
+    rippleR,
+    rippleGain,
+    rippleCount,
     lightX,
     lightY,
     lightRadius,
+    velocity,
     time,
   } = state;
 
   // The wordmark fades out over the first 60% of the scroll, while the field
-  // itself keeps drifting for the full range.
-  const maskGain = intro * (1 - clamp(scroll / 0.6, 0, 1));
+  // itself keeps drifting for the full range. The fade is deliberately not
+  // linear: holding brightness and then dropping fast keeps the letters legible
+  // *while* they come apart below, instead of dimming evenly through the whole
+  // gesture and hiding it.
+  const maskGain = intro * (1 - Math.pow(clamp(scroll / 0.6, 0, 1), 1.6));
   const globalFade =
     FIELD_FLOOR +
     (1 - FIELD_FLOOR) * (1 - clamp((scroll - 0.15) / 0.85, 0, 1)) +
-    pulse * 0.5;
+    pulse * 0.5 +
+    // Fast scroll flares the field as well as smearing it. Kept modest: the
+    // stretched cells already add a lot of apparent brightness on their own, so
+    // a larger term here blows the whole field out on every flick.
+    Math.abs(velocity) * 0.09;
 
   // Dispersal is a hump, not a ramp. A ramp blows the field apart and leaves it
   // apart — permanently sparse in the middle, piled at the edges. Peaking mid
   // hero and returning to zero lets the grid re-form into a calm ambient field
   // below the fold, so it reads as settling rather than breaking.
   const dispersal = Math.sin(clamp(scroll, 0, 1) * Math.PI) * 260;
+
+  // The wordmark is made of samples, so it comes apart into samples — but it
+  // has to survive long enough to be seen doing it. Dispersal alone reaches
+  // 260px by a third of the way down the hero, which is already more than
+  // enough to erase a letterform, so simply pushing mask cells harder just
+  // erases them sooner.
+  //
+  // Instead they resist first: `hold` exempts mask cells from the field's
+  // dispersal early on, so the letters stay crisp while the grid around them
+  // blows away. Once it lapses, `maskPush` takes over and the letters go too.
+  const hold = 1 - clamp(scroll / 0.42, 0, 1);
+  // `release` is not cosmetic. Without it the push never returns and those cells
+  // stay permanently displaced — the ambient field would carry a MIKOSHI-shaped
+  // hole for the rest of the page. It unwinds from 0.6 to 1.0, by which point
+  // `maskGain` is already zero, so none of it is visible.
+  const blow = clamp((scroll - 0.28) / 0.32, 0, 1);
+  const release = 1 - clamp((scroll - 0.6) / 0.4, 0, 1);
+  const maskPush = blow * blow * release * 340;
 
   // How strongly bare field cells catch the light.
   //
@@ -343,6 +440,8 @@ export function renderFrame(
   const orbActive = orbGain > 0.002;
   /** Falloff of the scan band either side of its centre, in CSS pixels. */
   const BAND_HALF = 74;
+  /** Thickness of each shockwave front, in CSS pixels. */
+  const RIPPLE_HALF = 46;
   const invOrbR = orbR > 0 ? 1 / orbR : 0;
   const invRadius = 1 / lightRadius;
   const invRadius2 = invRadius * invRadius;
@@ -354,8 +453,15 @@ export function renderFrame(
   buckets.size.fill(0);
 
   for (let i = 0; i < grid.count; i++) {
-    const px = grid.x[i] + grid.scatterX[i] * scatter + grid.driftX[i] * dispersal;
-    const py = grid.y[i] + grid.scatterY[i] * scatter + grid.driftY[i] * dispersal;
+    // Mask cells move differently from bare ones — held back from the field's
+    // dispersal at first, then thrown further than it once they let go. That
+    // difference is the wordmark disintegrating. Read once here; the intensity
+    // maths below reuses it.
+    const mk = grid.mask[i];
+    const push = dispersal * (1 - mk * hold) + mk * maskPush;
+
+    const px = grid.x[i] + grid.scatterX[i] * scatter + grid.driftX[i] * push;
+    const py = grid.y[i] + grid.scatterY[i] * scatter + grid.driftY[i] * push;
 
     // Cheap early-out: skip anything already off-canvas.
     if (px < -8 || py < -8 || px > width + 8 || py > height + 8) continue;
@@ -386,13 +492,26 @@ export function renderFrame(
     // field cells barely catch the light at all. Without that asymmetry the
     // letterforms wash out inside the halo and the wordmark disappears.
     // `maskAlt` is the footer bookend, gained in as the footer arrives.
-    let m = grid.mask[i] * maskGain + grid.maskAlt[i] * altGain;
+    let m = mk * maskGain + grid.maskAlt[i] * altGain;
 
     if (bandActive) {
       const d = Math.abs(py - bandY);
       if (d < BAND_HALF) {
         const f = 1 - d / BAND_HALF;
         m += f * f * bandGain;
+      }
+    }
+
+    // The premise shockwaves: each is two fronts travelling out from its
+    // origin, one up and one down. The inner abs picks the distance to
+    // whichever front is nearer, which is what makes one compare draw both.
+    // `rippleCount` is zero for all but about a second of a visit, so this
+    // costs a single compare the rest of the time.
+    for (let r = 0; r < rippleCount; r++) {
+      const d = Math.abs(Math.abs(py - rippleY[r]) - rippleR[r]);
+      if (d < RIPPLE_HALF) {
+        const f = 1 - d / RIPPLE_HALF;
+        m += f * f * rippleGain[r];
       }
     }
 
@@ -435,23 +554,38 @@ export function renderFrame(
     buckets.posY[i] = py;
   }
 
+  // Motion smear, measured in cell pitches rather than pixels.
+  //
+  // An absolute length is wrong here: at a fixed 13px the streaks run longer
+  // than the gap between rows on every viewport, so they fuse into unbroken
+  // vertical lines and the field reads as corduroy instead of as a grid in
+  // motion. Held just under one pitch, cells stretch to roughly three times
+  // their resting length and still read as discrete samples. It also bounds the
+  // cost, since fill area is what this actually spends.
+  //
+  // Scrolling down moves content up, so the streak trails below the cell;
+  // scrolling up it trails above.
+  const SMEAR_PITCHES = 0.8;
+  const smear = Math.min(Math.abs(velocity), 1) * grid.spacing * SMEAR_PITCHES;
+  const rectH = grid.dotSize + smear;
+  const top = half + (velocity < 0 ? smear : 0);
+
   // One fillStyle assignment per level instead of one per cell. This is the
   // difference between 60fps and a slideshow.
   for (let level = 1; level < LEVELS; level++) {
     const n = buckets.size[level];
     if (n === 0) continue;
 
-    const v = level / (LEVELS - 1);
-    ctx.fillStyle = `rgba(250,250,250,${(v * 0.95).toFixed(3)})`;
+    ctx.fillStyle = LEVEL_FILL[level];
 
     const ids = buckets.index[level];
     for (let k = 0; k < n; k++) {
       const i = ids[k];
       ctx.fillRect(
         buckets.posX[i] - half,
-        buckets.posY[i] - half,
+        buckets.posY[i] - top,
         grid.dotSize,
-        grid.dotSize,
+        rectH,
       );
     }
   }

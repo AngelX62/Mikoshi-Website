@@ -11,7 +11,7 @@ import {
   type Buckets,
   type Grid,
 } from "@/lib/dither";
-import { fieldState } from "@/lib/fieldState";
+import { RIPPLE_SLOTS, fieldState } from "@/lib/fieldState";
 import { clamp, prefersReducedMotion } from "@/lib/motion";
 
 const MAX_DPR = 2;
@@ -19,6 +19,10 @@ const MAX_DPR = 2;
 const RESOLVE_MS = 1900;
 /** Length of the opening title sequence, in milliseconds. */
 const OPEN_MS = 2600;
+/** How long a premise shockwave takes to cross the frame. */
+const RIPPLE_MS = 1100;
+/** Scroll rate, in px per 60fps frame, at which the smear saturates. */
+const VELOCITY_FULL = 90;
 
 /** Dispatch on `window` to flare the field. See `pulseField`. */
 export const FIELD_PULSE_EVENT = "mikoshi:field-pulse";
@@ -60,6 +64,18 @@ export default function DitherField({ text }: Props) {
     let lastPointer = -Infinity;
     /** Momentary brightening, decayed each frame. See `onPulse`. */
     let pulse = 0;
+    /** Eased scroll velocity, -1..1. Drives the smear. See `FrameState`. */
+    let velocity = 0;
+    // Seeded, not zeroed: a reload part-way down the page would otherwise read
+    // the whole scroll offset as one frame of travel and smear on arrival.
+    let lastScrollY = window.scrollY;
+    let lastFrameTime = 0;
+
+    // Live shockwave geometry, compacted each frame. Allocated once so the
+    // frame loop stays garbage-free.
+    const rippleY = new Float32Array(RIPPLE_SLOTS);
+    const rippleR = new Float32Array(RIPPLE_SLOTS);
+    const rippleGain = new Float32Array(RIPPLE_SLOTS);
     /** Set by any visitor input; collapses the opening sequence immediately. */
     let skipOpen = reduced;
 
@@ -163,9 +179,16 @@ export default function DitherField({ text }: Props) {
           orbR: fieldState.orbR,
           orbGain: fieldState.orbGain,
           orbRing: fieldState.orbRing,
+          // Reduced motion gets no shockwave and no smear — both are pure
+          // motion, and neither carries information the frame needs.
+          rippleY,
+          rippleR,
+          rippleGain,
+          rippleCount: 0,
           lightX: width / 2,
           lightY: height * 0.46,
           lightRadius: Math.max(width, height) * 0.42,
+          velocity: 0,
           time: 0,
         },
         width,
@@ -205,6 +228,39 @@ export default function DitherField({ text }: Props) {
       pulse *= 0.94;
       if (pulse < 0.002) pulse = 0;
 
+      // Scroll velocity, for the smear. Lenis runs in native-scroll mode, so
+      // window.scrollY is authoritative and this stays decoupled from it — the
+      // field doesn't need to know a smooth-scroll library exists. Eased, so it
+      // decays off a flick instead of snapping back to still.
+      const dt = Math.max(1, now - lastFrameTime);
+      lastFrameTime = now;
+      const y = window.scrollY;
+      const raw = ((y - lastScrollY) / dt) * 16.67;
+      lastScrollY = y;
+      velocity += (clamp(raw / VELOCITY_FULL, -1, 1) - velocity) * 0.18;
+
+      // Premise shockwaves. The clock lives here rather than in renderFrame,
+      // which takes concrete geometry and owns no timers — same split as the
+      // orb. Slots retire themselves, so spent ripples cost nothing.
+      let rippleCount = 0;
+      for (let s = 0; s < RIPPLE_SLOTS; s++) {
+        const started = fieldState.rippleStart[s];
+        if (started < 0) continue;
+
+        const t = (now - started) / RIPPLE_MS;
+        if (t >= 1) {
+          fieldState.rippleStart[s] = -1;
+          continue;
+        }
+
+        rippleY[rippleCount] = fieldState.rippleY[s];
+        rippleR[rippleCount] = t * height * 0.9;
+        // Struck hard and decaying quadratically — at parity with the passage's
+        // scan band at t=0, gone well before it reaches the frame edge.
+        rippleGain[rippleCount] = (1 - t) * (1 - t);
+        rippleCount++;
+      }
+
       renderFrame(
         ctx,
         grid,
@@ -220,9 +276,14 @@ export default function DitherField({ text }: Props) {
           orbR: fieldState.orbR,
           orbGain: fieldState.orbGain,
           orbRing: fieldState.orbRing,
+          rippleY,
+          rippleR,
+          rippleGain,
+          rippleCount,
           lightX,
           lightY,
           lightRadius: Math.min(Math.max(width, height) * 0.3, 420),
+          velocity,
           time: now,
         },
         width,

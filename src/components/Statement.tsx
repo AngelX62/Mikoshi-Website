@@ -4,12 +4,16 @@ import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { statement } from "@/content";
+import { rippleField } from "@/lib/fieldState";
 import {
   DURATION,
   EASE_OUT_EXPO,
   STAGGER,
   prefersReducedMotion,
 } from "@/lib/motion";
+
+/** How far into a line's wipe the shockwave fires, in seconds. */
+const RIPPLE_OFFSET = 0.42;
 
 /**
  * The premise.
@@ -18,6 +22,11 @@ import {
  * anything scroll-scrubbed: scrubbing ties comprehension to the wheel and turns
  * five short lines into a task. The lines fire once on entry instead, arriving
  * whole and legible, and then the reader is left alone with the paragraph.
+ *
+ * What carries the section is the field behind it, not the type: each line
+ * punches a shockwave outward through the dither as it lands. The words
+ * themselves never distort, so nothing about this makes the paragraph harder to
+ * read — it just stops the background being a bystander.
  */
 export default function Statement() {
   const ref = useRef<HTMLDivElement>(null);
@@ -36,20 +45,41 @@ export default function Statement() {
     gsap.registerPlugin(ScrollTrigger);
 
     const ctx = gsap.context(() => {
-      gsap.fromTo(
-        lines,
-        { yPercent: 115, opacity: 0 },
-        {
-          yPercent: 0,
-          opacity: 1,
-          duration: DURATION.slow,
-          ease: EASE_OUT_EXPO,
-          stagger: STAGGER.base,
-          // yPercent, not y: the type is clamped against viewport width, so a
-          // pixel offset would under- or overshoot the mask at other sizes.
-          scrollTrigger: { trigger: el, start: "top 78%", once: true },
-        },
-      );
+      // A timeline rather than one tween with `stagger`: a staggered tween
+      // fires its callbacks once for the whole group, and each line needs to
+      // punch the field at its own moment and its own height.
+      const tl = gsap.timeline({
+        scrollTrigger: { trigger: el, start: "top 78%", once: true },
+      });
+
+      lines.forEach((line, i) => {
+        const at = i * STAGGER.base;
+
+        tl.fromTo(
+          line,
+          { yPercent: 115, opacity: 0 },
+          {
+            yPercent: 0,
+            opacity: 1,
+            duration: DURATION.slow,
+            ease: EASE_OUT_EXPO,
+            // yPercent, not y: the type is clamped against viewport width, so a
+            // pixel offset would under- or overshoot the mask at other sizes.
+          },
+          at,
+        );
+
+        // Measured at fire time, not at setup: smooth scrolling means the line
+        // is somewhere else on screen by the time this runs.
+        tl.call(
+          () => {
+            const box = line.getBoundingClientRect();
+            rippleField(box.top + box.height / 2);
+          },
+          undefined,
+          at + RIPPLE_OFFSET,
+        );
+      });
     }, el);
 
     return () => ctx.revert();
