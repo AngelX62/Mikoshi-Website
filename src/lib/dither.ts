@@ -14,8 +14,13 @@
 
 import { clamp } from "./motion";
 
-/** Classic 4x4 ordered-dither threshold matrix, normalised to 0..1. */
-const BAYER_4 = [
+/**
+ * Classic 4x4 ordered-dither threshold matrix, normalised to 0..1.
+ *
+ * Exported because the statement text resolves in this same order — the type
+ * and the field quantise by the identical pattern, which is the whole point.
+ */
+export const BAYER_4 = [
   0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5,
 ].map((v) => (v + 0.5) / 16);
 
@@ -75,6 +80,8 @@ export type Grid = {
   threshold: Float32Array;
   /** Wordmark coverage, 0..1. Rebuilt whenever the canvas resizes. */
   mask: Float32Array;
+  /** A second mask, for the footer bookend. Same buffer shape as `mask`. */
+  maskAlt: Float32Array;
   /** Per-cell dispersal vector, and a scatter offset for the intro resolve. */
   driftX: Float32Array;
   driftY: Float32Array;
@@ -99,6 +106,7 @@ export function buildGrid(width: number, height: number, spacing: number): Grid 
     y: new Float32Array(count),
     threshold: new Float32Array(count),
     mask: new Float32Array(count),
+    maskAlt: new Float32Array(count),
     driftX: new Float32Array(count),
     driftY: new Float32Array(count),
     scatterX: new Float32Array(count),
@@ -142,11 +150,23 @@ export function sampleTextMask(
   width: number,
   height: number,
   fontFamily: string,
-  opts: { widthRatio?: number; centerY?: number; letterSpacing?: string } = {},
+  opts: {
+    widthRatio?: number;
+    centerY?: number;
+    letterSpacing?: string;
+    /** Which buffer to fill. `maskAlt` holds the footer bookend. */
+    into?: "mask" | "maskAlt";
+  } = {},
 ): void {
-  const { widthRatio = 0.72, centerY = 0.5, letterSpacing = "0.06em" } = opts;
+  const {
+    widthRatio = 0.72,
+    centerY = 0.5,
+    letterSpacing = "0.06em",
+    into = "mask",
+  } = opts;
 
-  grid.mask.fill(0);
+  const buffer = grid[into];
+  buffer.fill(0);
   if (width <= 0 || height <= 0) return;
 
   const off = document.createElement("canvas");
@@ -184,7 +204,7 @@ export function sampleTextMask(
     const py = Math.round(grid.y[i]);
     if (px < 0 || py < 0 || px >= off.width || py >= off.height) continue;
     // Red channel is enough — the mask is drawn in pure white on black.
-    grid.mask[i] = data[(py * off.width + px) * 4] / 255;
+    buffer[i] = data[(py * off.width + px) * 4] / 255;
   }
 }
 
@@ -212,11 +232,24 @@ export function createBuckets(count: number): Buckets {
   };
 }
 
+/**
+ * How much of the field survives past the hero.
+ *
+ * The field is the site's whole identity, so it doesn't die when the hero
+ * scrolls away — it settles to a faint ambient grid that persists the length of
+ * the page. Far below text contrast, but present.
+ */
+export const FIELD_FLOOR = 0.75;
+
 export type FrameState = {
   /** 0..1 intro resolve: scattered and dark → settled and lit. */
   intro: number;
-  /** 0..1 scroll dispersal: wordmark holds → field blows apart and fades. */
+  /** 0..1 scroll dispersal: wordmark holds → field scatters → field re-forms. */
   scroll: number;
+  /** 0..1 gain on the footer bookend mask. */
+  altGain: number;
+  /** Momentary brightening, 0..1 — used to pulse on waitlist submit. */
+  pulse: number;
   lightX: number;
   lightY: number;
   /** Radius of the cursor light in CSS pixels. */
@@ -238,15 +271,30 @@ export function renderFrame(
 ): void {
   ctx.clearRect(0, 0, width, height);
 
-  const { intro, scroll, lightX, lightY, lightRadius, time } = state;
+  const { intro, scroll, altGain, pulse, lightX, lightY, lightRadius, time } =
+    state;
 
   // The wordmark fades out over the first 60% of the scroll, while the field
   // itself keeps drifting for the full range.
   const maskGain = intro * (1 - clamp(scroll / 0.6, 0, 1));
-  const globalFade = 1 - clamp((scroll - 0.15) / 0.85, 0, 1);
-  if (globalFade <= 0.001) return;
+  const globalFade =
+    FIELD_FLOOR +
+    (1 - FIELD_FLOOR) * (1 - clamp((scroll - 0.15) / 0.85, 0, 1)) +
+    pulse * 0.5;
 
-  const dispersal = scroll * scroll * 260;
+  // Dispersal is a hump, not a ramp. A ramp blows the field apart and leaves it
+  // apart — permanently sparse in the middle, piled at the edges. Peaking mid
+  // hero and returning to zero lets the grid re-form into a calm ambient field
+  // below the fold, so it reads as settling rather than breaking.
+  const dispersal = Math.sin(clamp(scroll, 0, 1) * Math.PI) * 260;
+
+  // How strongly bare field cells catch the light.
+  //
+  // Under a wordmark this has to stay low or the lit background washes the
+  // letterforms out — that's why it's 0.13 in the hero. With no wordmark on
+  // screen there is nothing to protect, so it rises and the cursor genuinely
+  // illuminates the grid. Without this the field is invisible past the hero.
+  const bareLight = 0.13 + 0.34 * (1 - Math.min(1, maskGain + altGain));
   const scatter = 1 - intro;
   const invRadius = 1 / lightRadius;
   const invRadius2 = invRadius * invRadius;
@@ -281,7 +329,9 @@ export function renderFrame(
     // cells hold a floor of brightness everywhere and bloom where lit; bare
     // field cells barely catch the light at all. Without that asymmetry the
     // letterforms wash out inside the halo and the wordmark disappears.
-    const base = grid.mask[i] * maskGain * (0.34 + lit * 0.85) + lit * 0.13;
+    // `maskAlt` is the footer bookend, gained in as the footer arrives.
+    const m = grid.mask[i] * maskGain + grid.maskAlt[i] * altGain;
+    const base = m * (0.34 + lit * 0.85) + lit * bareLight;
 
     // Shimmer can only ever add `ambient`, so anything that still falls under
     // the visibility floor at full shimmer is dropped here — before paying for

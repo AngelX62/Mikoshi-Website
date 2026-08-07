@@ -38,6 +38,14 @@ export const INTRO = {
   total: 2.2,
 } as const;
 
+/** Scroll-linked motion. `scrub` is the lag, in seconds, behind the wheel. */
+export const SCROLL = {
+  /** Tight enough to feel direct, loose enough to smooth wheel jitter. */
+  scrub: 0.6,
+  /** Below this width, pinning fights touch scrolling — don't. */
+  pinMinWidth: 768,
+} as const;
+
 export function prefersReducedMotion(): boolean {
   if (typeof window === "undefined") return false;
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;

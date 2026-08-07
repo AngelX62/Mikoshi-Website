@@ -16,6 +16,13 @@ const MAX_DPR = 2;
 /** Length of the intro resolve, in milliseconds. */
 const RESOLVE_MS = 1900;
 
+/** Dispatch on `window` to flare the field. See `pulseField`. */
+export const FIELD_PULSE_EVENT = "mikoshi:field-pulse";
+
+export function pulseField() {
+  window.dispatchEvent(new Event(FIELD_PULSE_EVENT));
+}
+
 type Props = {
   /** Text drawn into the field. Mirrored as a real heading by the caller. */
   text: string;
@@ -47,6 +54,8 @@ export default function DitherField({ text }: Props) {
     let targetY = 0;
     /** Timestamp of the last real pointer movement, for the idle drift. */
     let lastPointer = -Infinity;
+    /** Momentary brightening, decayed each frame. See `onPulse`. */
+    let pulse = 0;
 
     const fontFamily = () => {
       const v = getComputedStyle(document.documentElement)
@@ -63,6 +72,38 @@ export default function DitherField({ text }: Props) {
         widthRatio: width < 768 ? 0.84 : 0.66,
         centerY: 0.46,
       });
+      // The footer bookend: the same wordmark re-condensing out of the
+      // scattered field as you reach the bottom. Sat low in the viewport so it
+      // lands in the footer's empty band rather than behind the copy.
+      sampleTextMask(grid, text, width, height, fontFamily(), {
+        widthRatio: width < 768 ? 0.78 : 0.58,
+        centerY: 0.68,
+        into: "maskAlt",
+      });
+    }
+
+    /** Cached so the frame loop never forces a layout to find the footer. */
+    let footerTop = Infinity;
+
+    function measureFooter() {
+      const el = document.getElementById("site-footer");
+      footerTop = el
+        ? el.getBoundingClientRect().top + window.scrollY
+        : Infinity;
+    }
+
+    /**
+     * 0..1 as the footer arrives.
+     *
+     * Capped low on purpose. At full strength the wordmark competes with the
+     * footer copy sitting over it; as a faint watermark it reads as a closing
+     * bookend instead of a collision.
+     */
+    function footerGain() {
+      if (footerTop === Infinity) return 0;
+      const topInView = footerTop - window.scrollY;
+      const t = clamp((height * 0.9 - topInView) / (height * 0.5 || 1), 0, 1);
+      return t * 0.42;
     }
 
     function layout() {
@@ -102,6 +143,8 @@ export default function DitherField({ text }: Props) {
         {
           intro: 1,
           scroll: scrollProgress(),
+          altGain: footerGain(),
+          pulse: 0,
           lightX: width / 2,
           lightY: height * 0.46,
           lightRadius: Math.max(width, height) * 0.42,
@@ -134,7 +177,9 @@ export default function DitherField({ text }: Props) {
       lightX += (targetX - lightX) * (idle ? 0.014 : 0.085);
       lightY += (targetY - lightY) * (idle ? 0.014 : 0.085);
 
-      const scroll = scrollProgress();
+      // Pulse decays exponentially from whatever the last trigger set.
+      pulse *= 0.94;
+      if (pulse < 0.002) pulse = 0;
 
       renderFrame(
         ctx,
@@ -142,7 +187,9 @@ export default function DitherField({ text }: Props) {
         buckets,
         {
           intro,
-          scroll,
+          scroll: scrollProgress(),
+          altGain: footerGain(),
+          pulse,
           lightX,
           lightY,
           lightRadius: Math.min(Math.max(width, height) * 0.3, 420),
@@ -152,12 +199,9 @@ export default function DitherField({ text }: Props) {
         height,
       );
 
-      // Once the field is fully dispersed it draws nothing — stop burning
-      // frames until the user scrolls back up.
-      if (scroll >= 1 && intro >= 0.999) {
-        raf = 0;
-        return;
-      }
+      // The field now runs the length of the page rather than stopping past the
+      // hero, so the loop keeps going. Cost stays bounded by the visibility
+      // pause below and by the cell budget in `spacingFor`.
       raf = requestAnimationFrame(frame);
     }
 
@@ -178,11 +222,22 @@ export default function DitherField({ text }: Props) {
       else start();
     }
 
+    /**
+     * Fired by the waitlist on submit — sending an address is itself a sample,
+     * so the field flares. Decoupled via a DOM event so nothing needs to thread
+     * a ref down through the tree.
+     */
+    function onPulse() {
+      pulse = 1;
+      start();
+    }
+
     let resizeTimer: ReturnType<typeof setTimeout>;
     function onResize() {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
         layout();
+        measureFooter();
         if (reduced) drawStatic();
         else {
           // Re-run the resolve from settled, not from scattered.
@@ -202,6 +257,7 @@ export default function DitherField({ text }: Props) {
     }
 
     layout();
+    measureFooter();
 
     if (reduced) {
       drawStatic();
@@ -220,6 +276,7 @@ export default function DitherField({ text }: Props) {
     window.addEventListener("pointermove", onPointerMove, { passive: true });
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onResize);
+    window.addEventListener(FIELD_PULSE_EVENT, onPulse);
     document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
@@ -229,6 +286,7 @@ export default function DitherField({ text }: Props) {
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
+      window.removeEventListener(FIELD_PULSE_EVENT, onPulse);
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [text]);

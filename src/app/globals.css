@@ -84,6 +84,104 @@ body {
   border-width: 0;
 }
 
+/* ---------------------------------------------------------------------------
+   Dithered character resolve.
+
+   `--p` (0..1 progress) is set on the paragraph by ScrollTrigger and inherits
+   down; `--t` is the character's Bayer threshold and `--jx`/`--jy` its scatter
+   direction. `--r` is how far this character has resolved.
+
+   Only transform and opacity are animated — both composite on the GPU without
+   layout or paint. A blur would sell the "out of focus" state better, but it
+   would mean a filter layer per character, and there are ~140 of them.
+   --------------------------------------------------------------------------- */
+.dither-char {
+  --r: clamp(0, calc((var(--p, 1) - var(--t, 0)) / 0.28), 1);
+  display: inline-block;
+  white-space: pre;
+  /* The whole sentence stays present and merely sharpens — an unresolved
+     character sits dim and slightly off its slot, not absent. Dropping this
+     floor lower makes the mid-state read as scrambled text rather than as
+     type coming into focus. */
+  opacity: calc(0.2 + 0.8 * var(--r));
+  /* Small displacement on purpose: enough to unsettle, not so much that a
+     character drifts into the line above and turns the block to mush. */
+  transform: translate3d(
+    calc((1 - var(--r)) * var(--jx, 0) * 0.13em),
+    calc((1 - var(--r)) * var(--jy, 0) * 0.17em),
+    0
+  );
+}
+
+/* No scroll-driven resolve without motion — show the finished text. */
+@media (prefers-reduced-motion: reduce) {
+  .dither-char {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Hover label swap: two stacked copies, one following the other up. */
+.swap {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+}
+
+.swap > span {
+  display: block;
+  transition: transform 0.5s var(--ease-out-expo);
+}
+
+.swap > span:last-child {
+  position: absolute;
+  inset: 0;
+  transform: translateY(100%);
+}
+
+.swap:hover > span:first-child,
+.swap:focus-visible > span:first-child {
+  transform: translateY(-100%);
+}
+
+.swap:hover > span:last-child,
+.swap:focus-visible > span:last-child {
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .swap > span {
+    transition: none;
+  }
+}
+
+/* Cursor spotlight on the capability panels. `--mx`/`--my` are written by the
+   card's pointer handler; everything else here is static CSS. */
+.spotlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.45s ease;
+  background: radial-gradient(
+    22rem circle at var(--mx, 50%) var(--my, 50%),
+    color-mix(in srgb, var(--color-accent) 13%, transparent),
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+.spotlight:hover::before {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spotlight::before {
+    display: none;
+  }
+}
+
 /* Lines that wipe up into place on scroll. The mask is what makes the reveal
    read as a wipe rather than a fade. */
 .line-mask {

@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { waitlist } from "@/content";
 import { isValidEmail, submitWaitlist } from "@/lib/waitlist";
+import { pulseField } from "./DitherField";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
@@ -29,6 +30,9 @@ export default function Waitlist() {
       setStatus("success");
       setMessage(waitlist.success);
       setEmail("");
+      // Sending an address is itself a sample — the field flares to acknowledge
+      // it. Cheaper and more on-concept than a checkmark.
+      pulseField();
     } catch {
       setStatus("error");
       setMessage(waitlist.errorGeneric);
@@ -77,7 +81,20 @@ export default function Waitlist() {
             disabled={status === "submitting" || isDone}
             className="shrink-0 whitespace-nowrap py-4 font-mono text-[11px] uppercase tracking-[0.22em] text-ink-dim transition-colors duration-300 hover:text-accent focus-visible:text-accent disabled:opacity-40"
           >
-            {status === "submitting" ? "Sending" : isDone ? "Sent" : waitlist.cta}
+            {status === "submitting" || isDone ? (
+              status === "submitting" ? (
+                "Sending"
+              ) : (
+                "Sent"
+              )
+            ) : (
+              // Idle only: the swap needs a stable label on both faces, and the
+              // transient states replace the text outright.
+              <span className="swap">
+                <span>{waitlist.cta}</span>
+                <span aria-hidden="true">{waitlist.cta}</span>
+              </span>
+            )}
           </button>
         </div>
 

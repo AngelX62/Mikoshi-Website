@@ -1,15 +1,19 @@
 import { footer, site, waitlist as waitlistCopy } from "@/content";
+import Reveal from "./Reveal";
 import Waitlist from "./Waitlist";
 
 export default function Footer() {
   return (
-    <footer className="relative z-10 border-t border-edge bg-void px-6 py-20 md:px-10 md:py-28">
+    <footer
+      id="site-footer"
+      className="relative z-10 border-t border-edge px-6 py-20 md:px-10 md:py-28"
+    >
       <div className="mx-auto max-w-6xl">
         <span className="mb-12 block font-mono text-[11px] uppercase tracking-[0.22em] text-ink-faint">
           {waitlistCopy.label}
         </span>
 
-        <div className="flex flex-col justify-between gap-16 md:flex-row md:gap-12">
+        <Reveal className="flex flex-col justify-between gap-16 md:flex-row md:gap-12">
           <Waitlist />
 
           <div className="flex flex-col items-start gap-6 md:items-end">
@@ -22,9 +26,12 @@ export default function Footer() {
 
             <a
               href={`mailto:${footer.email}`}
-              className="text-sm text-ink-dim underline-offset-4 transition-colors duration-300 hover:text-accent hover:underline"
+              className="text-sm text-ink-dim transition-colors duration-300 hover:text-accent"
             >
-              {footer.email}
+              <span className="swap">
+                <span>{footer.email}</span>
+                <span aria-hidden="true">{footer.email}</span>
+              </span>
             </a>
 
             {footer.links.length > 0 && (
@@ -41,7 +48,7 @@ export default function Footer() {
               </nav>
             )}
           </div>
-        </div>
+        </Reveal>
 
         <div className="mt-20 flex flex-col gap-2 border-t border-edge pt-8 font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint md:flex-row md:justify-between">
           <span>{footer.copyright}</span>
