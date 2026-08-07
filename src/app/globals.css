@@ -1,0 +1,113 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Design tokens. Tailwind 4 is configured here in CSS rather than in a
+   tailwind.config.js — every value below is available as a utility class
+   (e.g. `text-ink-dim`, `bg-void`, `duration-slow`).
+   --------------------------------------------------------------------------- */
+@theme {
+  /* Ground. Pure black, as in every reference image. */
+  --color-void: #000000;
+  --color-surface: #0a0a0b;
+  --color-edge: #1c1c1f;
+
+  /* Ink ramp. `ink-dim` is the dimmest grey that still clears 4.5:1 on black,
+     so body copy never drops below AA. Anything dimmer is decorative only. */
+  --color-ink: #fafafa;
+  --color-ink-soft: #d4d4d8;
+  --color-ink-dim: #a1a1aa;
+  --color-ink-faint: #52525b;
+
+  /* The single accent. Used in exactly three places: hover, focus ring, and
+     the waitlist glow. Restraint is the point — see the reference palette. */
+  --color-accent: #a855f7;
+  --color-accent-soft: #c084fc;
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* Motion tokens. Mirrored in src/lib/motion.ts so CSS and GSAP animations
+     share one vocabulary instead of drifting apart. */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out-soft: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html {
+  background-color: var(--color-void);
+  /* Lenis drives scrolling; native smooth behaviour would fight it. */
+  scroll-behavior: auto;
+}
+
+body {
+  background-color: var(--color-void);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+/* Hide the native cursor only where the custom one actually renders: a fine
+   pointer. Touch and coarse-pointer devices keep their default behaviour. */
+@media (pointer: fine) {
+  html.has-custom-cursor,
+  html.has-custom-cursor * {
+    cursor: none;
+  }
+}
+
+::selection {
+  background-color: var(--color-accent);
+  color: var(--color-void);
+}
+
+:focus-visible {
+  outline: 1px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+/* Screen-reader-only. The hero wordmark is drawn on canvas, so the real
+   heading text is exposed here for search engines and assistive tech. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Lines that wipe up into place on scroll. The mask is what makes the reveal
+   read as a wipe rather than a fade. */
+.line-mask {
+  display: block;
+  overflow: hidden;
+  /* The mask clips at the line box, which cuts descenders at this line-height.
+     Pad the box out and pull the same amount back off the flow, so descenders
+     survive without changing the vertical rhythm. */
+  padding-bottom: 0.14em;
+  margin-bottom: -0.14em;
+}
+
+.line-mask > span {
+  display: block;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
