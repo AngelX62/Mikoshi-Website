@@ -6,11 +6,15 @@ Next.js 16 (App Router) · TypeScript · Tailwind 4 · GSAP · Lenis. Builds to 
 fully static export, so it deploys anywhere with no server runtime.
 
 ```bash
-npm install
-npm run dev      # http://localhost:3000
-npm run build    # static site → out/
-npm run typecheck
+pnpm install
+pnpm dev        # http://localhost:3000
+pnpm build      # static site → out/
+pnpm typecheck
 ```
+
+The `packageManager` field pins pnpm, so `corepack enable` once and you'll get the
+same version this was built with. Vercel detects `pnpm-lock.yaml` and needs no
+config.
 
 ## Changing the copy
 
