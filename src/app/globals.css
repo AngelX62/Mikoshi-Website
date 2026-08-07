@@ -84,43 +84,6 @@ body {
   border-width: 0;
 }
 
-/* ---------------------------------------------------------------------------
-   Dithered character resolve.
-
-   `--p` (0..1 progress) is set on the paragraph by ScrollTrigger and inherits
-   down; `--t` is the character's Bayer threshold and `--jx`/`--jy` its scatter
-   direction. `--r` is how far this character has resolved.
-
-   Only transform and opacity are animated — both composite on the GPU without
-   layout or paint. A blur would sell the "out of focus" state better, but it
-   would mean a filter layer per character, and there are ~140 of them.
-   --------------------------------------------------------------------------- */
-.dither-char {
-  --r: clamp(0, calc((var(--p, 1) - var(--t, 0)) / 0.28), 1);
-  display: inline-block;
-  white-space: pre;
-  /* The whole sentence stays present and merely sharpens — an unresolved
-     character sits dim and slightly off its slot, not absent. Dropping this
-     floor lower makes the mid-state read as scrambled text rather than as
-     type coming into focus. */
-  opacity: calc(0.2 + 0.8 * var(--r));
-  /* Small displacement on purpose: enough to unsettle, not so much that a
-     character drifts into the line above and turns the block to mush. */
-  transform: translate3d(
-    calc((1 - var(--r)) * var(--jx, 0) * 0.13em),
-    calc((1 - var(--r)) * var(--jy, 0) * 0.17em),
-    0
-  );
-}
-
-/* No scroll-driven resolve without motion — show the finished text. */
-@media (prefers-reduced-motion: reduce) {
-  .dither-char {
-    opacity: 1;
-    transform: none;
-  }
-}
-
 /* Hover label swap: two stacked copies, one following the other up. */
 .swap {
   position: relative;

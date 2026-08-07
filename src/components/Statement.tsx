@@ -3,56 +3,54 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import DitherText from "./DitherText";
 import { statement } from "@/content";
-import { SCROLL, prefersReducedMotion } from "@/lib/motion";
+import {
+  DURATION,
+  EASE_OUT_EXPO,
+  STAGGER,
+  prefersReducedMotion,
+} from "@/lib/motion";
 
+/**
+ * The premise.
+ *
+ * This is the only prose on the site, so its job is to be read. That rules out
+ * anything scroll-scrubbed: scrubbing ties comprehension to the wheel and turns
+ * five short lines into a task. The lines fire once on entry instead, arriving
+ * whole and legible, and then the reader is left alone with the paragraph.
+ */
 export default function Statement() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const textRef = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const section = sectionRef.current;
-    const holder = textRef.current;
-    if (!section || !holder) return;
+    const el = ref.current;
+    if (!el) return;
 
-    const para = holder.querySelector<HTMLElement>("p");
-    if (!para) return;
+    const lines = el.querySelectorAll<HTMLElement>(".line-mask > span");
+    if (lines.length === 0) return;
 
-    // Reduced motion: the CSS already defaults to resolved, so there's nothing
-    // to do but stay out of the way.
+    // Nothing to do: the spans have no hidden state in CSS, so leaving them
+    // untouched means the paragraph is simply readable.
     if (prefersReducedMotion()) return;
 
     gsap.registerPlugin(ScrollTrigger);
 
-    // Pinning against touch scrolling is fraught, so it's desktop-only. Narrow
-    // viewports get the identical scrubbed resolve, just without the hold.
-    const pin = window.innerWidth >= SCROLL.pinMinWidth;
-
-    const write = (v: number) => para.style.setProperty("--p", v.toFixed(4));
-
     const ctx = gsap.context(() => {
-      const trigger = ScrollTrigger.create({
-        trigger: section,
-        start: pin ? "top top" : "top 78%",
-        end: pin ? "+=110%" : "bottom 55%",
-        pin: pin,
-        pinSpacing: pin,
-        scrub: SCROLL.scrub,
-        // Progress is written straight to the custom property rather than
-        // tweened. With scrub, GSAP is already interpolating the scroll
-        // position; interpolating again would only add lag.
-        onUpdate: (self) => write(self.progress),
-        // onUpdate doesn't fire outside the trigger's range, and the CSS
-        // defaults to fully resolved — so without seeding these, the text sits
-        // readable and then snaps to scattered the instant the pin engages.
-        onRefresh: (self) => write(self.progress),
-        onLeaveBack: () => write(0),
-        onLeave: () => write(1),
-      });
-
-      write(trigger.progress);
-    }, section);
+      gsap.fromTo(
+        lines,
+        { yPercent: 115, opacity: 0 },
+        {
+          yPercent: 0,
+          opacity: 1,
+          duration: DURATION.slow,
+          ease: EASE_OUT_EXPO,
+          stagger: STAGGER.base,
+          // yPercent, not y: the type is clamped against viewport width, so a
+          // pixel offset would under- or overshoot the mask at other sizes.
+          scrollTrigger: { trigger: el, start: "top 78%", once: true },
+        },
+      );
+    }, el);
 
     return () => ctx.revert();
   }, []);
@@ -60,18 +58,20 @@ export default function Statement() {
   return (
     <section
       id="statement"
-      ref={sectionRef}
       className="relative z-10 flex min-h-screen items-center px-6 py-32 md:px-10 md:py-48"
     >
-      <div ref={textRef} className="mx-auto w-full max-w-4xl">
+      <div ref={ref} className="mx-auto w-full max-w-4xl">
         <span className="mb-10 block font-mono text-[11px] uppercase tracking-[0.22em] text-ink-dim">
           {statement.label}
         </span>
 
-        <DitherText
-          lines={statement.lines}
-          className="text-[clamp(1.75rem,5vw,3.5rem)] font-medium leading-[1.15] tracking-[-0.02em]"
-        />
+        <p className="text-[clamp(1.75rem,5vw,3.5rem)] font-medium leading-[1.15] tracking-[-0.02em]">
+          {statement.lines.map((line, i) => (
+            <span key={i} className="line-mask">
+              <span>{line}</span>
+            </span>
+          ))}
+        </p>
       </div>
     </section>
   );

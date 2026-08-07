@@ -14,13 +14,8 @@
 
 import { clamp } from "./motion";
 
-/**
- * Classic 4x4 ordered-dither threshold matrix, normalised to 0..1.
- *
- * Exported because the statement text resolves in this same order — the type
- * and the field quantise by the identical pattern, which is the whole point.
- */
-export const BAYER_4 = [
+/** Classic 4x4 ordered-dither threshold matrix, normalised to 0..1. */
+const BAYER_4 = [
   0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5,
 ].map((v) => (v + 0.5) / 16);
 
