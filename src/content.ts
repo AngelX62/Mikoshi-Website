@@ -42,9 +42,10 @@ export const thesis = {
   label: "Thesis",
   lines: [
     "A working cell is not",
-    "a robot program. It is intent,",
-    "sequence, timing, tolerance,",
-    "and the recovery when it fails.",
+    "a robot program.",
+    "It is intent. Sequence.",
+    "Timing. Tolerance.",
+    "The recovery when it fails.",
     "MIKOSHI ports production,",
     "not merely robot programs.",
   ],
@@ -106,6 +107,29 @@ export const method = {
       inputs: ["Production outcome", "Acceptance criteria"],
     },
   ],
+} as const;
+
+/**
+ * The proof beat: a real cell, run through the same grid as everything else.
+ *
+ * TO ADD THE PHOTOGRAPH: drop the file in `public/` and set `src` below to
+ * "/cell.jpg". Nothing else needs changing.
+ *
+ * Supply a landscape shot of an actual machine-tending cell, high contrast with
+ * a clear silhouette, 2000px or wider. The grid samples one pixel per cell and
+ * the ramp has eight levels, so composition and tone carry the image and
+ * sharpness is thrown away. A picture that already reads as near black and
+ * white will survive; a flat, evenly lit one will turn to grey noise.
+ *
+ * Empty ships no request at all. The field falls back to the schematic target
+ * cell, which is also the safety net if a real file ever fails to load.
+ */
+export const proof = {
+  src: "",
+  label: "Proof",
+  caption: "A cell running work it was not originally programmed for.",
+  /** Describes the photograph for anyone who cannot see the canvas. */
+  alt: "A CNC machine-tending cell on a shop floor.",
 } as const;
 
 /** The first product. Concrete on purpose: it names who runs it and who pays. */

@@ -70,6 +70,51 @@ const LEVEL_FILL: string[] = Array.from({ length: LEVELS }, (_, level) => {
 });
 
 /**
+ * Dot size per level, as a multiple of `grid.dotSize`.
+ *
+ * This is what makes the field a halftone rather than a grid of identical dots
+ * at varying opacity. In a real halftone the *dot grows* with tone: shadows are
+ * sparse specks, highlights are fat and nearly touching. Brightness alone gives
+ * an even grey texture no matter how the ramp is tuned, which is why the field
+ * read flat next to the reference images.
+ *
+ * Free, because cells are already bucketed by level: the size is computed once
+ * per bucket, not once per cell.
+ */
+const DOT_MIN = 0.5;
+const DOT_MAX = 1.55;
+const DOT_SCALE = Array.from(
+  { length: LEVELS },
+  (_, level) => DOT_MIN + (level / (LEVELS - 1)) * (DOT_MAX - DOT_MIN),
+);
+
+/**
+ * Bloom.
+ *
+ * The top levels get a wide, faint square painted underneath the crisp dot, so
+ * lit cells carry a halo instead of ending at a hard edge. Without it the
+ * brightest thing on the page is a flat pale square, which reads as grey paint
+ * rather than as something emitting light.
+ *
+ * Confined to the hottest levels on purpose: those buckets hold the fewest
+ * cells, so the extra fill is cheap, and bloom on the midtones would just fog
+ * the black ground the reference images depend on.
+ */
+const BLOOM_FROM = LEVELS - 2;
+const BLOOM_SCALE = 2.4;
+const BLOOM_FILL: Array<string | null> = Array.from(
+  { length: LEVELS },
+  (_, level) => {
+    if (level < BLOOM_FROM) return null;
+    const v = level / (LEVELS - 1);
+    const t = Math.pow(v, RAMP_BIAS);
+    const c = (i: number) =>
+      Math.round(RAMP_DIM[i] + (RAMP_BRIGHT[i] - RAMP_DIM[i]) * t);
+    return `rgba(${c(0)},${c(1)},${c(2)},${(0.05 + v * 0.06).toFixed(3)})`;
+  },
+);
+
+/**
  * Precomputed sine, already mapped to 0..1, for the ambient shimmer.
  * A Math.sin per cell per frame is tens of thousands of transcendental calls a
  * second for an effect that only needs to look irregular — a table lookup is
@@ -138,6 +183,15 @@ export type Grid = {
   maskSource: Float32Array;
   maskEngram: Float32Array;
   maskTarget: Float32Array;
+  /**
+   * A photograph, sampled through the same grid as everything else.
+   *
+   * Not a separate image element on purpose. Running a real cell through this
+   * buffer means it arrives with the same ramp, the same halftone and the same
+   * scroll smear as the schematic forms, which is the site's own argument
+   * applied to itself: the picture re-expressed in a different substrate.
+   */
+  maskPhoto: Float32Array;
   /** Per-cell dispersal vector, and a scatter offset for the intro resolve. */
   driftX: Float32Array;
   driftY: Float32Array;
@@ -166,6 +220,7 @@ export function buildGrid(width: number, height: number, spacing: number): Grid 
     maskSource: new Float32Array(count),
     maskEngram: new Float32Array(count),
     maskTarget: new Float32Array(count),
+    maskPhoto: new Float32Array(count),
     driftX: new Float32Array(count),
     driftY: new Float32Array(count),
     scatterX: new Float32Array(count),
@@ -204,7 +259,8 @@ export type MaskTarget =
   | "maskAlt"
   | "maskSource"
   | "maskEngram"
-  | "maskTarget";
+  | "maskTarget"
+  | "maskPhoto";
 
 /**
  * Rasterises an arbitrary drawing to an offscreen canvas and samples it onto
@@ -247,6 +303,40 @@ export function sampleMask(
     // Red channel is enough: the mask is drawn in pure white on black.
     buffer[i] = data[(py * off.width + px) * 4] / 255;
   }
+}
+
+/**
+ * Draws an image into a mask buffer, cover-fitting it to the canvas.
+ *
+ * Desaturated before sampling because `sampleMask` reads the red channel, which
+ * only equals luminance once there is no colour left. Contrast is nudged up:
+ * the ramp has eight levels to work with, so a flat midtone photograph
+ * collapses into two or three of them and reads as noise.
+ */
+export function sampleImageMask(
+  grid: Grid,
+  image: CanvasImageSource,
+  naturalWidth: number,
+  naturalHeight: number,
+  width: number,
+  height: number,
+  into: MaskTarget = "maskPhoto",
+): void {
+  if (naturalWidth <= 0 || naturalHeight <= 0) return;
+
+  sampleMask(grid, width, height, into, (ctx, w, h) => {
+    // Hard contrast, not a gentle nudge. There are eight levels to land in and
+    // a photograph is mostly midtones, so an untouched image collapses into two
+    // or three of them and reads as grey noise. The reference images are
+    // extremely high contrast for the same reason: this ramp rewards images
+    // that are already close to black and white.
+    ctx.filter = "grayscale(1) brightness(1.12) contrast(1.9)";
+    // Cover fit: fill the frame, crop the overflow, never distort.
+    const scale = Math.max(w / naturalWidth, h / naturalHeight);
+    const dw = naturalWidth * scale;
+    const dh = naturalHeight * scale;
+    ctx.drawImage(image, (w - dw) / 2, (h - dh) / 2, dw, dh);
+  });
 }
 
 /**
@@ -347,6 +437,8 @@ export type FrameState = {
   sourceGain: number;
   engramGain: number;
   targetGain: number;
+  /** 0..1 gain on the photograph. */
+  photoGain: number;
   /** Momentary brightening, 0..1 — used to pulse on waitlist submit. */
   pulse: number;
   /**
@@ -405,6 +497,7 @@ export function renderFrame(
     sourceGain,
     engramGain,
     targetGain,
+    photoGain,
     pulse,
     open,
     bandY,
@@ -470,7 +563,7 @@ export function renderFrame(
   // form on screen suppresses the background by the same amount.
   const formPresence = Math.min(
     1,
-    maskGain + altGain + sourceGain + engramGain + targetGain,
+    maskGain + altGain + sourceGain + engramGain + targetGain + photoGain,
   );
   const bareLight = 0.13 + 0.34 * (1 - formPresence);
   const scatter = 1 - intro;
@@ -499,7 +592,6 @@ export function renderFrame(
   const invRadius = 1 / lightRadius;
   const invRadius2 = invRadius * invRadius;
   const ambient = 0.055 * intro;
-  const half = grid.dotSize / 2;
   /** Shimmer clock, as a LUT offset. Hoisted out of the per-cell loop. */
   const tIdx = (time * 0.179) | 0;
 
@@ -553,7 +645,8 @@ export function renderFrame(
       // it would skip, and off-sequence these are all zero anyway.
       grid.maskSource[i] * sourceGain +
       grid.maskEngram[i] * engramGain +
-      grid.maskTarget[i] * targetGain;
+      grid.maskTarget[i] * targetGain +
+      grid.maskPhoto[i] * photoGain;
 
     if (bandActive) {
       const d = Math.abs(py - bandY);
@@ -613,26 +706,39 @@ export function renderFrame(
   // scrolling up it trails above.
   const SMEAR_PITCHES = 0.8;
   const smear = Math.min(Math.abs(velocity), 1) * grid.spacing * SMEAR_PITCHES;
-  const rectH = grid.dotSize + smear;
-  const top = half + (velocity < 0 ? smear : 0);
 
   // One fillStyle assignment per level instead of one per cell. This is the
-  // difference between 60fps and a slideshow.
+  // difference between 60fps and a slideshow. Dot size is now per level too,
+  // which is what makes this a halftone; it costs nothing here because the
+  // bucketing already grouped the cells.
   for (let level = 1; level < LEVELS; level++) {
     const n = buckets.size[level];
     if (n === 0) continue;
 
-    ctx.fillStyle = LEVEL_FILL[level];
-
     const ids = buckets.index[level];
+    const size = grid.dotSize * DOT_SCALE[level];
+    const half = size / 2;
+    const rectH = size + smear;
+    const top = half + (velocity < 0 ? smear : 0);
+
+    // Halo first, so the crisp dot lands on top of its own glow.
+    const bloom = BLOOM_FILL[level];
+    if (bloom) {
+      const bSize = size * BLOOM_SCALE;
+      const bHalf = bSize / 2;
+      const bH = bSize + smear;
+      const bTop = bHalf + (velocity < 0 ? smear : 0);
+      ctx.fillStyle = bloom;
+      for (let k = 0; k < n; k++) {
+        const i = ids[k];
+        ctx.fillRect(buckets.posX[i] - bHalf, buckets.posY[i] - bTop, bSize, bH);
+      }
+    }
+
+    ctx.fillStyle = LEVEL_FILL[level];
     for (let k = 0; k < n; k++) {
       const i = ids[k];
-      ctx.fillRect(
-        buckets.posX[i] - half,
-        buckets.posY[i] - top,
-        grid.dotSize,
-        rectH,
-      );
+      ctx.fillRect(buckets.posX[i] - half, buckets.posY[i] - top, size, rectH);
     }
   }
 }

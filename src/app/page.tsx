@@ -1,6 +1,7 @@
 import Hero from "@/components/Hero";
 import Thesis from "@/components/Thesis";
 import Method from "@/components/Method";
+import Proof from "@/components/Proof";
 import Deployment from "@/components/Deployment";
 import Horizon from "@/components/Horizon";
 import Footer from "@/components/Footer";
@@ -19,6 +20,7 @@ export default function Home() {
       <Hero />
       <Thesis />
       <Method />
+      <Proof />
       <Deployment />
       <Horizon />
       <Footer />

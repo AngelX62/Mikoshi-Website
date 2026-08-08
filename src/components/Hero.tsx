@@ -66,7 +66,7 @@ export default function Hero() {
         <div className="flex items-end justify-between gap-8">
           <p
             data-intro
-            className="max-w-xs text-balance text-sm leading-relaxed text-ink-soft opacity-0 md:max-w-sm md:text-base"
+            className="max-w-md text-balance text-[clamp(1rem,2vw,1.5rem)] font-medium leading-[1.25] tracking-[-0.015em] text-ink-soft opacity-0 md:max-w-lg"
           >
             {hero.descriptor}
           </p>

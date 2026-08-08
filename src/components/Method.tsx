@@ -257,7 +257,7 @@ export default function Method() {
                   <span className="text-ink-dim">{step.readout}</span>
                 </div>
 
-                <h2 className="mb-4 max-w-2xl text-[clamp(1.5rem,3.6vw,2.6rem)] font-medium leading-[1.15] tracking-[-0.02em]">
+                <h2 className="mb-4 max-w-2xl text-[clamp(1.75rem,4.4vw,3.25rem)] font-medium leading-[1.06] tracking-[-0.025em]">
                   {step.title}
                 </h2>
 

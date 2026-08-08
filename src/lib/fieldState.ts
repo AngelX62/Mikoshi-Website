@@ -35,6 +35,12 @@ export const fieldState = {
   targetGain: 0,
 
   /**
+   * The photograph. Driven by the proof beat and held low under the deployment
+   * copy, so the real cell carries forward instead of cutting to black.
+   */
+  photoGain: 0,
+
+  /**
    * Shockwave origins, in CSS pixels from the top of the viewport. Fired by the
    * thesis as each line lands, so the type and the field are one instrument.
    */
@@ -48,6 +54,7 @@ export function resetFieldShapes(): void {
   fieldState.sourceGain = 0;
   fieldState.engramGain = 0;
   fieldState.targetGain = 0;
+  fieldState.photoGain = 0;
   fieldState.rippleStart.fill(-1);
 }
 

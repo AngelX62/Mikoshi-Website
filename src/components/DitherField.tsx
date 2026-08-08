@@ -6,6 +6,7 @@ import {
   buildGrid,
   createBuckets,
   renderFrame,
+  sampleImageMask,
   sampleMask,
   sampleTextMask,
   spacingFor,
@@ -13,6 +14,7 @@ import {
   type Grid,
 } from "@/lib/dither";
 import { drawEngram, drawSource, drawTarget } from "@/lib/forms";
+import { proof } from "@/content";
 import { RIPPLE_SLOTS, fieldState } from "@/lib/fieldState";
 import { clamp, prefersReducedMotion } from "@/lib/motion";
 
@@ -110,6 +112,46 @@ export default function DitherField({ text }: Props) {
       sampleMask(grid, width, height, "maskSource", drawSource);
       sampleMask(grid, width, height, "maskEngram", drawEngram);
       sampleMask(grid, width, height, "maskTarget", drawTarget);
+      applyPhoto();
+    }
+
+    /**
+     * The photograph, or the target cell standing in for it.
+     *
+     * The fallback is the point: the proof beat has to work before anyone has
+     * supplied a photo, and it has to keep working if the file 404s in
+     * production. Either way the section renders something true.
+     */
+    let photo: HTMLImageElement | null = null;
+
+    function applyPhoto() {
+      if (!grid) return;
+      if (photo?.complete && photo.naturalWidth > 0) {
+        sampleImageMask(
+          grid,
+          photo,
+          photo.naturalWidth,
+          photo.naturalHeight,
+          width,
+          height,
+        );
+      } else {
+        sampleMask(grid, width, height, "maskPhoto", drawTarget);
+      }
+    }
+
+    if (proof.src) {
+      const img = new Image();
+      img.decoding = "async";
+      img.src = proof.src;
+      img.onload = () => {
+        if (disposed) return;
+        photo = img;
+        applyPhoto();
+        if (reduced) drawStatic();
+      };
+      // No onerror handler beyond this: `applyPhoto` already falls back, and a
+      // missing file should degrade quietly rather than blank the section.
     }
 
     /** Cached so the frame loop never forces a layout to find the footer. */
@@ -183,6 +225,7 @@ export default function DitherField({ text }: Props) {
           sourceGain: fieldState.sourceGain,
           engramGain: fieldState.engramGain,
           targetGain: fieldState.targetGain,
+          photoGain: fieldState.photoGain,
           pulse: 0,
           open: 1,
           bandY: fieldState.bandY,
@@ -280,6 +323,7 @@ export default function DitherField({ text }: Props) {
           sourceGain: fieldState.sourceGain,
           engramGain: fieldState.engramGain,
           targetGain: fieldState.targetGain,
+          photoGain: fieldState.photoGain,
           pulse,
           open,
           bandY: fieldState.bandY,
