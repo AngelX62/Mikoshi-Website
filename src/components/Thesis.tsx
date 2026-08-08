@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { statement } from "@/content";
+import { thesis } from "@/content";
 import { rippleField } from "@/lib/fieldState";
 import {
   DURATION,
@@ -16,19 +16,19 @@ import {
 const RIPPLE_OFFSET = 0.42;
 
 /**
- * The premise.
+ * The thesis.
  *
- * This is the only prose on the site, so its job is to be read. That rules out
- * anything scroll-scrubbed: scrubbing ties comprehension to the wheel and turns
- * five short lines into a task. The lines fire once on entry instead, arriving
- * whole and legible, and then the reader is left alone with the paragraph.
+ * The job here is to be read, which rules out anything scroll-scrubbed:
+ * scrubbing ties comprehension to the wheel and turns a few short lines into a
+ * task. The lines fire once on entry instead, arriving whole and legible, and
+ * then the reader is left alone with the paragraph.
  *
- * What carries the section is the field behind it, not the type: each line
+ * What carries the section is the field behind it, not the type. Each line
  * punches a shockwave outward through the dither as it lands. The words
- * themselves never distort, so nothing about this makes the paragraph harder to
- * read — it just stops the background being a bystander.
+ * themselves never distort, so nothing here makes the paragraph harder to read.
+ * It just stops the background being a bystander.
  */
-export default function Statement() {
+export default function Thesis() {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -87,16 +87,16 @@ export default function Statement() {
 
   return (
     <section
-      id="statement"
+      id="thesis"
       className="relative z-10 flex min-h-screen items-center px-6 py-32 md:px-10 md:py-48"
     >
       <div ref={ref} className="mx-auto w-full max-w-4xl">
         <span className="mb-10 block font-mono text-[11px] uppercase tracking-[0.22em] text-ink-dim">
-          {statement.label}
+          {thesis.label}
         </span>
 
         <p className="text-[clamp(1.75rem,5vw,3.5rem)] font-medium leading-[1.15] tracking-[-0.02em]">
-          {statement.lines.map((line, i) => (
+          {thesis.lines.map((line, i) => (
             <span key={i} className="line-mask">
               <span>{line}</span>
             </span>

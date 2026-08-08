@@ -124,6 +124,20 @@ export type Grid = {
   mask: Float32Array;
   /** A second mask, for the footer bookend. Same buffer shape as `mask`. */
   maskAlt: Float32Array;
+  /**
+   * The method's three forms, in the order the sequence plays them.
+   *
+   * `maskSource` and `maskTarget` are schematic cells: a machine and an arm.
+   * They have to read as two different bodies doing one job, which is the whole
+   * argument, so they differ in proportion and handedness rather than position.
+   *
+   * `maskEngram` is deliberately not a picture of anything. It is nodes and
+   * chords, a causal structure, because the middle step is where the work stops
+   * being a shape and becomes the reason the shape works.
+   */
+  maskSource: Float32Array;
+  maskEngram: Float32Array;
+  maskTarget: Float32Array;
   /** Per-cell dispersal vector, and a scatter offset for the intro resolve. */
   driftX: Float32Array;
   driftY: Float32Array;
@@ -149,6 +163,9 @@ export function buildGrid(width: number, height: number, spacing: number): Grid 
     threshold: new Float32Array(count),
     mask: new Float32Array(count),
     maskAlt: new Float32Array(count),
+    maskSource: new Float32Array(count),
+    maskEngram: new Float32Array(count),
+    maskTarget: new Float32Array(count),
     driftX: new Float32Array(count),
     driftY: new Float32Array(count),
     scatterX: new Float32Array(count),
@@ -181,32 +198,29 @@ export function buildGrid(width: number, height: number, spacing: number): Grid 
   return grid;
 }
 
+/** Which buffer a mask sampling pass fills. */
+export type MaskTarget =
+  | "mask"
+  | "maskAlt"
+  | "maskSource"
+  | "maskEngram"
+  | "maskTarget";
+
 /**
- * Renders `text` to an offscreen canvas and samples it onto the grid, filling
- * `grid.mask` with per-cell coverage. Auto-fits the type to `widthRatio` of the
- * canvas so the wordmark holds its proportions at any viewport size.
+ * Rasterises an arbitrary drawing to an offscreen canvas and samples it onto
+ * the grid, filling one mask buffer with per-cell coverage.
+ *
+ * `draw` receives a context already cleared to black with the fill set to
+ * white, and should paint in white: the sampler reads one channel, so anything
+ * else is wasted work. Whatever it paints becomes a form the field can hold.
  */
-export function sampleTextMask(
+export function sampleMask(
   grid: Grid,
-  text: string,
   width: number,
   height: number,
-  fontFamily: string,
-  opts: {
-    widthRatio?: number;
-    centerY?: number;
-    letterSpacing?: string;
-    /** Which buffer to fill. `maskAlt` holds the footer bookend. */
-    into?: "mask" | "maskAlt";
-  } = {},
+  into: MaskTarget,
+  draw: (ctx: CanvasRenderingContext2D, w: number, h: number) => void,
 ): void {
-  const {
-    widthRatio = 0.72,
-    centerY = 0.5,
-    letterSpacing = "0.06em",
-    into = "mask",
-  } = opts;
-
   const buffer = grid[into];
   buffer.fill(0);
   if (width <= 0 || height <= 0) return;
@@ -219,25 +233,10 @@ export function sampleTextMask(
 
   ctx.fillStyle = "#000";
   ctx.fillRect(0, 0, off.width, off.height);
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
   ctx.fillStyle = "#fff";
+  ctx.strokeStyle = "#fff";
 
-  // `letterSpacing` is Chromium-only; harmless where unsupported.
-  type SpacedContext = CanvasRenderingContext2D & { letterSpacing?: string };
-  (ctx as SpacedContext).letterSpacing = letterSpacing;
-
-  // Fit by measuring once at a reference size and scaling — one extra measure
-  // beats a binary search and is exact for a linear font metric.
-  const target = width * widthRatio;
-  const reference = 100;
-  ctx.font = `600 ${reference}px ${fontFamily}`;
-  const measured = ctx.measureText(text).width || 1;
-  let fontSize = (target / measured) * reference;
-  fontSize = Math.min(fontSize, height * 0.42);
-
-  ctx.font = `600 ${fontSize}px ${fontFamily}`;
-  ctx.fillText(text, width / 2, height * centerY);
+  draw(ctx, width, height);
 
   const data = ctx.getImageData(0, 0, off.width, off.height).data;
 
@@ -245,9 +244,59 @@ export function sampleTextMask(
     const px = Math.round(grid.x[i]);
     const py = Math.round(grid.y[i]);
     if (px < 0 || py < 0 || px >= off.width || py >= off.height) continue;
-    // Red channel is enough — the mask is drawn in pure white on black.
+    // Red channel is enough: the mask is drawn in pure white on black.
     buffer[i] = data[(py * off.width + px) * 4] / 255;
   }
+}
+
+/**
+ * Draws `text` into a mask buffer, auto-fitting it to `widthRatio` of the canvas
+ * so the wordmark holds its proportions at any viewport size.
+ *
+ * One caller of `sampleMask` among several. The offscreen setup and sampling
+ * loop live there; only the font fitting is text-specific.
+ */
+export function sampleTextMask(
+  grid: Grid,
+  text: string,
+  width: number,
+  height: number,
+  fontFamily: string,
+  opts: {
+    widthRatio?: number;
+    centerY?: number;
+    letterSpacing?: string;
+    /** Which buffer to fill. `maskAlt` holds the footer bookend. */
+    into?: MaskTarget;
+  } = {},
+): void {
+  const {
+    widthRatio = 0.72,
+    centerY = 0.5,
+    letterSpacing = "0.06em",
+    into = "mask",
+  } = opts;
+
+  sampleMask(grid, width, height, into, (ctx) => {
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    // `letterSpacing` is Chromium-only; harmless where unsupported.
+    type SpacedContext = CanvasRenderingContext2D & { letterSpacing?: string };
+    (ctx as SpacedContext).letterSpacing = letterSpacing;
+
+    // Fit by measuring once at a reference size and scaling. One extra measure
+    // beats a binary search and is exact for a linear font metric.
+    const target = width * widthRatio;
+    const reference = 100;
+    ctx.font = `600 ${reference}px ${fontFamily}`;
+    const measured = ctx.measureText(text).width || 1;
+    let fontSize = (target / measured) * reference;
+    fontSize = Math.min(fontSize, height * 0.42);
+
+    ctx.font = `600 ${fontSize}px ${fontFamily}`;
+    ctx.fillText(text, width / 2, height * centerY);
+  });
 }
 
 /**
@@ -290,6 +339,14 @@ export type FrameState = {
   scroll: number;
   /** 0..1 gain on the footer bookend mask. */
   altGain: number;
+  /**
+   * 0..1 gains on the method's three forms. Cross-faded by Method.tsx as the
+   * sequence advances, so the field holds one body, then the structure behind
+   * it, then a different body.
+   */
+  sourceGain: number;
+  engramGain: number;
+  targetGain: number;
   /** Momentary brightening, 0..1 — used to pulse on waitlist submit. */
   pulse: number;
   /**
@@ -300,22 +357,12 @@ export type FrameState = {
   /** Scan band: centre in CSS pixels, and its strength. */
   bandY: number;
   bandGain: number;
-  /** Point-cloud sphere: radius in CSS pixels, and its strength. */
-  orbR: number;
-  orbGain: number;
   /**
-   * 0 = solid sphere, 1 = hollow shell.
-   *
-   * Ramped toward 1 as the sphere expands, so it breaks up into a thinning ring
-   * rather than inflating into a uniform wash of dots.
-   */
-  orbRing: number;
-  /**
-   * Shockwaves from the premise, each an expanding pair of horizontal fronts.
+   * Shockwaves from the thesis, each an expanding pair of horizontal fronts.
    * `rippleY` holds origins in CSS pixels and `rippleR` how far each front has
    * travelled; live entries are compacted into the first `rippleCount` slots,
-   * so the draw loop never walks dead ones. The caller owns the clock — this
-   * just draws where it's told, same split as the orb.
+   * so the draw loop never walks dead ones. The caller owns the clock, this
+   * just draws where it is told.
    */
   rippleY: Float32Array;
   rippleR: Float32Array;
@@ -355,13 +402,13 @@ export function renderFrame(
     intro,
     scroll,
     altGain,
+    sourceGain,
+    engramGain,
+    targetGain,
     pulse,
     open,
     bandY,
     bandGain,
-    orbR,
-    orbGain,
-    orbRing,
     rippleY,
     rippleR,
     rippleGain,
@@ -415,10 +462,17 @@ export function renderFrame(
   // How strongly bare field cells catch the light.
   //
   // Under a wordmark this has to stay low or the lit background washes the
-  // letterforms out — that's why it's 0.13 in the hero. With no wordmark on
+  // letterforms out, which is why it sits at 0.13 in the hero. With nothing on
   // screen there is nothing to protect, so it rises and the cursor genuinely
   // illuminates the grid. Without this the field is invisible past the hero.
-  const bareLight = 0.13 + 0.34 * (1 - Math.min(1, maskGain + altGain));
+  //
+  // The method's forms need exactly the same protection as the wordmark, so any
+  // form on screen suppresses the background by the same amount.
+  const formPresence = Math.min(
+    1,
+    maskGain + altGain + sourceGain + engramGain + targetGain,
+  );
+  const bareLight = 0.13 + 0.34 * (1 - formPresence);
   const scatter = 1 - intro;
 
   // Opening title sequence: a front expanding from the centre. Cells only light
@@ -433,16 +487,15 @@ export function renderFrame(
   /** Width of the soft edge on the expanding front, in CSS pixels. */
   const FRONT_FEATHER = 190;
 
-  // Passage shapes are computed here rather than rasterised into a mask: they
-  // move every frame, and a getImageData per frame is orders of magnitude too
-  // slow. A band is an abs and a compare; the sphere is one sqrt.
+  // The scan band is computed here rather than rasterised into a mask: it moves
+  // every frame, and a getImageData per frame is orders of magnitude too slow.
+  // A band is an abs and a compare. The method's forms go the other way, since
+  // they are fixed geometry and only their gains change.
   const bandActive = bandGain > 0.002;
-  const orbActive = orbGain > 0.002;
   /** Falloff of the scan band either side of its centre, in CSS pixels. */
   const BAND_HALF = 74;
   /** Thickness of each shockwave front, in CSS pixels. */
   const RIPPLE_HALF = 46;
-  const invOrbR = orbR > 0 ? 1 / orbR : 0;
   const invRadius = 1 / lightRadius;
   const invRadius2 = invRadius * invRadius;
   const ambient = 0.055 * intro;
@@ -492,7 +545,15 @@ export function renderFrame(
     // field cells barely catch the light at all. Without that asymmetry the
     // letterforms wash out inside the halo and the wordmark disappears.
     // `maskAlt` is the footer bookend, gained in as the footer arrives.
-    let m = mk * maskGain + grid.maskAlt[i] * altGain;
+    let m =
+      mk * maskGain +
+      grid.maskAlt[i] * altGain +
+      // The method's forms. Three unconditional multiply-adds rather than a
+      // guard on the gains: a branch per cell costs more than the arithmetic
+      // it would skip, and off-sequence these are all zero anyway.
+      grid.maskSource[i] * sourceGain +
+      grid.maskEngram[i] * engramGain +
+      grid.maskTarget[i] * targetGain;
 
     if (bandActive) {
       const d = Math.abs(py - bandY);
@@ -512,21 +573,6 @@ export function renderFrame(
       if (d < RIPPLE_HALF) {
         const f = 1 - d / RIPPLE_HALF;
         m += f * f * rippleGain[r];
-      }
-    }
-
-    if (orbActive) {
-      const ox = px - halfW;
-      const oy = py - halfH;
-      const r = Math.hypot(ox, oy);
-      if (r < orbR) {
-        // Projected point density on a sphere goes as 1/sqrt(1-(r/R)^2), which
-        // is what gives a point cloud its bright rim and makes it read as a
-        // sphere rather than a flat disc. It diverges at the edge, so clamp it.
-        const u = r * invOrbR;
-        const shell = Math.min(1 / Math.sqrt(1 - u * u + 0.0001), 3.4) / 3.4;
-        // Interior fades out as `orbRing` rises, leaving only the rim.
-        m += (0.25 * (1 - orbRing) + shell * 0.9) * orbGain;
       }
     }
 

@@ -46,10 +46,10 @@ export default function Hero() {
 
       {/*
         The wordmark is drawn as canvas pixels, which are invisible to search
-        engines and screen readers — so the real heading lives here.
+        engines and screen readers, so the real heading lives here.
       */}
       <h1 className="sr-only">
-        {hero.wordmark} — {hero.descriptor}
+        {hero.wordmark}. {hero.descriptor}
       </h1>
 
       <div

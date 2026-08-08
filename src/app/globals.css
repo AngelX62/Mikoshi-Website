@@ -28,8 +28,11 @@
   --color-accent: #b9a8d0;
   --color-accent-soft: #cabce0;
 
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  /* IBM Plex. Drawn for an engineering company, which is the register this site
+     wants: precise and slightly severe, rather than the softer grotesques that
+     have become the default for dark technical pages. */
+  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
 
   /* Motion tokens. Mirrored in src/lib/motion.ts so CSS and GSAP animations
      share one vocabulary instead of drifting apart. */
@@ -139,6 +142,26 @@ body {
 .line-mask > span {
   display: block;
   will-change: transform;
+}
+
+/*
+   The method's steps are stacked on top of each other and cross-faded by
+   scroll. Without scrubbing there is nothing to reveal the other three, so a
+   reduced-motion reader would get one step out of four and no way to reach the
+   rest. This unstacks them into a plain vertical list.
+
+   Applied by Method.tsx rather than by a media query, so the component keeps
+   one source of truth for whether it is animating. Unlayered, so it outranks
+   the Tailwind utilities in @layer utilities that set the stacked state.
+*/
+.method-static > [data-step] {
+  position: static;
+  opacity: 1;
+  transform: none;
+}
+
+.method-static > [data-step] + [data-step] {
+  margin-top: 3.5rem;
 }
 
 @media (prefers-reduced-motion: reduce) {

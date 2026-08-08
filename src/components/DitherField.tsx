@@ -6,11 +6,13 @@ import {
   buildGrid,
   createBuckets,
   renderFrame,
+  sampleMask,
   sampleTextMask,
   spacingFor,
   type Buckets,
   type Grid,
 } from "@/lib/dither";
+import { drawEngram, drawSource, drawTarget } from "@/lib/forms";
 import { RIPPLE_SLOTS, fieldState } from "@/lib/fieldState";
 import { clamp, prefersReducedMotion } from "@/lib/motion";
 
@@ -81,7 +83,7 @@ export default function DitherField({ text }: Props) {
 
     const fontFamily = () => {
       const v = getComputedStyle(document.documentElement)
-        .getPropertyValue("--font-geist-sans")
+        .getPropertyValue("--font-plex-sans")
         .trim();
       return v ? `${v}, sans-serif` : "system-ui, sans-serif";
     };
@@ -102,6 +104,12 @@ export default function DitherField({ text }: Props) {
         centerY: 0.68,
         into: "maskAlt",
       });
+
+      // The method's three forms. Rasterised once per layout rather than per
+      // frame: they never move, only their gains change as the sequence runs.
+      sampleMask(grid, width, height, "maskSource", drawSource);
+      sampleMask(grid, width, height, "maskEngram", drawEngram);
+      sampleMask(grid, width, height, "maskTarget", drawTarget);
     }
 
     /** Cached so the frame loop never forces a layout to find the footer. */
@@ -172,13 +180,13 @@ export default function DitherField({ text }: Props) {
           intro: 1,
           scroll: scrollProgress(),
           altGain: footerGain(),
+          sourceGain: fieldState.sourceGain,
+          engramGain: fieldState.engramGain,
+          targetGain: fieldState.targetGain,
           pulse: 0,
           open: 1,
           bandY: fieldState.bandY,
           bandGain: fieldState.bandGain,
-          orbR: fieldState.orbR,
-          orbGain: fieldState.orbGain,
-          orbRing: fieldState.orbRing,
           // Reduced motion gets no shockwave and no smear — both are pure
           // motion, and neither carries information the frame needs.
           rippleY,
@@ -269,13 +277,13 @@ export default function DitherField({ text }: Props) {
           intro,
           scroll: scrollProgress(),
           altGain: footerGain(),
+          sourceGain: fieldState.sourceGain,
+          engramGain: fieldState.engramGain,
+          targetGain: fieldState.targetGain,
           pulse,
           open,
           bandY: fieldState.bandY,
           bandGain: fieldState.bandGain,
-          orbR: fieldState.orbR,
-          orbGain: fieldState.orbGain,
-          orbRing: fieldState.orbRing,
           rippleY,
           rippleR,
           rippleGain,

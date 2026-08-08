@@ -1,68 +1,141 @@
 /**
  * Every word on the site lives here.
  *
- * The positioning isn't settled yet, so the copy below is deliberately abstract:
- * it sets a tone without committing to claims about what the product does. Edit
- * this file to change the site — you should never need to open a component to
- * change a sentence.
+ * Two rules govern this file.
+ *
+ * No em dashes. They are the loudest tell of machine-written copy, and a
+ * company selling judgement about physical work cannot afford to read as
+ * generated. Restructure with a period, a colon or a comma instead.
+ *
+ * Nothing invented. Every claim below traces to the positioning brief. An
+ * earlier version of this site carried capability copy that was written to fill
+ * a section rather than to state a fact, and it read as exactly that.
  */
 
 export const site = {
   name: "MIKOSHI",
-  /** Used for <title>, OpenGraph, and the footer. */
-  tagline: "Software for machines that move.",
+  /** Used for the document title, OpenGraph, and the footer. */
+  tagline: "Proven work in. Qualified capability out.",
   description:
-    "MIKOSHI builds software for machines that move through the physical world.",
+    "MIKOSHI turns proven physical work into portable, executable intelligence. Observe a working operation, reconstruct why it succeeds, re-embody it on different equipment, and qualify the result.",
   /** Set this once you have a domain, so OpenGraph URLs resolve absolutely. */
   url: "https://mikoshi.com",
 } as const;
 
 export const hero = {
-  /** Drawn into the dither field, and mirrored as the page's real <h1>. */
+  /** Drawn into the dither field, and mirrored as the page's real h1. */
   wordmark: "MIKOSHI",
-  descriptor: "Software for machines that move.",
+  descriptor: "Proven work in. Qualified capability out, on any compatible machine.",
   /** Small mono label in the top-left corner. */
-  eyebrow: "Robotic Software",
+  eyebrow: "Physical Intelligence",
   scrollCue: "Scroll",
 } as const;
 
-export const statement = {
-  // No numerals. With only two labelled sections an index carries nothing, and
-  // the 01 / 02 / 03 device is the tell of a templated landing page.
-  label: "Premise",
-  /** Rendered one line at a time, each wiping up into place. Keep lines short. */
+/**
+ * The thesis.
+ *
+ * Builds to the sharpest available description of the company. Rendered one
+ * line at a time, each wiping up into place, so keep the lines short and keep
+ * the last one the payload.
+ */
+export const thesis = {
+  label: "Thesis",
   lines: [
-    "Machines perceive the world",
-    "as a field of samples —",
-    "discrete, noisy, incomplete.",
-    "We build the layer that turns",
-    "that field into intent.",
+    "A working cell is not",
+    "a robot program. It is intent,",
+    "sequence, timing, tolerance,",
+    "and the recovery when it fails.",
+    "MIKOSHI ports production,",
+    "not merely robot programs.",
   ],
 } as const;
 
 /**
- * The wordless passage.
+ * The method.
  *
- * There is no prose here on purpose. Until the positioning is settled, any
- * capability copy would be invented — which is exactly what made the section
- * this replaced ring false. The readouts below are instrumentation, not claims:
- * they name what the field is doing, nothing more.
+ * Four ordered steps, so the numerals carry information here. Each step names
+ * what it takes in as `inputs`, which is what keeps the section specific rather
+ * than a set of capability nouns.
+ *
+ * `readout` is the mono label the field's instrumentation shows during that
+ * shot, and doubles as the shot name in Method.tsx.
  */
-export const passage = {
-  shots: [
-    { at: 0.0, readout: "Scan" },
-    { at: 0.38, readout: "Volume" },
-    { at: 0.74, readout: "Sample" },
+export const method = {
+  label: "Method",
+  steps: [
+    {
+      index: "01",
+      readout: "Observe",
+      title: "Take in a working operation",
+      body: "Import or watch an operation that already runs on the floor.",
+      inputs: [
+        "Robot programs",
+        "Video",
+        "Sensor signals",
+        "PLC and CNC states",
+        "Operator corrections",
+        "Production results",
+      ],
+    },
+    {
+      index: "02",
+      readout: "Reconstruct",
+      title: "Recover why it succeeds",
+      body: "The result is a Work Engram: the structure underneath the motion, not a recording of it.",
+      inputs: [
+        "Intent",
+        "Causal sequence",
+        "Constraints",
+        "Timing",
+        "Failure recovery",
+        "Acceptance criteria",
+      ],
+    },
+    {
+      index: "03",
+      readout: "Re-embody",
+      title: "Rebuild the work in another body",
+      body: "Generate native programs for the equipment already on site: a different robot, a different machine, eventually a humanoid.",
+      inputs: ["Different robot", "Different machine", "Humanoid"],
+    },
+    {
+      index: "04",
+      readout: "Qualify",
+      title: "Prove it physically",
+      body: "Verify that the new embodiment reaches the production outcome the work requires.",
+      inputs: ["Production outcome", "Acceptance criteria"],
+    },
   ],
+} as const;
+
+/** The first product. Concrete on purpose: it names who runs it and who pays. */
+export const deployment = {
+  label: "First deployment",
+  heading: "CNC machine tending",
+  body: "Replicate a proven machine-tending cell across different machines and robot configurations.",
+  facts: [
+    { key: "Operated by", value: "The integrator" },
+    { key: "Paid for by", value: "The manufacturer" },
+  ],
+  rationale:
+    "Replication gets faster and cheaper, and stops depending on rebuilding the engineering logic every time.",
+} as const;
+
+/** Where this goes. Kept to one claim and the loop that supports it. */
+export const horizon = {
+  label: "Horizon",
+  heading: "The portability layer for physical work.",
+  body: "A machine perceives a demonstrated job, understands the logic underneath it, imagines how to perform it with its own body, executes it, and improves with experience.",
+  loop: ["Perceive", "Understand", "Imagine", "Execute", "Improve"],
 } as const;
 
 export const waitlist = {
   label: "Contact",
-  heading: "Early access",
-  body: "We're building quietly. Leave an address and we'll be in touch when there's something worth showing.",
+  heading: "For integrators and manufacturers",
+  body: "If you run cells you would rather not rebuild from scratch, we want to hear what you are replicating.",
   placeholder: "you@company.com",
-  cta: "Request access",
-  success: "Received. We'll be in touch.",
+  cta: "Start a conversation",
+  success: "Received. We will be in touch.",
   errorInvalid: "Enter a valid email address.",
   errorGeneric: "Something went wrong. Try again.",
 } as const;
