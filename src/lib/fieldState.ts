@@ -41,6 +41,16 @@ export const fieldState = {
   photoGain: 0,
 
   /**
+   * Which of the method's four shots is running, 0 to 3.
+   *
+   * Written by `Method` and read by the instrument overlay, which annotates
+   * whatever the field is currently holding. Kept here rather than passed,
+   * because both are outside React's render path for the same reason: this
+   * changes on every scrub frame.
+   */
+  shot: 0,
+
+  /**
    * Shockwave origins, in CSS pixels from the top of the viewport. Fired by the
    * thesis as each line lands, so the type and the field are one instrument.
    */
@@ -55,6 +65,7 @@ export function resetFieldShapes(): void {
   fieldState.engramGain = 0;
   fieldState.targetGain = 0;
   fieldState.photoGain = 0;
+  fieldState.shot = 0;
   fieldState.rippleStart.fill(-1);
 }
 

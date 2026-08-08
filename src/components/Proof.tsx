@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { proof } from "@/content";
+import SectionLabel from "./SectionLabel";
 import { fieldState, resetFieldShapes } from "@/lib/fieldState";
 import { SCROLL, norm, prefersReducedMotion } from "@/lib/motion";
 
@@ -82,11 +83,9 @@ export default function Proof() {
     <section
       id="proof"
       ref={sectionRef}
-      className="relative z-10 flex min-h-screen flex-col justify-between px-6 py-16 md:px-10 md:py-20"
+      className="relative z-10 flex min-h-screen flex-col justify-end px-6 py-16 md:py-20 md:pl-24 md:pr-10"
     >
-      <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-ink-dim">
-        {proof.label}
-      </span>
+      <SectionLabel>{proof.label}</SectionLabel>
 
       {/*
         The photograph is drawn on canvas, which is invisible to search engines
@@ -94,6 +93,12 @@ export default function Proof() {
       */}
       <p className="sr-only">{proof.alt}</p>
 
+      {/*
+        Pinned to the bottom rather than spread against the label, which used to
+        be the section's other flex child. Once the label moves to the margin
+        there is nothing left to space it against, and a caption floating in the
+        middle of a photograph is worse than one sitting under it.
+      */}
       <p className="max-w-md font-mono text-[11px] uppercase leading-relaxed tracking-[0.18em] text-ink-soft">
         {proof.caption}
       </p>

@@ -41,7 +41,7 @@ export default function Hero() {
   }, []);
 
   return (
-    <section className="relative h-screen w-full">
+    <section id="hero" className="relative h-screen w-full">
       <DitherField text={hero.wordmark} />
 
       {/*

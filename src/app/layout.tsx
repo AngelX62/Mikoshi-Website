@@ -4,6 +4,7 @@ import { site } from "@/content";
 import SmoothScroll from "@/components/SmoothScroll";
 import Cursor from "@/components/Cursor";
 import Grain from "@/components/Grain";
+import Instrument from "@/components/Instrument";
 import ScrollRail from "@/components/ScrollRail";
 import Vignette from "@/components/Vignette";
 import "./globals.css";
@@ -71,6 +72,10 @@ export default function RootLayout({
       <body className="bg-void antialiased">
         <SmoothScroll />
         {children}
+        {/* Sits above the field and below the copy. Mounted here rather than
+            per section because it is one fixed coordinate space shared with the
+            canvas, not a decoration each section owns. */}
+        <Instrument />
         <Vignette />
         <ScrollRail />
         <Grain />

@@ -14,6 +14,8 @@
 
 import { clamp } from "./motion";
 
+const TAU = Math.PI * 2;
+
 /** Classic 4x4 ordered-dither threshold matrix, normalised to 0..1. */
 const BAYER_4 = [
   0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5,
@@ -26,46 +28,77 @@ export const LEVELS = 8;
  * The level ramp — where the site's colour lives.
  *
  * A dither ramp is a palette, so the tint belongs here rather than in a wash
- * laid over the page. Dim samples sit at an ashy violet and bright ones burn
- * out to near-white, which makes the colour a *consequence of light*: the
- * ambient field reads dusty, and anything the light touches — the wordmark
- * included — goes white. That's also what preserves the high-contrast
- * black-and-white dither of the reference images.
+ * laid over the page.
  *
- * Baked into strings once at module load, so the draw loop still costs one
- * fillStyle assignment per level and builds nothing per frame.
+ * One colour per level rather than a lerp between two endpoints. A two-point
+ * ramp puts every cell on the page on a single line through colour space, and
+ * the line from violet to white passes through desaturated mid-lilac on the way,
+ * so the midtones — which is most of the field — arrive greyer than either end.
+ * Hue has to be a dimension of the image, not a constant with brightness laid
+ * over it.
  *
- * `RAMP_DIM` is more saturated than the tint actually wanted, on purpose. Cells
- * are drawn with alpha proportional to level, and compositing scales all three
- * channels together — so the channel *spread* that carries the hue shrinks with
- * it, and a colour picked to look right at full strength turns to neutral grey
- * by the time it's painted at 0.4. Both endpoints are chosen to read correctly
- * after that compositing, not before it.
+ * The shape of the ramp is *cold shadow, hot highlight*: it opens at an indigo
+ * dark enough to read as near-black, holds ashy violet through the populated
+ * midtones, and only picks up rose and a warm white at the top. So the page
+ * still reads purple, and heat appears exactly where light actually lands — the
+ * wordmark core, the cursor, the bloom.
+ *
+ * Heat belongs at the top for a measured reason, not a taste one. See
+ * `ALPHA_BIAS`: chroma only survives compositing where alpha is high, and
+ * levels 6 and 7 are the only place on this ramp with the headroom to hold a
+ * saturated hue at all.
+ *
+ * These are the colours **as they should appear on screen**, already composited
+ * onto black. That is not how the previous version was written and it is the
+ * whole reason it was hard to tune: cells are painted with alpha proportional
+ * to level, compositing scales all three channels together, and so the channel
+ * spread that carries hue shrinks with it. A colour picked to look right in the
+ * source turns to neutral grey by the time it is painted at 0.3.
+ *
+ * Declaring the target and dividing back out by the alpha means the numbers
+ * below are the ones you can actually check against a screenshot.
  */
-const RAMP_DIM = [126, 94, 190];
-const RAMP_BRIGHT = [247, 245, 250];
-/** >1 holds the violet through the midtones instead of racing to white. */
-const RAMP_BIAS = 1.35;
+const RAMP_ON_BLACK: ReadonlyArray<readonly [number, number, number]> = [
+  [0, 0, 0], //             L0  never drawn
+  // L1 and L2 carry the ground, and they sit right on the edge of being seen at
+  // all: below about luminance 24 an 8-bit sRGB colour has no room left to show
+  // hue. Measured at the first pass of these values, 61% of everything drawn
+  // landed under that line. They are pitched just clear of it on purpose.
+  [31, 27, 56], //          L1  indigo, the ground speckle
+  [55, 46, 96], //          L2  indigo
+  [64, 52, 108], //         L3  deep violet
+  [92, 73, 144], //         L4  violet
+  [130, 101, 176], //       L5  lilac
+  [186, 132, 170], //       L6  rose, where the heat starts
+  [240, 226, 222], //       L7  hot white, warm cast
+];
 
 /**
  * Alpha is deliberately *not* linear in level.
  *
- * Compositing scales all three channels together, so the channel spread that
- * carries hue shrinks with luminance — and below about luminance 24 there is no
- * room left in 8-bit sRGB to see any colour at all. With a linear curve roughly
- * four fifths of the drawn field landed in exactly that band: present, but
- * neither visible nor violet. Lifting the low and middle levels puts the
- * populated part of the ramp where chroma has headroom, which is what makes
- * the ambient field read as dusty rather than as black-on-black.
+ * Below about luminance 24 there is no room left in 8-bit sRGB to see any
+ * colour at all. With a linear curve roughly four fifths of the drawn field
+ * landed in exactly that band: present, but neither visible nor violet. Lifting
+ * the low and middle levels puts the populated part of the ramp where chroma
+ * has headroom, which is what makes the ambient field read as dusty rather than
+ * as black-on-black.
  */
-const ALPHA_BIAS = 0.7;
+const ALPHA_BIAS = 0.55;
 
+/** Alpha for a level, on the biased curve above. */
+function levelAlpha(level: number): number {
+  return Math.pow(level / (LEVELS - 1), ALPHA_BIAS) * 0.95;
+}
+
+/**
+ * What to actually paint, so that painting it at `levelAlpha` lands on the
+ * target above. Baked into strings once at module load, so the draw loop builds
+ * nothing per frame.
+ */
 const LEVEL_FILL: string[] = Array.from({ length: LEVELS }, (_, level) => {
-  const v = level / (LEVELS - 1);
-  const t = Math.pow(v, RAMP_BIAS);
+  const alpha = levelAlpha(level) || 1;
   const c = (i: number) =>
-    Math.round(RAMP_DIM[i] + (RAMP_BRIGHT[i] - RAMP_DIM[i]) * t);
-  const alpha = Math.pow(v, ALPHA_BIAS) * 0.95;
+    Math.min(255, Math.round(RAMP_ON_BLACK[level][i] / alpha));
   return `rgba(${c(0)},${c(1)},${c(2)},${alpha.toFixed(3)})`;
 });
 
@@ -81,8 +114,13 @@ const LEVEL_FILL: string[] = Array.from({ length: LEVELS }, (_, level) => {
  * Free, because cells are already bucketed by level: the size is computed once
  * per bucket, not once per cell.
  */
-const DOT_MIN = 0.5;
-const DOT_MAX = 1.55;
+// Range chosen against the pitch, not in the abstract. At the desktop pitch a
+// level 1 speck covers about a quarter of the cell's width and a level 7 mark
+// about three quarters, so shadows are sparse and highlights nearly touch,
+// which is the spread the reference halftones have. Narrower than this and the
+// midtones all read as the same even grey texture.
+const DOT_MIN = 0.55;
+const DOT_MAX = 1.7;
 const DOT_SCALE = Array.from(
   { length: LEVELS },
   (_, level) => DOT_MIN + (level / (LEVELS - 1)) * (DOT_MAX - DOT_MIN),
@@ -91,28 +129,55 @@ const DOT_SCALE = Array.from(
 /**
  * Bloom.
  *
- * The top levels get a wide, faint square painted underneath the crisp dot, so
- * lit cells carry a halo instead of ending at a hard edge. Without it the
- * brightest thing on the page is a flat pale square, which reads as grey paint
- * rather than as something emitting light.
+ * The top levels carry a halo, so lit cells fade out instead of ending at a
+ * hard edge. Without it the brightest thing on the page is a flat pale mark,
+ * which reads as paint rather than as something emitting light.
  *
  * Confined to the hottest levels on purpose: those buckets hold the fewest
- * cells, so the extra fill is cheap, and bloom on the midtones would just fog
- * the black ground the reference images depend on.
+ * cells, and bloom on the midtones would fog the black ground the reference
+ * images depend on.
+ *
+ * Two concentric rings rather than a radial gradient. A gradient means one
+ * paint per cell, which is the thing the batched draw exists to avoid; two flat
+ * rings are two more batched fills over the sparsest buckets on the ramp, and
+ * at these sizes the step between them is invisible.
  */
 const BLOOM_FROM = LEVELS - 2;
-const BLOOM_SCALE = 2.4;
-const BLOOM_FILL: Array<string | null> = Array.from(
-  { length: LEVELS },
-  (_, level) => {
-    if (level < BLOOM_FROM) return null;
-    const v = level / (LEVELS - 1);
-    const t = Math.pow(v, RAMP_BIAS);
-    const c = (i: number) =>
-      Math.round(RAMP_DIM[i] + (RAMP_BRIGHT[i] - RAMP_DIM[i]) * t);
-    return `rgba(${c(0)},${c(1)},${c(2)},${(0.05 + v * 0.06).toFixed(3)})`;
-  },
-);
+const BLOOM_RINGS: ReadonlyArray<{ scale: number; alpha: number }> = [
+  { scale: 2.6, alpha: 0.05 },
+  { scale: 1.7, alpha: 0.09 },
+];
+
+/**
+ * The hot levels are drawn as characters rather than as dots.
+ *
+ * The field is a machine's work being sampled, and where the sample is
+ * strongest it should read as data rather than as texture. Confined to the top
+ * two levels for two reasons: those cells are the largest on the ramp, which is
+ * the only size at which a character survives at all, and they are the
+ * sparsest, so nothing here turns into a wall of falling glyphs.
+ *
+ * **Drawn as a 3x5 dot matrix, not as type.** `fillText` was measured at 54
+ * microseconds a call — 886 hot cells cost 47ms, three whole frames, for the
+ * hot levels alone. A matrix emits a handful of rects into the batched path the
+ * rest of the draw already uses, so it costs a fraction of a millisecond and,
+ * unlike type, degrades linearly if a photograph ever puts thousands of cells
+ * up here. It also happens to be the more honest mark: a dot matrix is what a
+ * machine readout is, where an antialiased typeface is what a document is.
+ *
+ * Digits plus a registration cross. Each row is three bits, high bit leftmost.
+ */
+const GLYPHS: ReadonlyArray<readonly number[]> = [
+  [0b111, 0b101, 0b101, 0b101, 0b111], // 0
+  [0b010, 0b110, 0b010, 0b010, 0b111], // 1
+  [0b101, 0b101, 0b111, 0b001, 0b001], // 4
+  [0b111, 0b001, 0b010, 0b010, 0b010], // 7
+  [0b111, 0b101, 0b111, 0b001, 0b111], // 9
+  [0b000, 0b010, 0b111, 0b010, 0b000], // +
+];
+const GLYPH_FROM = LEVELS - 2;
+/** Matrix pixel size, as a fraction of the mark. Five of them make the height. */
+const GLYPH_PX = 1 / 3.6;
 
 /**
  * Precomputed sine, already mapped to 0..1, for the ambient shimmer.
@@ -126,8 +191,8 @@ for (let i = 0; i < SIN_STEPS; i++) {
   SIN_LUT[i] = 0.5 + 0.5 * Math.sin((i / SIN_STEPS) * Math.PI * 2);
 }
 
-/** Size of the square drawn in each cell, as a fraction of the pitch. */
-export const DOT_RATIO = 0.34;
+/** Nominal mark size in each cell, as a fraction of the pitch. */
+export const DOT_RATIO = 0.42;
 
 /**
  * Cell pitch in CSS pixels.
@@ -143,10 +208,15 @@ export const DOT_RATIO = 0.34;
  * display the grid is coarsened until it fits the budget. That still leaves
  * ~20 cells per letter at 2560px wide, well clear of the legibility floor.
  */
-const PITCH_PER_PX = 1 / 210;
+// Raised once the draw pass moved to batched paths. The reference halftones are
+// roughly twice as fine as this grid was, relative to their frame, and the
+// difference between a dot pattern and an image made of dots is mostly density.
+// Batching cut the draw cost by a factor of five, and this is where that
+// headroom is spent.
+const PITCH_PER_PX = 1 / 245;
 const MIN_PITCH = 4.5;
-const MAX_PITCH = 10;
-const CELL_BUDGET = 30_000;
+const MAX_PITCH = 8;
+const CELL_BUDGET = 40_000;
 
 export function spacingFor(width: number, height: number): number {
   const pitch = Math.max(MIN_PITCH, Math.min(MAX_PITCH, width * PITCH_PER_PX));
@@ -199,6 +269,27 @@ export type Grid = {
   scatterY: Float32Array;
   /** Per-cell shimmer phase, as an index into SIN_LUT. */
   phase: Uint16Array;
+  /**
+   * Two standing waves across the grid, as SIN_LUT indices baked from each
+   * cell's resting position.
+   *
+   * The ground wash needs *structure*, not an even level. Run flat through an
+   * ordered dither it produces a strictly periodic lattice — the Bayer matrix
+   * made visible, which reads as graph paper rather than as a surface. Two
+   * waves at different frequencies and angles, summed, break that periodicity
+   * into a slow cloud: dense in places, thin in others, drifting.
+   *
+   * Baked here because the position never changes; only the phase offset does,
+   * which is one add per frame.
+   */
+  wave: Uint16Array;
+  waveAlt: Uint16Array;
+  /**
+   * Which glyph variant this cell draws once it is hot enough to be one.
+   * Fixed to the cell rather than rolled per frame, so the hot levels read as
+   * a stable readout instead of flickering through the alphabet.
+   */
+  glyph: Uint8Array;
 };
 
 export function buildGrid(width: number, height: number, spacing: number): Grid {
@@ -226,6 +317,9 @@ export function buildGrid(width: number, height: number, spacing: number): Grid 
     scatterX: new Float32Array(count),
     scatterY: new Float32Array(count),
     phase: new Uint16Array(count),
+    wave: new Uint16Array(count),
+    waveAlt: new Uint16Array(count),
+    glyph: new Uint8Array(count),
   };
 
   for (let row = 0; row < rows; row++) {
@@ -247,6 +341,14 @@ export function buildGrid(width: number, height: number, spacing: number): Grid 
       grid.scatterX[i] = (Math.random() - 0.5) * spacing * 9;
       grid.scatterY[i] = (Math.random() - 0.5) * spacing * 9;
       grid.phase[i] = (Math.random() * SIN_STEPS) | 0;
+      grid.glyph[i] = (Math.random() * GLYPHS.length) | 0;
+
+      // Two wavelengths, neither a multiple of the other and neither aligned to
+      // an axis, so their sum has no short repeat anywhere on screen.
+      grid.wave[i] =
+        ((grid.x[i] / 430 + grid.y[i] / 265) * SIN_STEPS) & (SIN_STEPS - 1);
+      grid.waveAlt[i] =
+        ((grid.x[i] / -183 + grid.y[i] / 121) * SIN_STEPS) & (SIN_STEPS - 1);
     }
   }
 
@@ -568,6 +670,38 @@ export function renderFrame(
   const bareLight = 0.13 + 0.34 * (1 - formPresence);
   const scatter = 1 - intro;
 
+  // The ground wash.
+  //
+  // Without this the field is only visible where the cursor light lands, and
+  // everywhere else the cull below drops it outright — which is why the page
+  // read as type floating on black rather than as a sampled surface. The
+  // reference halftones have structure in every part of the frame.
+  //
+  // Graded down the viewport rather than flat, so the ground has a direction:
+  // dense at the top, thinning toward the bottom, the way the second reference
+  // fades its wash out under the subject. Ordered dither turns a wash this
+  // faint into speckle rather than a grey veil, because only the cells whose
+  // Bayer threshold is favourable ever cross into level 1.
+  //
+  // Suppressed wherever a form is on screen, for the same reason `bareLight` is:
+  // a lifted ground competes with the letterforms sitting on it.
+  // Pitched so the crest of the cloud clears the level 2 boundary at the top of
+  // the frame and its trough falls under level 1 at the bottom, letting the
+  // dither do the thinning: a wash this faint lights only the cells whose Bayer
+  // threshold is favourable, and the proportion that qualify falls both down
+  // the screen and through the cloud.
+  const WASH_TOP = 0.36;
+  const WASH_BOTTOM = 0.13;
+  /** How much of the wash survives in the troughs of the cloud. */
+  const WASH_FLOOR = 0.2;
+  const washGain = intro * (1 - formPresence * 0.55);
+  const washBase = WASH_TOP * washGain;
+  const washSlope = ((WASH_BOTTOM - WASH_TOP) * washGain) / (height || 1);
+  // The two waves drift at different rates and in opposite directions, so the
+  // pattern never resolves into something a viewer can predict.
+  const waveIdx = (time * 0.021) | 0;
+  const waveAltIdx = (time * -0.013) | 0;
+
   // Opening title sequence: a front expanding from the centre. Cells only light
   // once it has passed them, so the page opens on a point of light rather than
   // a grid that is simply already there. `open` at 1 puts the front past every
@@ -669,13 +803,37 @@ export function renderFrame(
       }
     }
 
-    const base = m * (0.34 + lit * 0.85) + lit * bareLight;
+    const cloud =
+      (SIN_LUT[(grid.wave[i] + waveIdx) & (SIN_STEPS - 1)] +
+        SIN_LUT[(grid.waveAlt[i] + waveAltIdx) & (SIN_STEPS - 1)]) *
+      0.5;
+    const wash =
+      (washBase + py * washSlope) * (WASH_FLOOR + (1 - WASH_FLOOR) * cloud);
+
+    // A form's brightness: a floor everywhere it exists, plus what the light
+    // adds where it falls.
+    //
+    // The coefficients are set so a fully lit mask cell lands *just* at the top
+    // of the ramp rather than far past it, and an unlit one still sits clear of
+    // the ground wash. They used to overshoot by about a third, which pinned
+    // every cell the light touched to level 7 and made the wordmark a flat white
+    // stencil: 47% of the drawn field sat on one stop while the five violet
+    // stops between it and the ground shared 22%. Traversing the ramp is the
+    // entire point of having one, so the light now carries a form from violet at
+    // its far edge through lilac to a rose and white core.
+    const base = m * (0.42 + lit * 0.45) + lit * bareLight + wash;
 
     // Shimmer can only ever add `ambient`, so anything that still falls under
     // the visibility floor at full shimmer is dropped here — before paying for
     // the table lookup. Most of the field is dark, so this skips the majority
     // of cells outright.
-    if ((base + ambient) * globalFade <= 0.02) continue;
+    //
+    // The floor is the exact quantisation boundary, not a guess. A cell reaches
+    // level 1 when `intensity * LEVELS + threshold - 0.5 >= 1`, and the largest
+    // Bayer threshold is 0.969, so nothing below 0.066 can ever be drawn however
+    // lucky its cell is. Culling at that boundary rather than well under it pays
+    // for the ground wash above, which puts many more cells in play.
+    if ((base + ambient) * globalFade <= 0.066) continue;
 
     // Ambient shimmer keeps the dark field alive without reading as noise.
     const shimmer = SIN_LUT[(tIdx + grid.phase[i]) & (SIN_STEPS - 1)];
@@ -707,38 +865,86 @@ export function renderFrame(
   const SMEAR_PITCHES = 0.8;
   const smear = Math.min(Math.abs(velocity), 1) * grid.spacing * SMEAR_PITCHES;
 
-  // One fillStyle assignment per level instead of one per cell. This is the
-  // difference between 60fps and a slideshow. Dot size is now per level too,
-  // which is what makes this a halftone; it costs nothing here because the
-  // bucketing already grouped the cells.
+  // One path per level, one `fill` per path.
+  //
+  // This is the single decision that pays for everything else in the frame.
+  // Measured over 15,364 marks in the same renderer: a batched path of arcs
+  // costs 4.6ms, where a `fillRect` per cell costs 15.7ms, an `arc` plus `fill`
+  // per cell costs 23ms, and a `drawImage` per cell from a pre-rendered tile
+  // costs 59ms. Building the path is still per cell; what collapses is the
+  // rasterisation, which happens once per level instead of once per mark.
+  //
+  // It is also what makes the shape affordable. A halftone is round, and a grid
+  // of squares on a square lattice reads as a grid; batching is why the field
+  // can be circles at a third of what squares used to cost.
+  const glyph = grid.glyph;
+  const posX = buckets.posX;
+  const posY = buckets.posY;
+  // Scrolling down moves content up, so the streak trails below the cell.
+  const lead = velocity < 0 ? smear : 0;
+
   for (let level = 1; level < LEVELS; level++) {
     const n = buckets.size[level];
     if (n === 0) continue;
 
     const ids = buckets.index[level];
-    const size = grid.dotSize * DOT_SCALE[level];
-    const half = size / 2;
-    const rectH = size + smear;
-    const top = half + (velocity < 0 ? smear : 0);
+    const mark = grid.dotSize * DOT_SCALE[level];
 
-    // Halo first, so the crisp dot lands on top of its own glow.
-    const bloom = BLOOM_FILL[level];
-    if (bloom) {
-      const bSize = size * BLOOM_SCALE;
-      const bHalf = bSize / 2;
-      const bH = bSize + smear;
-      const bTop = bHalf + (velocity < 0 ? smear : 0);
-      ctx.fillStyle = bloom;
-      for (let k = 0; k < n; k++) {
-        const i = ids[k];
-        ctx.fillRect(buckets.posX[i] - bHalf, buckets.posY[i] - bTop, bSize, bH);
+    // Halos first, widest first, so the crisp mark lands on top of its own glow.
+    if (level >= BLOOM_FROM) {
+      const [r, g, b] = RAMP_ON_BLACK[level];
+      for (const ring of BLOOM_RINGS) {
+        const rx = (mark * ring.scale) / 2;
+        const ry = rx + smear / 2;
+        ctx.fillStyle = `rgba(${r},${g},${b},${ring.alpha})`;
+        ctx.beginPath();
+        for (let k = 0; k < n; k++) {
+          const i = ids[k];
+          ctx.moveTo(posX[i] + rx, posY[i]);
+          ctx.ellipse(posX[i], posY[i] + smear / 2 - lead, rx, ry, 0, 0, TAU);
+        }
+        ctx.fill();
       }
     }
 
     ctx.fillStyle = LEVEL_FILL[level];
-    for (let k = 0; k < n; k++) {
-      const i = ids[k];
-      ctx.fillRect(buckets.posX[i] - half, buckets.posY[i] - top, size, rectH);
+    ctx.beginPath();
+
+    if (level >= GLYPH_FROM) {
+      // A dot matrix, emitted as rects into the same path. Three columns wide
+      // and five rows tall, so the mark reads as a character cell rather than
+      // as a square.
+      const px = mark * GLYPH_PX;
+      const w = px * 3;
+      const h = px * 5;
+      const rowH = px + smear / 5;
+      for (let k = 0; k < n; k++) {
+        const i = ids[k];
+        const left = posX[i] - w / 2;
+        const top = posY[i] - h / 2 - lead;
+        const rows = GLYPHS[glyph[i]];
+        for (let row = 0; row < 5; row++) {
+          const bits = rows[row];
+          if (bits === 0) continue;
+          const y = top + row * px;
+          if (bits & 0b100) ctx.rect(left, y, px, rowH);
+          if (bits & 0b010) ctx.rect(left + px, y, px, rowH);
+          if (bits & 0b001) ctx.rect(left + px * 2, y, px, rowH);
+        }
+      }
+    } else {
+      // Stretched along the direction of travel: an ellipse rather than a
+      // circle is the field's rolling shutter, the same smear the previous
+      // version got by growing a rectangle.
+      const rx = mark / 2;
+      const ry = rx + smear / 2;
+      for (let k = 0; k < n; k++) {
+        const i = ids[k];
+        ctx.moveTo(posX[i] + rx, posY[i]);
+        ctx.ellipse(posX[i], posY[i] + smear / 2 - lead, rx, ry, 0, 0, TAU);
+      }
     }
+
+    ctx.fill();
   }
 }

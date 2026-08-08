@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { thesis } from "@/content";
+import SectionLabel from "./SectionLabel";
 import { rippleField } from "@/lib/fieldState";
 import {
   DURATION,
@@ -88,12 +89,11 @@ export default function Thesis() {
   return (
     <section
       id="thesis"
-      className="relative z-10 flex min-h-screen items-center px-6 py-32 md:px-10 md:py-48"
+      className="relative z-10 flex min-h-screen items-center px-6 py-32 md:py-48 md:pl-24 md:pr-10"
     >
+      <SectionLabel>{thesis.label}</SectionLabel>
+
       <div ref={ref} className="mx-auto w-full max-w-4xl">
-        <span className="mb-10 block font-mono text-[11px] uppercase tracking-[0.22em] text-ink-dim">
-          {thesis.label}
-        </span>
 
         {/*
           The lower bound is set by the narrowest phone, not by taste. These

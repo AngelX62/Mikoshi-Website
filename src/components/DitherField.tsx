@@ -83,12 +83,15 @@ export default function DitherField({ text }: Props) {
     /** Set by any visitor input; collapses the opening sequence immediately. */
     let skipOpen = reduced;
 
-    const fontFamily = () => {
+    const cssFont = (token: string, fallback: string) => {
       const v = getComputedStyle(document.documentElement)
-        .getPropertyValue("--font-plex-sans")
+        .getPropertyValue(token)
         .trim();
-      return v ? `${v}, sans-serif` : "system-ui, sans-serif";
+      return v ? `${v}, ${fallback}` : fallback;
     };
+
+    const fontFamily = () =>
+      cssFont("--font-plex-sans", "system-ui, sans-serif");
 
     function applyMask() {
       if (!grid) return;
@@ -422,6 +425,8 @@ export default function DitherField({ text }: Props) {
 
     // Webfonts usually land after first paint; the mask has to be rebuilt from
     // the real letterforms once they do, or the wordmark is drawn in a fallback.
+    // The field's own hot-level glyphs need no such handling: they are a dot
+    // matrix the engine draws itself, not type.
     document.fonts?.ready.then(() => {
       if (disposed || !grid) return;
       applyMask();

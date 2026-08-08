@@ -117,6 +117,21 @@ export const method = {
 } as const;
 
 /**
+ * What the field is holding, one per method shot.
+ *
+ * Read by the instrument overlay, which annotates the canvas rather than the
+ * copy. These name the *form on screen*, which is the one thing the step's own
+ * title and index do not: the reader can already see it is step three, so a
+ * third label saying so is noise. Naming the body being drawn is information.
+ */
+export const fieldReadout = [
+  "Source cell",
+  "Work engram",
+  "Target cell",
+  "Target cell",
+] as const;
+
+/**
  * The proof beat: a real cell, run through the same grid as everything else.
  *
  * TO ADD THE PHOTOGRAPH: drop the file in `public/` and set `src` below to

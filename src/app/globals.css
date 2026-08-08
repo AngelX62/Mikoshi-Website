@@ -15,7 +15,9 @@
      so type and field read as one material rather than as grey text sitting on
      a tinted background. `ink-dim` is the dimmest of these that still clears
      4.5:1 on black, so body copy never drops below AA — anything dimmer is
-     decorative only, and `ink-faint` is used exclusively as a `bg-`. */
+     decorative only. `ink-faint` measures 2.74:1 and is therefore never used
+     for text: it is a `bg-`, and the stroke colour for the instrument layer's
+     hairlines, which are decoration and carry no information of their own. */
   --color-ink: #f6f4f9;
   --color-ink-soft: #d3ccdd;
   --color-ink-dim: #a49bb2;

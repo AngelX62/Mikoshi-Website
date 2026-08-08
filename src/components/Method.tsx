@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { method } from "@/content";
+import SectionLabel from "./SectionLabel";
 import { fieldState, resetFieldShapes } from "@/lib/fieldState";
 import { SCROLL, clamp, norm, prefersReducedMotion } from "@/lib/motion";
 
@@ -47,14 +48,12 @@ export default function Method() {
   const sectionRef = useRef<HTMLElement>(null);
   const stepsRef = useRef<HTMLDivElement>(null);
   const spineRef = useRef<HTMLDivElement>(null);
-  const readoutRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     const section = sectionRef.current;
     const steps = stepsRef.current;
     const spine = spineRef.current;
-    const readout = readoutRef.current;
-    if (!section || !steps || !spine || !readout) return;
+    if (!section || !steps || !spine) return;
 
     const panels = Array.from(
       steps.querySelectorAll<HTMLElement>("[data-step]"),
@@ -133,6 +132,11 @@ export default function Method() {
       let active = 0;
       for (let i = 0; i < SHOTS.length; i++) if (p >= SHOTS[i].from) active = i;
 
+      // Published for the instrument overlay, which annotates whatever the
+      // field is holding. Written unguarded: it is one integer store, cheaper
+      // than the comparison that would skip it.
+      fieldState.shot = active;
+
       // The guard lives on the element, not in a closure variable.
       //
       // `apply` runs on every scrub frame but the active step only changes four
@@ -152,7 +156,6 @@ export default function Method() {
           // accessibility tree as well as out of sight.
           panel.setAttribute("aria-hidden", on ? "false" : "true");
         });
-        readout!.textContent = method.steps[active].readout;
       }
     }
 
@@ -202,13 +205,11 @@ export default function Method() {
     <section
       id="method"
       ref={sectionRef}
-      className="relative z-10 flex min-h-screen flex-col justify-center px-6 py-32 md:px-10 md:py-0"
+      className="relative z-10 flex min-h-screen flex-col justify-center px-6 py-32 md:py-0 md:pl-24 md:pr-10"
     >
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-12">
-        <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-ink-dim">
-          {method.label}
-        </span>
+      <SectionLabel>{method.label}</SectionLabel>
 
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-12">
         <div className="flex gap-6 md:gap-10">
           {/* The spine fills as the process advances: a progress bar that
               happens to be the section's left rule. */}
@@ -278,20 +279,6 @@ export default function Method() {
               </div>
             ))}
           </div>
-        </div>
-
-        {/* Instrumentation, matching the readout the field is running. */}
-        <div
-          aria-hidden="true"
-          className="flex items-center gap-4 font-mono text-[11px] uppercase tracking-[0.22em] text-ink-dim"
-        >
-          <span ref={readoutRef} className="w-24 shrink-0">
-            {method.steps[0].readout}
-          </span>
-          <div className="h-px flex-1 bg-edge" />
-          <span>
-            {method.steps.length} steps
-          </span>
         </div>
       </div>
     </section>

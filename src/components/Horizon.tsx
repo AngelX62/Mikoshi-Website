@@ -7,6 +7,7 @@ import { horizon } from "@/content";
 import { rippleField } from "@/lib/fieldState";
 import { prefersReducedMotion } from "@/lib/motion";
 import Reveal from "./Reveal";
+import SectionLabel from "./SectionLabel";
 import Wipe from "./Wipe";
 
 /** Seconds between rings while the section is in view. */
@@ -71,41 +72,51 @@ export default function Horizon() {
     <section
       id="horizon"
       ref={sectionRef}
-      className="relative z-10 flex min-h-screen items-center px-6 py-32 md:px-10 md:py-48"
+      className="relative z-10 flex min-h-screen flex-col justify-center px-6 py-32 md:py-48 md:pl-24 md:pr-10"
     >
-      <div className="mx-auto w-full max-w-4xl">
-        <span className="mb-12 block font-mono text-[11px] uppercase tracking-[0.22em] text-ink-dim">
-          {horizon.label}
-        </span>
+      <SectionLabel>{horizon.label}</SectionLabel>
 
+      <div className="mx-auto w-full max-w-4xl">
         <Reveal>
           <Wipe
-            className="mb-8 text-[clamp(2.5rem,8vw,6rem)] font-medium leading-[0.98] tracking-[-0.035em]"
+            className="mb-8 max-w-4xl text-[clamp(2.5rem,8vw,6rem)] font-medium leading-[0.98] tracking-[-0.035em]"
           >
             <h2>{horizon.heading}</h2>
           </Wipe>
 
-          <p className="mb-16 max-w-2xl text-base leading-relaxed text-ink-soft md:text-lg">
+          <p className="max-w-2xl text-base leading-relaxed text-ink-soft md:text-lg">
             {horizon.body}
           </p>
-
-          {/*
-            The loop reads as a sequence rather than a list: hairline rules
-            between the verbs, wrapping on narrow screens. It is the same
-            ordered-process device as the method spine, at a smaller scale.
-          */}
-          <ol className="flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-edge pt-8 font-mono text-[11px] uppercase tracking-[0.22em]">
-            {horizon.loop.map((verb, i) => (
-              <li key={verb} className="flex items-center gap-5">
-                <span className="text-ink-soft">{verb}</span>
-                {i < horizon.loop.length - 1 && (
-                  <span aria-hidden="true" className="h-px w-6 bg-edge" />
-                )}
-              </li>
-            ))}
-          </ol>
         </Reveal>
       </div>
+
+      {/*
+        The loop breaks out of the container the rest of the page lives in.
+        Full width, spread edge to edge on a dashed rule, it stops being a list
+        under a paragraph and becomes a scale the section is measured against.
+        This is the one place the reference's device is quoted directly, and it
+        lands here because this is the one section whose subject is a cycle
+        rather than a step.
+
+        `justify-between` rather than gaps: what carries the idea is that the
+        verbs are distributed across the whole frame, not that they are near
+        each other. Only from `md`, though. Five verbs do not fit on one line on
+        a phone, and spreading a wrapped row leaves the last two marooned at
+        opposite edges with a hole between them, which reads as broken rather
+        than as distributed.
+      */}
+      <ol
+        className="
+          mt-20 flex w-full flex-wrap items-center gap-x-6 gap-y-3
+          border-t border-dashed border-ink-faint/45 pt-6
+          font-mono text-[11px] uppercase tracking-[0.22em] text-ink-soft
+          md:mt-28 md:justify-between md:gap-x-4 md:tracking-[0.3em]
+        "
+      >
+        {horizon.loop.map((verb) => (
+          <li key={verb}>{verb}</li>
+        ))}
+      </ol>
     </section>
   );
 }

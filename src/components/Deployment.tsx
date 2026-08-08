@@ -7,6 +7,7 @@ import { deployment } from "@/content";
 import { fieldState, resetFieldShapes } from "@/lib/fieldState";
 import { SCROLL, norm, prefersReducedMotion } from "@/lib/motion";
 import Reveal from "./Reveal";
+import SectionLabel from "./SectionLabel";
 import Wipe from "./Wipe";
 
 /**
@@ -71,12 +72,11 @@ export default function Deployment() {
     <section
       id="deployment"
       ref={sectionRef}
-      className="relative z-10 flex min-h-screen items-center px-6 py-32 md:px-10 md:py-48"
+      className="relative z-10 flex min-h-screen items-center px-6 py-32 md:py-48 md:pl-24 md:pr-10"
     >
+      <SectionLabel>{deployment.label}</SectionLabel>
+
       <div className="mx-auto w-full max-w-6xl">
-        <span className="mb-12 block font-mono text-[11px] uppercase tracking-[0.22em] text-ink-dim">
-          {deployment.label}
-        </span>
 
         <Reveal className="grid gap-14 md:grid-cols-[1.4fr_1fr] md:gap-20">
           <div>
