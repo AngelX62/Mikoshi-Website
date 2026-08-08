@@ -95,7 +95,19 @@ export default function Thesis() {
           {thesis.label}
         </span>
 
-        <p className="text-[clamp(1.75rem,5vw,3.5rem)] font-medium leading-[1.15] tracking-[-0.02em]">
+        {/*
+          The lower bound is set by the narrowest phone, not by taste. These
+          breaks are hand-set and each line sits in its own mask, so a line that
+          wraps turns one clean reveal into a ragged two-line one and undoes the
+          rhythm the copy was written for.
+
+          Below 448px the clamp is pinned to its minimum, so this single value
+          governs every phone. 1.4rem is the largest that holds all seven breaks
+          at 360px. At 320px the longest line still wraps; fixing that would
+          mean shrinking the type on the sizes people actually use, which is the
+          worse trade. The wipe still works there, it just reads as eight lines.
+        */}
+        <p className="text-[clamp(1.4rem,5vw,3.5rem)] font-medium leading-[1.15] tracking-[-0.02em]">
           {thesis.lines.map((line, i) => (
             <span key={i} className="line-mask">
               <span>{line}</span>
