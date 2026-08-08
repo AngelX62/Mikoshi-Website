@@ -44,6 +44,16 @@ export const SCROLL = {
   scrub: 0.6,
   /** Below this width, pinning fights touch scrolling — don't. */
   pinMinWidth: 768,
+  /**
+   * Where anything on the page arrives. One value, no exceptions.
+   *
+   * There used to be three: the thesis at 78%, the shared entrances at 82%, and
+   * the instrument layer at 65%. Inside a single section the copy and the
+   * geometry then landed at two different moments, which is most of why the
+   * page read as a set of separate scenes rather than one continuous shot — the
+   * annotation always arrived after the thing it was annotating.
+   */
+  enter: "top 80%",
 } as const;
 
 export function prefersReducedMotion(): boolean {

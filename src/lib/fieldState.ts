@@ -1,14 +1,31 @@
 /**
- * Shape state the method hands to the field.
+ * Shape state the page hands to the field.
  *
- * A plain mutable singleton rather than context or props: `Method` writes to it
- * from a scrubbed ScrollTrigger and `DitherField` reads it once per frame, so
+ * A plain mutable singleton rather than context or props: sections write to it
+ * from scrubbed ScrollTriggers and `DitherField` reads it once per frame, so
  * scrolling never triggers a React render. Same reasoning as the pulse event in
  * `DitherField`: the canvas is outside React's world and should not be dragged
  * into it sixty times a second.
  *
- * Values are in CSS pixels. Gains are 0..1 and default to off, so the field
- * behaves exactly as it does elsewhere wherever the method is not driving it.
+ * **One channel per owner, composed at read time.**
+ *
+ * This used to be a flat set of gains that every section wrote to directly, plus
+ * a `resetFieldShapes()` that zeroed all of them. That is fine while only one
+ * section is ever live, and the page stopped being that some time ago. Measured
+ * at 1440x900, the proof runs from scroll 4320 to 6120 and the deployment from
+ * 5220 to 7020: for a full viewport of scroll both are live and both were
+ * writing `photoGain`, and when the proof left it zeroed the value the
+ * deployment was driving that same frame. The method and the proof overlapped
+ * the same way on the scan band.
+ *
+ * Last writer won, the loser was whichever section was about to become the
+ * subject, and the result was a drop at exactly the boundary where the page
+ * most needs to feel continuous. So a section now writes only its own channel
+ * and releases only its own channel, and `composeField` decides what the canvas
+ * actually gets. Overlap becomes a cross-fade instead of a fight.
+ *
+ * Values are in CSS pixels. Gains default to off, so the field behaves exactly
+ * as it does elsewhere wherever nothing is driving it.
  */
 
 /**
@@ -21,32 +38,54 @@
  */
 export const RIPPLE_SLOTS = 5;
 
-export const fieldState = {
-  /** Vertical centre of the scan band, and its strength. */
+/** Everything one section can ask the field to do. */
+type Channel = {
+  /** The method's three forms: a working cell, its structure, another body. */
+  source: number;
+  engram: number;
+  target: number;
+  /** A photograph, sampled through the same grid as everything else. */
+  photo: number;
+  /** A scan band: its centre down the viewport, and its strength. */
+  bandY: number;
+  band: number;
+};
+
+const empty = (): Channel => ({
+  source: 0,
+  engram: 0,
+  target: 0,
+  photo: 0,
   bandY: 0,
-  bandGain: 0,
+  band: 0,
+});
 
-  /**
-   * The method's three forms: a working cell, the structure recovered from it,
-   * and that structure rebuilt in a different body. Cross-faded by `Method`.
-   */
-  sourceGain: 0,
-  engramGain: 0,
-  targetGain: 0,
+/**
+ * One channel per section that drives the field.
+ *
+ * Named after the section rather than the effect, because ownership is the
+ * whole point: `Proof` may only ever touch `channels.proof`.
+ */
+export const channels = {
+  method: empty(),
+  proof: empty(),
+  deployment: empty(),
+};
 
-  /**
-   * The photograph. Driven by the proof beat and held low under the deployment
-   * copy, so the real cell carries forward instead of cutting to black.
-   */
-  photoGain: 0,
+export type ChannelName = keyof typeof channels;
 
+/** Hands a channel back. A section calls this for itself and nothing else. */
+export function releaseChannel(name: ChannelName): void {
+  Object.assign(channels[name], empty());
+}
+
+/**
+ * Non-shape state, which has exactly one owner each and so needs no channel.
+ */
+export const fieldState = {
   /**
-   * Which of the method's four shots is running, 0 to 3.
-   *
-   * Written by `Method` and read by the instrument overlay, which annotates
-   * whatever the field is currently holding. Kept here rather than passed,
-   * because both are outside React's render path for the same reason: this
-   * changes on every scrub frame.
+   * Which of the method's four shots is running, 0 to 3. Written by `Method`,
+   * read by the instrument overlay, which annotates whatever the field holds.
    */
   shot: 0,
 
@@ -59,14 +98,58 @@ export const fieldState = {
   rippleStart: new Float32Array(RIPPLE_SLOTS).fill(-1),
 };
 
-export function resetFieldShapes(): void {
-  fieldState.bandGain = 0;
-  fieldState.sourceGain = 0;
-  fieldState.engramGain = 0;
-  fieldState.targetGain = 0;
-  fieldState.photoGain = 0;
-  fieldState.shot = 0;
-  fieldState.rippleStart.fill(-1);
+/** What the canvas actually draws, after every live channel is combined. */
+export type ComposedField = {
+  sourceGain: number;
+  engramGain: number;
+  targetGain: number;
+  photoGain: number;
+  bandY: number;
+  bandGain: number;
+};
+
+/**
+ * Reused, so a frame allocates nothing. `DitherField` reads it and copies the
+ * values straight into the frame state.
+ */
+const composed: ComposedField = {
+  sourceGain: 0,
+  engramGain: 0,
+  targetGain: 0,
+  photoGain: 0,
+  bandY: 0,
+  bandGain: 0,
+};
+
+export function composeField(): ComposedField {
+  const { method, proof, deployment } = channels;
+
+  // Only the method draws these, but they compose the same way so that adding a
+  // second owner later cannot reintroduce the race this replaced.
+  composed.sourceGain = method.source;
+  composed.engramGain = method.engram;
+  composed.targetGain = method.target;
+
+  // The proof shows the photograph and the deployment holds it faintly behind
+  // its copy. Their ranges overlap by a viewport, and `max` is what makes that
+  // overlap read as one image being carried forward rather than as two sections
+  // taking turns: the proof's envelope is still falling while the deployment's
+  // is rising, so the larger of the two is always the one still in charge.
+  composed.photoGain = Math.max(proof.photo, deployment.photo);
+
+  // A band has a position as well as a strength, so it cannot be combined
+  // termwise: averaging two bands would put a third band between them, in a
+  // place neither section asked for. The stronger one wins outright and brings
+  // its own `y` with it.
+  if (proof.band >= method.band) {
+    composed.bandGain = proof.band;
+    composed.bandY = proof.bandY;
+  } else {
+    composed.bandGain = method.band;
+    composed.bandY = method.bandY;
+  }
+
+  return composed;
 }
 
 /** Round-robin write position into the ripple slots. */

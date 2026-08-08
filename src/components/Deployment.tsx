@@ -4,9 +4,8 @@ import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { deployment } from "@/content";
-import { fieldState, resetFieldShapes } from "@/lib/fieldState";
+import { channels, releaseChannel } from "@/lib/fieldState";
 import { SCROLL, norm, prefersReducedMotion } from "@/lib/motion";
-import Reveal from "./Reveal";
 import SectionLabel from "./SectionLabel";
 import Wipe from "./Wipe";
 
@@ -37,13 +36,13 @@ export default function Deployment() {
       // Sized for a real photograph rather than the schematic fallback, which
       // is sparser: a photo carries far more coverage at the same gain, and
       // this is the only place on the page where type sits over a form.
-      fieldState.photoGain =
+      channels.deployment.photo =
         Math.min(norm(p, 0.05, 0.28), 1 - norm(p, 0.7, 0.95)) * 0.5;
     }
 
     if (reduced) {
       apply(0.5);
-      return () => resetFieldShapes();
+      return () => releaseChannel("deployment");
     }
 
     gsap.registerPlugin(ScrollTrigger);
@@ -56,15 +55,15 @@ export default function Deployment() {
         scrub: SCROLL.scrub,
         onUpdate: (self) => apply(self.progress),
         onRefresh: (self) => apply(self.progress),
-        onLeave: () => resetFieldShapes(),
-        onLeaveBack: () => resetFieldShapes(),
+        onLeave: () => releaseChannel("deployment"),
+        onLeaveBack: () => releaseChannel("deployment"),
       });
       apply(trigger.progress);
     }, section);
 
     return () => {
       ctx.revert();
-      resetFieldShapes();
+      releaseChannel("deployment");
     };
   }, []);
 
@@ -78,13 +77,16 @@ export default function Deployment() {
 
       <div className="mx-auto w-full max-w-6xl">
 
-        <Reveal className="grid gap-14 md:grid-cols-[1.4fr_1fr] md:gap-20">
+        {/*
+          One wipe for the section, staggering the two columns. The heading used
+          to carry a second, nested wipe of its own, which meant the block and
+          the line inside it arrived by two separate animations.
+        */}
+        <Wipe stagger className="grid gap-14 md:grid-cols-[1.4fr_1fr] md:gap-20">
           <div>
-            <Wipe
-              className="mb-6 text-[clamp(2.25rem,7vw,5rem)] font-medium leading-[1.0] tracking-[-0.03em]"
-            >
-              <h2>{deployment.heading}</h2>
-            </Wipe>
+            <h2 className="mb-6 text-[clamp(2.25rem,7vw,5rem)] font-medium leading-[1.0] tracking-[-0.03em]">
+              {deployment.heading}
+            </h2>
             <p className="max-w-xl text-base leading-relaxed text-ink-soft md:text-lg">
               {deployment.body}
             </p>
@@ -116,7 +118,7 @@ export default function Deployment() {
               {deployment.rationale}
             </p>
           </div>
-        </Reveal>
+        </Wipe>
       </div>
     </section>
   );

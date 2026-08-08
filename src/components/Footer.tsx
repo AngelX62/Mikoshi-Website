@@ -1,5 +1,5 @@
 import { footer, site, waitlist as waitlistCopy } from "@/content";
-import Reveal from "./Reveal";
+import Wipe from "./Wipe";
 import Waitlist from "./Waitlist";
 
 export default function Footer() {
@@ -13,7 +13,7 @@ export default function Footer() {
           {waitlistCopy.label}
         </span>
 
-        <Reveal className="flex flex-col justify-between gap-16 md:flex-row md:gap-12">
+        <Wipe stagger className="flex flex-col justify-between gap-16 md:flex-row md:gap-12">
           <Waitlist />
 
           <div className="flex flex-col items-start gap-6 md:items-end">
@@ -48,7 +48,7 @@ export default function Footer() {
               </nav>
             )}
           </div>
-        </Reveal>
+        </Wipe>
 
         <div className="mt-20 flex flex-col gap-2 border-t border-edge pt-8 font-mono text-[11px] uppercase tracking-[0.18em] text-ink-dim md:flex-row md:justify-between">
           <span>{footer.copyright}</span>

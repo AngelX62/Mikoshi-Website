@@ -15,7 +15,7 @@ import {
 } from "@/lib/dither";
 import { drawEngram, drawSource, drawTarget } from "@/lib/forms";
 import { proof } from "@/content";
-import { RIPPLE_SLOTS, fieldState } from "@/lib/fieldState";
+import { RIPPLE_SLOTS, composeField, fieldState } from "@/lib/fieldState";
 import { clamp, prefersReducedMotion } from "@/lib/motion";
 
 const MAX_DPR = 2;
@@ -225,14 +225,9 @@ export default function DitherField({ text }: Props) {
           intro: 1,
           scroll: scrollProgress(),
           altGain: footerGain(),
-          sourceGain: fieldState.sourceGain,
-          engramGain: fieldState.engramGain,
-          targetGain: fieldState.targetGain,
-          photoGain: fieldState.photoGain,
+          ...composeField(),
           pulse: 0,
           open: 1,
-          bandY: fieldState.bandY,
-          bandGain: fieldState.bandGain,
           // Reduced motion gets no shockwave and no smear — both are pure
           // motion, and neither carries information the frame needs.
           rippleY,
@@ -323,14 +318,9 @@ export default function DitherField({ text }: Props) {
           intro,
           scroll: scrollProgress(),
           altGain: footerGain(),
-          sourceGain: fieldState.sourceGain,
-          engramGain: fieldState.engramGain,
-          targetGain: fieldState.targetGain,
-          photoGain: fieldState.photoGain,
+          ...composeField(),
           pulse,
           open,
-          bandY: fieldState.bandY,
-          bandGain: fieldState.bandGain,
           rippleY,
           rippleR,
           rippleGain,

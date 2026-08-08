@@ -9,6 +9,7 @@ import { rippleField } from "@/lib/fieldState";
 import {
   DURATION,
   EASE_OUT_EXPO,
+  SCROLL,
   STAGGER,
   prefersReducedMotion,
 } from "@/lib/motion";
@@ -50,7 +51,7 @@ export default function Thesis() {
       // fires its callbacks once for the whole group, and each line needs to
       // punch the field at its own moment and its own height.
       const tl = gsap.timeline({
-        scrollTrigger: { trigger: el, start: "top 78%", once: true },
+        scrollTrigger: { trigger: el, start: SCROLL.enter, once: true },
       });
 
       lines.forEach((line, i) => {

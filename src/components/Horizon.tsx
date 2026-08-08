@@ -6,7 +6,6 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { horizon } from "@/content";
 import { rippleField } from "@/lib/fieldState";
 import { prefersReducedMotion } from "@/lib/motion";
-import Reveal from "./Reveal";
 import SectionLabel from "./SectionLabel";
 import Wipe from "./Wipe";
 
@@ -77,17 +76,15 @@ export default function Horizon() {
       <SectionLabel>{horizon.label}</SectionLabel>
 
       <div className="mx-auto w-full max-w-4xl">
-        <Reveal>
-          <Wipe
-            className="mb-8 max-w-4xl text-[clamp(2.5rem,8vw,6rem)] font-medium leading-[0.98] tracking-[-0.035em]"
-          >
-            <h2>{horizon.heading}</h2>
-          </Wipe>
+        <Wipe stagger>
+          <h2 className="mb-8 max-w-4xl text-[clamp(2.5rem,8vw,6rem)] font-medium leading-[0.98] tracking-[-0.035em]">
+            {horizon.heading}
+          </h2>
 
           <p className="max-w-2xl text-base leading-relaxed text-ink-soft md:text-lg">
             {horizon.body}
           </p>
-        </Reveal>
+        </Wipe>
       </div>
 
       {/*

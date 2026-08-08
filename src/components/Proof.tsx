@@ -5,7 +5,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { proof } from "@/content";
 import SectionLabel from "./SectionLabel";
-import { fieldState, resetFieldShapes } from "@/lib/fieldState";
+import { channels, releaseChannel } from "@/lib/fieldState";
 import { SCROLL, norm, prefersReducedMotion } from "@/lib/motion";
 
 /**
@@ -40,19 +40,19 @@ export default function Proof() {
       // because the light sits on it; a photograph in the middle of the page
       // has no such luck, so it gets the headroom instead.
       const PHOTO_WEIGHT = 2.6;
-      fieldState.photoGain =
+      channels.proof.photo =
         Math.min(norm(p, 0.05, 0.3), 1 - norm(p, 0.72, 0.95)) * PHOTO_WEIGHT;
 
       // One verification sweep across the middle of the hold, so the image is
       // read rather than merely displayed.
       const scan = norm(p, 0.34, 0.66);
-      fieldState.bandY = -80 + scan * (height + 160);
-      fieldState.bandGain = Math.sin(scan * Math.PI) * 0.55;
+      channels.proof.bandY = -80 + scan * (height + 160);
+      channels.proof.band = Math.sin(scan * Math.PI) * 0.55;
     }
 
     if (reduced) {
       apply(0.5, window.innerHeight);
-      return () => resetFieldShapes();
+      return () => releaseChannel("proof");
     }
 
     gsap.registerPlugin(ScrollTrigger);
@@ -65,17 +65,19 @@ export default function Proof() {
         scrub: SCROLL.scrub,
         onUpdate: (self) => apply(self.progress, window.innerHeight),
         onRefresh: (self) => apply(self.progress, window.innerHeight),
-        // The field is shared, so hand it back or the photograph follows you
-        // into the deployment copy at full strength.
-        onLeave: () => resetFieldShapes(),
-        onLeaveBack: () => resetFieldShapes(),
+        // Only this section's channel. The envelope in `apply` has already
+        // brought the photograph back to zero by the time the range ends, so
+        // this is a backstop rather than a cut, and it can no longer take the
+        // deployment's hold of the same image down with it.
+        onLeave: () => releaseChannel("proof"),
+        onLeaveBack: () => releaseChannel("proof"),
       });
       apply(trigger.progress, window.innerHeight);
     }, section);
 
     return () => {
       ctx.revert();
-      resetFieldShapes();
+      releaseChannel("proof");
     };
   }, []);
 

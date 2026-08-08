@@ -5,7 +5,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { method } from "@/content";
 import SectionLabel from "./SectionLabel";
-import { fieldState, resetFieldShapes } from "@/lib/fieldState";
+import { channels, fieldState, releaseChannel } from "@/lib/fieldState";
 import { SCROLL, clamp, norm, prefersReducedMotion } from "@/lib/motion";
 
 /**
@@ -105,19 +105,19 @@ export default function Method() {
       // with the text sitting on top of them.
       const g = listed ? 0.42 : 0.95;
 
-      fieldState.sourceGain =
+      channels.method.source =
         norm(p, 0.01, 0.1) * clamp(1 - norm(p, 0.2, 0.34), 0, 1) * g;
-      fieldState.engramGain =
+      channels.method.engram =
         Math.min(norm(p, 0.3, 0.42), 1 - norm(p, 0.5, 0.6)) * g;
-      fieldState.targetGain = norm(p, 0.58, 0.7) * g;
+      channels.method.target = norm(p, 0.58, 0.7) * g;
 
       // Two scan passes: one reading the source in shot one, one verifying the
       // target in shot four. Same instrument, opposite ends of the process.
       const observe = envelope(p, SHOTS[0].from, SHOTS[0].to);
       const qualify = envelope(p, SHOTS[3].from, SHOTS[3].to);
       const sweep = observe > qualify ? norm(p, 0.0, 0.26) : norm(p, 0.78, 1.0);
-      fieldState.bandY = -80 + sweep * (height + 160);
-      fieldState.bandGain = Math.max(observe, qualify) * 0.9;
+      channels.method.bandY = -80 + sweep * (height + 160);
+      channels.method.band = Math.max(observe, qualify) * 0.9;
 
       // The spine fills in every layout: beside a list it reads as progress
       // through the section just as well as it does beside a pinned sequence.
@@ -163,7 +163,7 @@ export default function Method() {
     const restore = () => {
       steps.classList.remove("method-static");
       steps.style.minHeight = "";
-      resetFieldShapes();
+      releaseChannel("method");
     };
 
     // Reduced motion holds a single frame. The steps are already listed by the
@@ -187,10 +187,10 @@ export default function Method() {
         scrub: SCROLL.scrub,
         onUpdate: (self) => apply(self.progress, window.innerHeight),
         onRefresh: (self) => apply(self.progress, window.innerHeight),
-        // The field is shared, so the method hands it back on the way out.
-        // Without this the target cell would hang over the deployment section.
-        onLeave: () => resetFieldShapes(),
-        onLeaveBack: () => resetFieldShapes(),
+        // Only this section's channel, so handing the forms back can no longer
+        // take the proof's photograph down with them where the two overlap.
+        onLeave: () => releaseChannel("method"),
+        onLeaveBack: () => releaseChannel("method"),
       });
       apply(trigger.progress, window.innerHeight);
     }, section);
