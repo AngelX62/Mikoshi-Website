@@ -8,7 +8,8 @@ import SectionLabel from "./SectionLabel";
 import { channels, fieldState, releaseChannel } from "@/lib/fieldState";
 import {
   FORM_SPLIT,
-  engramHub,
+  engramEntry,
+  engramGate,
   formBand,
   formUnit,
   sourceWorkPoint,
@@ -286,7 +287,8 @@ export default function Method() {
       // covered by a gain dip rather than by a jump you can see.
       const unit = formUnit(w, h);
       const [sx] = sourceWorkPoint(w, h);
-      const [hx, hy] = engramHub(w, h);
+      const [ex, ey] = engramEntry(w, h);
+      const [gx, gy] = engramGate(w, h);
       const [tx, ty] = targetWorkPoint(w, h);
       /**
        * Travel of a reading pass, clear of the form at each end.
@@ -299,34 +301,48 @@ export default function Method() {
         lerp(bandTop - unit * 0.28, bandBottom + unit * 0.28, t);
 
       if (p < PASS_END) {
-        // Observe. A reading head travels down the source cell.
+        // Observe. A reading head travels down the source cell: wide and
+        // shallow, so it reads as a scan line crossing the machine rather than
+        // as a spot moving over it.
         ch.lightX = sx;
         ch.lightY = passY(norm(p, 0, PASS_END));
-        ch.lightR = unit * LIGHT_R;
+        ch.lightRX = unit * LIGHT_R * 1.5;
+        ch.lightRY = unit * LIGHT_R * 0.62;
       } else if (p < SWEEPS[1].from) {
-        // Reconstruct. The light climbs back off the bottom of the frame into
-        // the hub, then breathes outward along the spokes and back, so the
-        // structure is read from its middle rather than simply lit.
-        const t = smoothstep(norm(p, PASS_END, 0.4));
-        ch.lightX = lerp(sx, hx, t);
-        ch.lightY = lerp(passY(1), hy, t);
-        ch.lightR =
-          unit *
-          LIGHT_R *
-          (1 + 0.6 * Math.sin(Math.PI * norm(p, 0.38, SWEEPS[1].from)));
+        // Reconstruct. The light climbs off the bottom of the frame into the
+        // left edge of the plate, then reads it end to end. Narrow and tall, so
+        // it stands across the whole record at once: a playhead, not a spot.
+        //
+        // The plate is a closed cycle, so a playhead at one x crosses both the
+        // outward and the return leg together, which is what reading a
+        // chronophotograph actually looks like.
+        const enter = smoothstep(norm(p, PASS_END, 0.37));
+        const read = smoothstep(norm(p, 0.37, SWEEPS[1].from));
+        ch.lightX = lerp(lerp(sx, ex, enter), gx, read);
+        ch.lightY = lerp(lerp(passY(1), ey, enter), gy, read);
+        // Reshaping from the scan band the observe pass ended on, not from a
+        // round light. Starting these anywhere else pops the light's shape at
+        // p=0.245, where its gain is still full and nothing hides the change.
+        ch.lightRX = unit * lerp(LIGHT_R * 1.5, LIGHT_R * 0.42, enter);
+        ch.lightRY = unit * lerp(LIGHT_R * 0.62, LIGHT_R * 1.35, enter);
       } else if (p < PASS_START) {
-        // Re-embody. One light crossing from the old work point to the new one.
+        // Re-embody. One light crossing from the gate to the new body's work
+        // point, carrying what the plate just certified into another machine.
         // This is the section's argument in a single gesture, so it is the one
-        // move given the whole width of a shot to complete.
+        // move given the whole width of a shot to complete, and it rounds out
+        // as it goes because it is travelling rather than reading.
         const t = smoothstep(norm(p, 0.56, 0.74));
-        ch.lightX = lerp(hx, tx, t);
-        ch.lightY = lerp(hy, ty, t);
-        ch.lightR = unit * LIGHT_R;
+        ch.lightX = lerp(gx, tx, t);
+        ch.lightY = lerp(gy, ty, t);
+        ch.lightRX = unit * lerp(LIGHT_R * 0.42, LIGHT_R, t);
+        ch.lightRY = unit * lerp(LIGHT_R * 1.35, LIGHT_R, t);
       } else {
-        // Qualify. A second pass, over the finished cell this time.
+        // Qualify. A second pass, over the finished cell this time, and the
+        // same shape as the first so the two read as one instrument.
         ch.lightX = tx;
         ch.lightY = passY(norm(p, PASS_START, 0.99));
-        ch.lightR = unit * LIGHT_R;
+        ch.lightRX = unit * LIGHT_R * 1.5;
+        ch.lightRY = unit * LIGHT_R * 0.62;
       }
 
       // Full through the sequence, out at its two ends, and pinched to nothing

@@ -85,7 +85,18 @@ type Channel = {
    */
   lightX: number;
   lightY: number;
-  lightR: number;
+  /**
+   * Two radii, not one.
+   *
+   * A light shaped like the gesture it belongs to. The observe and qualify
+   * passes travel down the frame, so theirs is wide and short and reads as a
+   * scan band; the reconstruct reads the plate from end to end, so theirs is
+   * narrow and tall and stands across the whole record like a playhead; the
+   * re-embody crossing stays round. A single radius made all three the same
+   * blob moving in different directions.
+   */
+  lightRX: number;
+  lightRY: number;
   lightGain: number;
   /** A photograph, sampled through the same grid as everything else. */
   photo: number;
@@ -103,7 +114,8 @@ const empty = (): Channel => ({
   wipeSoft: 1,
   lightX: 0,
   lightY: 0,
-  lightR: 1,
+  lightRX: 1,
+  lightRY: 1,
   lightGain: 0,
   photo: 0,
   bandY: 0,
@@ -189,7 +201,8 @@ export type ComposedField = {
   wipeSoft: number;
   formLightX: number;
   formLightY: number;
-  formLightR: number;
+  formLightRX: number;
+  formLightRY: number;
   formLightGain: number;
   photoGain: number;
   bandY: number;
@@ -209,7 +222,8 @@ const composed: ComposedField = {
   wipeSoft: 1,
   formLightX: 0,
   formLightY: 0,
-  formLightR: 1,
+  formLightRX: 1,
+  formLightRY: 1,
   formLightGain: 0,
   photoGain: 0,
   bandY: 0,
@@ -229,7 +243,8 @@ export function composeField(): ComposedField {
   composed.wipeSoft = method.wipeSoft;
   composed.formLightX = method.lightX;
   composed.formLightY = method.lightY;
-  composed.formLightR = method.lightR;
+  composed.formLightRX = method.lightRX;
+  composed.formLightRY = method.lightRY;
   composed.formLightGain = method.lightGain;
 
   // The proof shows the photograph and the deployment holds it faintly behind

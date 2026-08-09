@@ -33,11 +33,8 @@ import { SCROLL } from "./motion";
  * line survives as a line.
  */
 const STROKE = 22;
-/** Links in the engram graph. Wider than an arm, since they carry the reading. */
+/** Leaders dropping from the engram's constraints to its trace channels. */
 const LINK = 21;
-/** Node radius in the engram graph, and the hub, which is larger. */
-const NODE_R = 24;
-const HUB_R = 34;
 /** Width to height of the form's bounding box. */
 const ASPECT = 1.5;
 
@@ -197,71 +194,286 @@ export function drawTarget(
 }
 
 /**
- * The Work Engram.
+ * The Work Engram, drawn as a Marey plate.
  *
- * Not a picture of a cell. Nodes and the links between them: the reason the
- * work succeeds, which is the thing that actually gets carried across.
+ * Étienne-Jules Marey invented the *méthode graphique* in the 1860s:
+ * instruments that transcribe the forces a body exerts in motion onto a moving
+ * surface, so that physical work becomes a portable, readable record. That is
+ * this company's whole proposition, described a hundred and fifty years early.
+ * He then invented chronophotography, which is the part that matters here:
+ * **many exposures on one plate** rather than frames laid side by side, dark
+ * ground, white markers on the limbs, one image holding every repetition of a
+ * movement at once.
  *
- * Kept sparse on purpose. An earlier version ran a chord from all seven outer
- * nodes into two inner ones, and seven lines crossing one small centre sampled
- * down to a scribble. A ring plus three spokes stays legible and still reads as
- * something with an order to it.
+ * That distinction is the entire design. The copy beside this form says a
+ * recording only tells you what moved, so the form cannot be a recording, and a
+ * single traced path is exactly that. **What survives superposition is not a
+ * recording.** It is whatever every run of the job agreed on, which is the
+ * constraint, which is why the work succeeds, which is the only part of it that
+ * can be carried to a different body.
+ *
+ * So: one work cycle, exposed many times. The strand pinches where the runs
+ * agree and swells where the job is free, which makes its width a picture of
+ * tolerance. Constraints drop leaders into two trace channels underneath, the
+ * graphical method beneath the chronophotograph, and the whole thing terminates
+ * on an accept gate.
+ *
+ * What this replaced was a ring of nodes with spokes to a hub, which is the
+ * standard "AI understands things" diagram and had no time in it at all, while
+ * four of the six chips printed next to it name properties of time.
  */
+
+/** How many runs of the job are on the plate. */
+const EXPOSURES = 13;
+/**
+ * Stroke width of one exposure.
+ *
+ * Under the two-cell floor the rest of this file works to, and deliberately.
+ * That floor exists so a line *meant to read as a line* survives the sampler,
+ * and one exposure is not meant to: the bundle is the mark. A strand this thin
+ * samples intermittently out at the fringe, which is exactly what a run nothing
+ * else agrees with should look like.
+ */
+const EXPOSURE_W = 13;
+/**
+ * How far apart the runs drift, in pixels, at a constraint and between them.
+ *
+ * The minimum is not zero. Collapsed onto a single line the agreement would be
+ * a hairline, and the pinch has to be the densest thing in the frame rather
+ * than the thinnest.
+ */
+const SPREAD_MIN = 9;
+const SPREAD_MAX = 66;
+/**
+ * Alpha per exposure, composited additively.
+ *
+ * This is what makes the picture mean what it claims. `sampleMask` paints white
+ * on black and reads the red channel over 255, so it already carries partial
+ * coverage, but opaque strokes do not accumulate: a tight knot and a wide fan
+ * would both sample as 1.0 and the pinch would differ from the swell in area
+ * only, never in tone. Added, the mask becomes **a histogram of runs** — it
+ * saturates where the exposures coincide and the ramp drives those cells to its
+ * hot end, while a lone strand out at the fringe sits on level 1. The hot core
+ * and cold edge come from what the picture means rather than from a light
+ * pointed at it.
+ */
+const EXPOSURE_ALPHA = 0.42;
+
+/** Where along the cycle the job is pinned. Fractions of its length. */
+const CONSTRAINTS = [0.12, 0.36, 0.61, 0.85];
+/**
+ * How far from a constraint the strand has opened up again.
+ *
+ * Widened from 0.11 once the shot was measured against its neighbours. The knot
+ * is where the plate saturates and therefore the only part of it that reaches
+ * the top of the ramp, so a narrow reach left the reconstruct at 0.7 percent
+ * hot area against the observe shot's 3.5, and a beat that dim between two
+ * bright ones reads as a dip in the sequence rather than as a change of
+ * subject. Widening the knots buys that back without flattening the difference
+ * between agreement and tolerance, which raising the alpha alone would have.
+ */
+const CONSTRAINT_REACH = 0.145;
+
+/**
+ * Per-run signature: two summed harmonics, from a fixed table.
+ *
+ * Fixed and not random, so the plate is identical on every layout and across
+ * reloads. Runs that differed each time you resized would be a screensaver, not
+ * a record. The pairs are chosen to be mutually non-repeating so no two runs
+ * shadow each other around the whole cycle.
+ */
+const SIGNATURES: ReadonlyArray<readonly [number, number, number, number]> = [
+  [1, 0.0, 3, 1.1],
+  [2, 2.3, 5, 0.4],
+  [1, 1.7, 4, 2.9],
+  [3, 0.8, 7, 1.9],
+  [2, 4.1, 3, 3.6],
+  [1, 3.2, 6, 0.2],
+  [4, 1.4, 5, 2.2],
+  [2, 0.6, 7, 4.4],
+  [3, 3.9, 4, 1.5],
+  [1, 2.8, 5, 3.1],
+  [4, 4.7, 3, 0.9],
+  [2, 1.2, 6, 2.6],
+  [3, 2.1, 7, 3.3],
+  [1, 4.4, 4, 0.7],
+  [4, 0.3, 6, 1.8],
+];
+
+/** Steps along the cycle. Enough that the strand is smooth at this pitch. */
+const CYCLE_STEPS = 128;
+
+/**
+ * Vertical deflection of the cycle itself, as a fraction of the box height.
+ *
+ * Deliberately small next to the spread. The path is not the subject here; the
+ * disagreement around it is. A cycle that swung as far as its own fan would
+ * hide the thing the picture is about, and it did: the first version ran a
+ * closed loop whose fan was as wide as the loop's own minor radius, so the
+ * exposures filled the interior and the whole thing sampled down to a
+ * rectangular smudge.
+ */
+const CYCLE_AMP = 0.19;
+
+/**
+ * The work cycle, as a deflection at `u` along its length.
+ *
+ * Open, left to right, not closed. A closed loop was the first instinct, on the
+ * grounds that a cycle returns to where it began, and it is wrong twice over:
+ * it encloses a region the fan then fills in, and it has no direction, where
+ * this shot is read from one end to the other. Traced against time a cycle is
+ * an open curve, which is what every one of Marey's own plates shows.
+ *
+ * Three harmonics so the path has a shape rather than a period.
+ */
+function cycleDeflection(u: number): number {
+  const t = u * Math.PI * 2;
+  return (
+    0.62 * Math.sin(t * 1.0 + 0.6) +
+    0.26 * Math.sin(t * 2.3 + 2.1) +
+    0.12 * Math.sin(t * 4.1 + 4.0)
+  );
+}
+
+/** Spread at `u`: nearly closed at a constraint, wide open between. */
+function spreadAt(u: number): number {
+  let nearest = 1;
+  for (const c of CONSTRAINTS) {
+    const d = Math.abs(u - c);
+    if (d < nearest) nearest = d;
+  }
+  const t = Math.min(1, nearest / CONSTRAINT_REACH);
+  return SPREAD_MIN + (SPREAD_MAX - SPREAD_MIN) * t;
+}
+
+/** Vertical extent of the plate inside the box, leaving room for the channels. */
+const PLATE_TOP = 0.0;
+const PLATE_BOTTOM = 0.7;
+/** Where the cycle starts and ends across the box. */
+const PLATE_X0 = 0.02;
+const PLATE_X1 = 0.93;
+/**
+ * Leaders from each constraint down into the channels.
+ *
+ * Thin and faint, because they are wiring rather than subject. At `LINK` width
+ * and full white they came out as four heavy posts holding up the plate, which
+ * put the most emphatic thing in the frame on the least important part of it.
+ * Under two cells they sample intermittently, which is how the reference gets
+ * its dashed leaders without a dash pattern the grid would swallow whole.
+ */
+const LEADER_W = 9;
+const LEADER_ALPHA = 0.5;
+/** The two trace channels underneath, and where the accept gate stands. */
+const CHANNEL_Y = [0.86, 1.0];
+const CHANNEL_BAND = 0.115;
+const GATE_X = 0.955;
+const GATE_W = 0.042;
+
 export function drawEngram(
   ctx: CanvasRenderingContext2D,
   w: number,
   h: number,
 ): void {
   const b = frame(w, h);
-  const cx = mapX(b, 0.5);
-  const cy = mapY(b, 0.5);
 
-  // A circle, not an ellipse fitted to the box.
-  //
-  // The box is 1.5:1, so radii taken per axis gave a ring half again as wide as
-  // it was tall, and a squashed circle reads as a squashed circle rather than as
-  // a structure. Constrained by whichever axis is tighter, it is round at every
-  // viewport, and roundness is what makes the spokes read as spokes.
-  const r = Math.min(b.w * 0.34, b.h * 0.44);
+  // The plate occupies the upper two thirds; the channels hang below it.
+  const plateCY = mapY(b, (PLATE_TOP + PLATE_BOTTOM) / 2);
+  const x0 = mapX(b, PLATE_X0);
+  const x1 = mapX(b, PLATE_X1);
+  const amp = CYCLE_AMP * b.h;
 
-  const OUTER = 6;
-  const outer: Array<[number, number]> = [];
-  for (let i = 0; i < OUTER; i++) {
-    // Rotated so no node sits dead on the vertical axis, which would read as a
-    // pointer rather than as a ring.
-    const a = (i / OUTER) * Math.PI * 2 - Math.PI / 2 + 0.3;
-    outer.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]);
-  }
+  /** One point on the cycle, in canvas pixels. */
+  const at = (u: number): [number, number] => [
+    x0 + (x1 - x0) * u,
+    plateCY + cycleDeflection(u) * amp,
+  ];
 
-  // Off-centre, so the graph reads as directed rather than as a wheel.
-  const hub: [number, number] = [cx - r * 0.22, cy + r * 0.1];
-
-  ctx.lineWidth = LINK;
+  ctx.save();
+  // Additive, so overlap accumulates. Without this the plate is a silhouette of
+  // where the runs went rather than a record of where they agreed.
+  ctx.globalCompositeOperation = "lighter";
+  ctx.globalAlpha = EXPOSURE_ALPHA;
+  ctx.lineWidth = EXPOSURE_W;
   ctx.lineCap = "round";
+  ctx.lineJoin = "round";
 
-  const link = (a: [number, number], c: [number, number]) => {
+  for (let k = 0; k < EXPOSURES; k++) {
+    const [a1, p1, a2, p2] = SIGNATURES[k % SIGNATURES.length];
     ctx.beginPath();
-    ctx.moveTo(a[0], a[1]);
-    ctx.lineTo(c[0], c[1]);
+    for (let s = 0; s <= CYCLE_STEPS; s++) {
+      const u = s / CYCLE_STEPS;
+      const [x, y] = at(u);
+      // Tangent by finite difference, then the normal to it. Offsetting along
+      // the normal is what keeps the fan perpendicular to the path everywhere;
+      // offsetting in y alone would collapse the spread wherever the cycle runs
+      // vertically, which is precisely where two of the constraints sit.
+      const [xa, ya] = at(Math.max(0, u - 0.004));
+      const [xb, yb] = at(Math.min(1, u + 0.004));
+      const tx = xb - xa;
+      const ty = yb - ya;
+      const len = Math.hypot(tx, ty) || 1;
+      const theta = u * Math.PI * 2;
+      const sig =
+        0.72 * Math.sin(theta * a1 + p1) + 0.28 * Math.sin(theta * a2 + p2);
+      const off = spreadAt(u) * sig;
+      const px = x + (-ty / len) * off;
+      const py = y + (tx / len) * off;
+      if (s === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
     ctx.stroke();
-  };
+  }
+  ctx.restore();
 
-  for (let i = 0; i < OUTER; i++) link(outer[i], outer[(i + 1) % OUTER]);
-  // Every other node only. All six spokes would fill the middle back in.
-  for (let i = 0; i < OUTER; i += 2) link(hub, outer[i]);
-
-  for (const [x, y] of outer) {
+  // Leaders, dropping from each constraint into the channels below: this is the
+  // point where a thing that held across every run gets written down.
+  ctx.save();
+  ctx.globalAlpha = LEADER_ALPHA;
+  ctx.lineWidth = LEADER_W;
+  ctx.lineCap = "butt";
+  const channelTop = mapY(b, CHANNEL_Y[0] - CHANNEL_BAND * 0.5);
+  for (const c of CONSTRAINTS) {
+    const [cx, cy] = at(c);
     ctx.beginPath();
-    ctx.arc(x, y, NODE_R, 0, Math.PI * 2);
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx, channelTop);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // The graphical method, under the chronophotograph: what moved above, why it
+  // worked below. Filled from the curve down to the baseline rather than
+  // stroked, because a filled area is a solid mass and a polyline is an outline,
+  // and this grid keeps the first and throws away the second.
+  for (let ch = 0; ch < CHANNEL_Y.length; ch++) {
+    const baseY = mapY(b, CHANNEL_Y[ch]);
+    const band = CHANNEL_BAND * b.h;
+    const cx0 = mapX(b, PLATE_X0);
+    const cx1 = mapX(b, GATE_X - 0.015);
+    ctx.beginPath();
+    ctx.moveTo(cx0, baseY);
+    const STEPS = 96;
+    for (let s = 0; s <= STEPS; s++) {
+      const t = s / STEPS;
+      const x = cx0 + (cx1 - cx0) * t;
+      // Three summed harmonics at the ratios the ground wash uses in dither.ts,
+      // so the record is drawn in the same material as the field it sits in.
+      // Floored well above zero: a trace that touches its own baseline breaks
+      // into separate islands at this pitch and stops reading as one channel.
+      const phase = ch * 1.9;
+      const v =
+        0.55 * Math.sin(t * 7.4 + phase) +
+        0.3 * Math.sin(t * 13.1 + phase * 2.2) +
+        0.15 * Math.sin(t * 24.3 + phase * 0.6);
+      ctx.lineTo(x, baseY - (0.22 + 0.78 * (0.5 + 0.5 * v)) * band);
+    }
+    ctx.lineTo(cx1, baseY);
+    ctx.closePath();
     ctx.fill();
   }
 
-  // The hub is drawn larger than the ring's nodes because it is not one of
-  // them: it is the intent the rest of the structure hangs off, and the key
-  // light sits on it for the whole of the reconstruct shot.
-  ctx.beginPath();
-  ctx.arc(hub[0], hub[1], HUB_R, 0, Math.PI * 2);
-  ctx.fill();
+  // The accept gate. Everything terminates on it, including the light.
+  rect(ctx, b, GATE_X, PLATE_TOP, GATE_X + GATE_W, 1);
 }
 
 /**
@@ -278,10 +490,24 @@ export function sourceWorkPoint(w: number, h: number): [number, number] {
   return [mapX(b, 0.4), mapY(b, 0.42)];
 }
 
-export function engramHub(w: number, h: number): [number, number] {
+/**
+ * Where the playhead enters the plate and where it comes to rest.
+ *
+ * The reconstruct shot reads the record from one end to the other, so the light
+ * needs a start and a finish rather than a point to sit on. Both are taken from
+ * the same numbers the drawing uses, so they cannot drift from it.
+ */
+export function engramEntry(w: number, h: number): [number, number] {
   const b = frame(w, h);
-  const r = Math.min(b.w * 0.34, b.h * 0.44);
-  return [mapX(b, 0.5) - r * 0.22, mapY(b, 0.5) + r * 0.1];
+  return [mapX(b, 0.01), mapY(b, (PLATE_TOP + PLATE_BOTTOM) / 2)];
+}
+
+export function engramGate(w: number, h: number): [number, number] {
+  const b = frame(w, h);
+  return [
+    mapX(b, GATE_X + GATE_W / 2),
+    mapY(b, (PLATE_TOP + PLATE_BOTTOM) / 2),
+  ];
 }
 
 export function targetWorkPoint(w: number, h: number): [number, number] {

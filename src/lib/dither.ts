@@ -657,7 +657,9 @@ export type FrameState = {
    */
   formLightX: number;
   formLightY: number;
-  formLightR: number;
+  /** Two radii, so the light is shaped like the gesture it belongs to. */
+  formLightRX: number;
+  formLightRY: number;
   formLightGain: number;
   /** 0..1 gain on the photograph. */
   photoGain: number;
@@ -724,7 +726,8 @@ export function renderFrame(
     wipeSoft,
     formLightX,
     formLightY,
-    formLightR,
+    formLightRX,
+    formLightRY,
     formLightGain,
     photoGain,
     pulse,
@@ -883,7 +886,8 @@ export function renderFrame(
   // The form's own key light. Same gate as the band: off-sequence this is one
   // compare per frame, not per cell.
   const formLit = formLightGain > 0.002;
-  const invFormR2 = 1 / Math.max(1, formLightR * formLightR);
+  const invFormRX2 = 1 / Math.max(1, formLightRX * formLightRX);
+  const invFormRY2 = 1 / Math.max(1, formLightRY * formLightRY);
   /**
    * How far the key light lifts a form, on top of everything else.
    *
@@ -1000,7 +1004,11 @@ export function renderFrame(
     if (formLit) {
       const fx = px - formLightX;
       const fy = py - formLightY;
-      const fd2 = (fx * fx + fy * fy) * invFormR2;
+      // Two radii rather than one, which is one more multiply and one fewer:
+      // the falloff is an ellipse, so a pass down the frame can carry a wide
+      // shallow scan band and a read across it can carry a narrow tall
+      // playhead, instead of both being the same disc travelling differently.
+      const fd2 = fx * fx * invFormRX2 + fy * fy * invFormRY2;
       if (fd2 < 1) keyLit = (1 - fd2) * (1 - fd2) * formLightGain;
     }
     // A form's brightness: a floor everywhere it exists, plus what the light
