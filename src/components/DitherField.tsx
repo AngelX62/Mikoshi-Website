@@ -15,10 +15,71 @@ import {
 } from "@/lib/dither";
 import { drawEngram, drawSource, drawTarget } from "@/lib/forms";
 import { proof } from "@/content";
-import { RIPPLE_SLOTS, composeField, fieldState } from "@/lib/fieldState";
+import {
+  RIPPLE_SLOTS,
+  composeField,
+  fieldState,
+  instrument,
+} from "@/lib/fieldState";
+import { drawInstrument, setInstrumentInk } from "@/lib/instrument";
+import { fieldReadout } from "@/content";
 import { clamp, prefersReducedMotion } from "@/lib/motion";
 
 const MAX_DPR = 2;
+/**
+ * Hard ceiling on the canvas backing store, in pixels.
+ *
+ * Roughly a 1440p frame. Above this the field is coarsened rather than allowed
+ * to draw an unbounded number of pixels every frame on a large display.
+ */
+const MAX_BACKING_PIXELS = 3_700_000;
+
+/**
+ * Quality tiers, coarsest first, picked at runtime from measured frame time.
+ *
+ * The hardware is the one variable that cannot be known in advance, so the page
+ * finds its own level rather than being tuned for one machine. Density is the
+ * primary lever and pixel ratio the secondary one: a dpr change is a canvas
+ * resize and a `setTransform`, since the grid is built in CSS pixels and does
+ * not depend on dpr at all, while a cell-count change needs `buildGrid` plus
+ * six mask samplings and so has to be rare.
+ *
+ * It starts one below the top. The complaint that prompted this was lag, so the
+ * default is the smooth one and the detail is earned.
+ */
+const TIERS = [
+  { budget: 24_000, dpr: 1.25 },
+  { budget: 34_000, dpr: 1.5 },
+  { budget: 40_000, dpr: MAX_DPR },
+] as const;
+const START_TIER = 1;
+
+/** Rolling frame time above which the field steps down, and below which up. */
+const TIER_DOWN_MS = 14;
+const TIER_UP_MS = 8;
+/**
+ * How long the evidence has to hold before either move, in milliseconds.
+ *
+ * Deliberately a duration and not a frame count. Counting frames makes the
+ * controller slower to react the slower the machine is, which is exactly
+ * backwards: at 20fps a 45-frame window is more than two seconds of stutter
+ * before anything happens, where at 60fps it is under one.
+ */
+const TIER_WINDOW_MS = 700;
+/**
+ * Longest frame that is allowed to influence the average.
+ *
+ * A frame over this did not happen because the field is too dense; it happened
+ * because something stalled — a garbage collection, a background tab being
+ * throttled, the compositor waiting on the main thread. Feeding a 1000ms frame
+ * into the average would convince the controller the machine runs at 1fps and
+ * drop it to the lowest tier over one hiccup.
+ */
+const TIER_MAX_SAMPLE_MS = 100;
+/** Minimum gap between changes, so a rebuild cannot happen twice in a second. */
+const TIER_COOLDOWN_MS = 4000;
+/** How long after start to begin trusting readings at all. */
+const TIER_WARMUP_MS = 1800;
 /** Length of the intro resolve, in milliseconds. */
 const RESOLVE_MS = 1900;
 /** Length of the opening title sequence, in milliseconds. */
@@ -59,6 +120,17 @@ export default function DitherField({ text }: Props) {
     let startTime = 0;
     let disposed = false;
 
+    /**
+     * Current quality tier, and the state the controller needs to move it.
+     * `overBudget` and `underBudget` hold the timestamp the evidence started,
+     * or 0 when it is not currently holding.
+     */
+    let tier = START_TIER;
+    let avgFrame = 16;
+    let overBudget = 0;
+    let underBudget = 0;
+    let lastTierChange = 0;
+
     // Light position, and the target it eases toward.
     let lightX = 0;
     let lightY = 0;
@@ -92,6 +164,22 @@ export default function DitherField({ text }: Props) {
 
     const fontFamily = () =>
       cssFont("--font-plex-sans", "system-ui, sans-serif");
+
+    /**
+     * The instrument's ink, taken from the same tokens the type uses so the
+     * overlay and the copy read as one material rather than as a canvas colour
+     * that happens to sit nearby.
+     */
+    function applyInstrumentInk() {
+      const root = getComputedStyle(document.documentElement);
+      const token = (name: string, fallback: string) =>
+        root.getPropertyValue(name).trim() || fallback;
+      setInstrumentInk(
+        token("--color-ink-faint", "#575065"),
+        token("--color-ink-dim", "#a49bb2"),
+        `500 10px ${cssFont("--font-plex-mono", "monospace")}`,
+      );
+    }
 
     function applyMask() {
       if (!grid) return;
@@ -189,9 +277,21 @@ export default function DitherField({ text }: Props) {
 
     function layout() {
       if (!canvas || !ctx) return;
-      const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
       width = window.innerWidth;
       height = window.innerHeight;
+
+      // A ceiling on the backing store, not just on the pixel ratio.
+      //
+      // MAX_DPR alone bounds nothing on a large display: a 4K panel at dpr 1 is
+      // already 8.3M pixels to clear and redraw every frame, and at dpr 2 it is
+      // four times that. Capping the area directly is the only limit that holds
+      // whatever the screen turns out to be.
+      const tierDpr = TIERS[tier].dpr;
+      let dpr = Math.min(window.devicePixelRatio || 1, tierDpr);
+      const area = width * height * dpr * dpr;
+      if (area > MAX_BACKING_PIXELS) {
+        dpr = Math.max(1, dpr * Math.sqrt(MAX_BACKING_PIXELS / area));
+      }
 
       canvas.width = Math.floor(width * dpr);
       canvas.height = Math.floor(height * dpr);
@@ -200,8 +300,9 @@ export default function DitherField({ text }: Props) {
       // Work in CSS pixels everywhere downstream.
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      grid = buildGrid(width, height, spacingFor(width, height));
+      grid = buildGrid(width, height, spacingFor(width, height, TIERS[tier].budget));
       buckets = createBuckets(grid.count);
+      applyInstrumentInk();
       applyMask();
 
       if (lightX === 0 && lightY === 0) {
@@ -242,6 +343,13 @@ export default function DitherField({ text }: Props) {
         },
         width,
         height,
+      );
+      drawInstrument(
+        ctx,
+        instrument,
+        width,
+        fieldReadout[fieldState.shot] ?? "",
+        0,
       );
     }
 
@@ -335,9 +443,60 @@ export default function DitherField({ text }: Props) {
         height,
       );
 
+      // The annotation shares the field's canvas, its clock and its velocity.
+      drawInstrument(
+        ctx,
+        instrument,
+        width,
+        fieldReadout[fieldState.shot] ?? "",
+        velocity,
+      );
+
+      // Quality control.
+      //
+      // Frame time is measured rather than assumed, because the hardware is the
+      // one variable that cannot be known in advance. A rolling average smooths
+      // out single bad frames, and both directions need sustained evidence and a
+      // cooldown, so a rebuild cannot happen twice in a second or oscillate
+      // between two tiers that both sit near the threshold.
+      if (elapsed > TIER_WARMUP_MS) {
+        avgFrame += (Math.min(dt, TIER_MAX_SAMPLE_MS) - avgFrame) * 0.08;
+        if (avgFrame > TIER_DOWN_MS) {
+          if (!overBudget) overBudget = now;
+          underBudget = 0;
+        } else if (avgFrame < TIER_UP_MS) {
+          if (!underBudget) underBudget = now;
+          overBudget = 0;
+        } else {
+          overBudget = 0;
+          underBudget = 0;
+        }
+
+        const settled = now - lastTierChange > TIER_COOLDOWN_MS;
+        const down =
+          overBudget > 0 && now - overBudget > TIER_WINDOW_MS && tier > 0;
+        const up =
+          underBudget > 0 &&
+          now - underBudget > TIER_WINDOW_MS &&
+          tier < TIERS.length - 1;
+        if (settled && (down || up)) {
+          tier += down ? -1 : 1;
+          lastTierChange = now;
+          overBudget = 0;
+          underBudget = 0;
+          avgFrame = 16;
+          // `layout` only, not a ScrollTrigger refresh. The canvas is fixed and
+          // its backing store has no effect on document layout, so refreshing
+          // would re-measure and re-pin every trigger on the page for nothing —
+          // an expensive hitch at the exact moment the field is already
+          // rebuilding because frames were slow.
+          layout();
+        }
+      }
+
       // The field now runs the length of the page rather than stopping past the
       // hero, so the loop keeps going. Cost stays bounded by the visibility
-      // pause below and by the cell budget in `spacingFor`.
+      // pause below, by the cell budget in `spacingFor` and by the tier above.
       raf = requestAnimationFrame(frame);
     }
 

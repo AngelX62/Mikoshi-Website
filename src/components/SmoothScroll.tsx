@@ -22,8 +22,12 @@ export default function SmoothScroll() {
       return;
     }
 
+    // 1.15s of smoothing was long enough that the page kept gliding well after
+    // the wheel stopped, which reads as the site not following your hand rather
+    // than as smoothness. Shorter still absorbs trackpad jitter, which is the
+    // only thing this is here for, without the float.
     const lenis = new Lenis({
-      duration: 1.15,
+      duration: 0.8,
       easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       touchMultiplier: 1.6,
     });

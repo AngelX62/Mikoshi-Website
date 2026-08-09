@@ -80,6 +80,37 @@ export function releaseChannel(name: ChannelName): void {
 }
 
 /**
+ * The instrument's resolved geometry, in CSS pixels.
+ *
+ * Written by `Instrument`, which owns the waypoints and the scroll maths, and
+ * read by `DitherField`, which draws it onto the canvas the field already uses.
+ * Same split as the gains above and for the same reason: this changes on every
+ * scroll frame and must never pass through React.
+ *
+ * It lives on a canvas rather than in an SVG because the overlay used to be a
+ * second full-viewport layer whose contents changed every frame, sitting between
+ * the field and the copy and re-rasterising alongside it. What it draws is a
+ * rule, a scale and a few short strokes, which is nothing next to sixteen
+ * thousand dots already being drawn one layer down.
+ */
+export const instrument = {
+  /** The rule, and the fainter one that trails it. */
+  ruleY: 0,
+  followY: 0,
+  /** Tick length. Zero is how a scale is put away. */
+  tick: 0,
+  /** Region of interest, and the arm length that reveals it. */
+  bracketX: 0,
+  bracketY: 0,
+  bracketW: 0,
+  bracketH: 0,
+  arm: 0,
+  /** 0..1 on the readout, the one thing here that fades. */
+  readout: 0,
+  readoutX: 0,
+};
+
+/**
  * Non-shape state, which has exactly one owner each and so needs no channel.
  */
 export const fieldState = {

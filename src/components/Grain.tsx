@@ -11,7 +11,11 @@ export default function Grain() {
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none fixed inset-0 z-50 opacity-[0.055] mix-blend-overlay"
+      // No blend mode. The element itself never repaints, but `mix-blend-overlay`
+      // across the full viewport forces the compositor to read back and re-blend
+      // the backdrop on every frame the canvas changes, which is every frame. At
+      // this opacity plain compositing is indistinguishable and costs nothing.
+      className="pointer-events-none fixed inset-0 z-50 opacity-[0.055]"
       style={{
         backgroundImage: `url("data:image/svg+xml,${NOISE}")`,
         backgroundRepeat: "repeat",

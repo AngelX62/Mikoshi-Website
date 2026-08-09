@@ -167,6 +167,15 @@ const BLOOM_RINGS: ReadonlyArray<{ scale: number; alpha: number }> = [
  *
  * Digits plus a registration cross. Each row is three bits, high bit leftmost.
  */
+/**
+ * The level at which marks become round.
+ *
+ * Below this they are drawn as rectangles: the cold levels carry the ground
+ * wash, which is most of the field by a wide margin, and at those sizes the
+ * shape is not visible. See the draw pass for the measurement.
+ */
+const ROUND_FROM = 4;
+
 const GLYPHS: ReadonlyArray<readonly number[]> = [
   [0b111, 0b101, 0b101, 0b101, 0b111], // 0
   [0b010, 0b110, 0b010, 0b010, 0b111], // 1
@@ -218,10 +227,14 @@ const MIN_PITCH = 4.5;
 const MAX_PITCH = 8;
 const CELL_BUDGET = 40_000;
 
-export function spacingFor(width: number, height: number): number {
+export function spacingFor(
+  width: number,
+  height: number,
+  budget: number = CELL_BUDGET,
+): number {
   const pitch = Math.max(MIN_PITCH, Math.min(MAX_PITCH, width * PITCH_PER_PX));
-  if ((width / pitch) * (height / pitch) <= CELL_BUDGET) return pitch;
-  return Math.sqrt((width * height) / CELL_BUDGET);
+  if ((width / pitch) * (height / pitch) <= budget) return pitch;
+  return Math.sqrt((width * height) / budget);
 }
 
 export type Grid = {
@@ -931,6 +944,25 @@ export function renderFrame(
           if (bits & 0b010) ctx.rect(left + px, y, px, rowH);
           if (bits & 0b001) ctx.rect(left + px * 2, y, px, rowH);
         }
+      }
+    } else if (level < ROUND_FROM) {
+      // Rectangles, and this is where the frame is won.
+      //
+      // A halftone is round, so the whole field was ellipses. But the ground
+      // wash puts the overwhelming majority of marks in the coldest level:
+      // measured at 1920x1080, level 1 alone held 13,723 of 16,091 drawn marks,
+      // 85% of everything on screen, at a mark size of 1.9px. Two pixels is
+      // well under the size at which an eye can tell a disc from a square, and
+      // an `ellipse` costs about three times what a `rect` does in the batched
+      // path — 4.25ms against 1.18ms over the same 15k marks.
+      //
+      // So roundness is bought only where it is legible. The cold levels are
+      // texture, and texture is rectangles.
+      const half = mark / 2;
+      const h = mark + smear;
+      for (let k = 0; k < n; k++) {
+        const i = ids[k];
+        ctx.rect(posX[i] - half, posY[i] - half - lead, mark, h);
       }
     } else {
       // Stretched along the direction of travel: an ellipse rather than a
