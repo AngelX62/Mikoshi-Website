@@ -20,14 +20,39 @@
  * to see that the second arrangement is not the first one moved.
  */
 
-/** Stroke width for arms. Comfortably above the sampling pitch. */
-const STROKE = 15;
-/** Node radius in the engram graph. */
-const NODE_R = 15;
+import { SCROLL } from "./motion";
+
+/**
+ * Stroke width for arms.
+ *
+ * "Comfortably above the sampling pitch" was the intent and 15 was not it. The
+ * sampler takes a handful of taps per cell at a pitch of 7.84 at 1920, so a
+ * 15px stroke is under two cells wide and a *diagonal* one lands on about one
+ * cell per column: the source cell's arm broke into scattered specks while its
+ * machine body, being solid, stayed crisp. Three cells is the floor at which a
+ * line survives as a line.
+ */
+const STROKE = 22;
+/** Links in the engram graph. Wider than an arm, since they carry the reading. */
+const LINK = 21;
+/** Node radius in the engram graph, and the hub, which is larger. */
+const NODE_R = 24;
+const HUB_R = 34;
 /** Width to height of the form's bounding box. */
 const ASPECT = 1.5;
 
 type Box = { x: number; y: number; w: number; h: number };
+
+/**
+ * Where the form's half of the frame begins, as a fraction of viewport width.
+ *
+ * Exported because the copy has to be capped against the same number. The two
+ * live in different coordinate systems — the form is placed in viewport pixels,
+ * the copy in a flow-laid container — and the only thing keeping them apart is
+ * that they agree on where the split is. They did not, and the method's chip row
+ * ran 41px into the machine at 1920.
+ */
+export const FORM_SPLIT = 0.52;
 
 /**
  * Where a form sits in the frame.
@@ -37,10 +62,13 @@ type Box = { x: number; y: number; w: number; h: number };
  * box toward 3:1, which squashes every form into an unreadable band.
  *
  * On wide screens the method puts its copy down the left, so the form is biased
- * right to stay clear of it. Narrow screens stack instead, so it centres.
+ * right to stay clear of it. Narrow screens stack instead, so it centres. The
+ * threshold is the method's own pin threshold, because "wide" here means
+ * exactly one thing: the layout put the copy beside the form rather than over
+ * it.
  */
 function frame(w: number, h: number): Box {
-  const wide = w >= 768;
+  const wide = w >= SCROLL.pinMinWidth;
   const availW = wide ? w * 0.46 : w * 0.8;
   const availH = h * 0.52;
 
@@ -52,7 +80,7 @@ function frame(w: number, h: number): Box {
   }
 
   return {
-    x: wide ? w * 0.52 + (w * 0.46 - bw) / 2 : (w - bw) / 2,
+    x: wide ? w * FORM_SPLIT + (w * 0.46 - bw) / 2 : (w - bw) / 2,
     y: h * 0.5 - bh / 2,
     w: bw,
     h: bh,
@@ -187,8 +215,14 @@ export function drawEngram(
   const b = frame(w, h);
   const cx = mapX(b, 0.5);
   const cy = mapY(b, 0.5);
-  const rx = b.w * 0.38;
-  const ry = b.h * 0.42;
+
+  // A circle, not an ellipse fitted to the box.
+  //
+  // The box is 1.5:1, so radii taken per axis gave a ring half again as wide as
+  // it was tall, and a squashed circle reads as a squashed circle rather than as
+  // a structure. Constrained by whichever axis is tighter, it is round at every
+  // viewport, and roundness is what makes the spokes read as spokes.
+  const r = Math.min(b.w * 0.34, b.h * 0.44);
 
   const OUTER = 6;
   const outer: Array<[number, number]> = [];
@@ -196,13 +230,13 @@ export function drawEngram(
     // Rotated so no node sits dead on the vertical axis, which would read as a
     // pointer rather than as a ring.
     const a = (i / OUTER) * Math.PI * 2 - Math.PI / 2 + 0.3;
-    outer.push([cx + Math.cos(a) * rx, cy + Math.sin(a) * ry]);
+    outer.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]);
   }
 
   // Off-centre, so the graph reads as directed rather than as a wheel.
-  const hub: [number, number] = [cx - b.w * 0.08, cy + b.h * 0.05];
+  const hub: [number, number] = [cx - r * 0.22, cy + r * 0.1];
 
-  ctx.lineWidth = STROKE * 0.6;
+  ctx.lineWidth = LINK;
   ctx.lineCap = "round";
 
   const link = (a: [number, number], c: [number, number]) => {
@@ -216,9 +250,62 @@ export function drawEngram(
   // Every other node only. All six spokes would fill the middle back in.
   for (let i = 0; i < OUTER; i += 2) link(hub, outer[i]);
 
-  for (const [x, y] of [...outer, hub]) {
+  for (const [x, y] of outer) {
     ctx.beginPath();
     ctx.arc(x, y, NODE_R, 0, Math.PI * 2);
     ctx.fill();
   }
+
+  // The hub is drawn larger than the ring's nodes because it is not one of
+  // them: it is the intent the rest of the structure hangs off, and the key
+  // light sits on it for the whole of the reconstruct shot.
+  ctx.beginPath();
+  ctx.arc(hub[0], hub[1], HUB_R, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+/**
+ * Where the key light should sit for each form, in viewport pixels.
+ *
+ * These are the points the section's argument actually turns on: the source's
+ * work point is where the old cell does the job, the engram's hub is the intent
+ * that gets carried, and the target's work point is where the new body does the
+ * same job. Exported so `Method` can move one light between them rather than
+ * inventing three positions that only look right by coincidence.
+ */
+export function sourceWorkPoint(w: number, h: number): [number, number] {
+  const b = frame(w, h);
+  return [mapX(b, 0.4), mapY(b, 0.42)];
+}
+
+export function engramHub(w: number, h: number): [number, number] {
+  const b = frame(w, h);
+  const r = Math.min(b.w * 0.34, b.h * 0.44);
+  return [mapX(b, 0.5) - r * 0.22, mapY(b, 0.5) + r * 0.1];
+}
+
+export function targetWorkPoint(w: number, h: number): [number, number] {
+  const b = frame(w, h);
+  return [mapX(b, 0.62), mapY(b, 0.63)];
+}
+
+/** The short side of the form's box, which every light radius is scaled from. */
+export function formUnit(w: number, h: number): number {
+  return frame(w, h).h;
+}
+
+/**
+ * The vertical extent of the form's box, in viewport pixels.
+ *
+ * Anything that travels down the frame — the reading light, the wipe line —
+ * travels across this rather than across the viewport. Measured at 1920x1080
+ * the box occupies y 327 to 754, so a pass run over the full viewport spends
+ * more than half its travel above or below every form on screen: at the middle
+ * of the source-to-engram sweep the line sat at y=829, below the bottom of both
+ * silhouettes, and the frame went dark in the one moment the handover was
+ * supposed to be legible.
+ */
+export function formBand(w: number, h: number): [top: number, bottom: number] {
+  const b = frame(w, h);
+  return [b.y, b.y + b.h];
 }

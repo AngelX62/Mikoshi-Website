@@ -12,6 +12,7 @@
  * slideshow; this holds 60fps.
  */
 
+import type { FormName } from "./fieldState";
 import { clamp } from "./motion";
 
 const TAU = Math.PI * 2;
@@ -204,6 +205,40 @@ for (let i = 0; i < SIN_STEPS; i++) {
 export const DOT_RATIO = 0.42;
 
 /**
+ * The coverage at which one of the method's forms counts as fully present.
+ *
+ * Measured, not chosen: at 1920x1080 the source cell covers 0.054 of the grid,
+ * the target 0.047 and the engram 0.019. The engram is a diagram rather than a
+ * body, so it is nearly three times sparser than the silhouette either side of
+ * it, and suppressing the ground wash by gain alone took the same texture out
+ * of the frame for all three. Pinned here to the densest of them, the source
+ * cell suppresses the ground exactly as much as it always did and the engram
+ * lets two thirds of it back in, which is what stops the reconstruct shot
+ * reading as a hole between two pictures.
+ *
+ * Applied only to the method's two channels. The wordmark, the footer bookend
+ * and the photograph each have one fixed shape and one meaning, so weighting
+ * them would change three other beats to fix a problem none of them has.
+ */
+const COVER_REF = 0.054;
+
+/**
+ * How much of the wash a form displaces, from its coverage.
+ *
+ * Not a bare ratio. Straight proportion let the engram back so much ground that
+ * the reconstruct shot came out *brighter* than the two silhouettes either side
+ * of it, measured 3.66 mean luminance against 2.5 and 2.1, which trades one
+ * unevenness for its mirror image. The floor keeps the three shots inside a
+ * narrow band while still letting a sparse form keep more of its ground than a
+ * solid one.
+ */
+const COVER_FLOOR = 0.55;
+const weigh = (cover: number) =>
+  cover > COVER_REF
+    ? 1
+    : COVER_FLOOR + (1 - COVER_FLOOR) * (cover / COVER_REF);
+
+/**
  * Cell pitch in CSS pixels.
  *
  * Pitch is driven by the wordmark, not by the screen. What matters is how many
@@ -303,6 +338,14 @@ export type Grid = {
    * a stable readout instead of flickering through the alphabet.
    */
   glyph: Uint8Array;
+  /**
+   * Mean coverage of each mask, 0..1, filled by `sampleMask` as it samples.
+   *
+   * The one thing a gain cannot tell the renderer: how much of the frame a form
+   * actually occupies. Used to suppress the ground wash in proportion to what
+   * is really on screen rather than to what has been switched on.
+   */
+  cover: Record<MaskTarget, number>;
 };
 
 export function buildGrid(width: number, height: number, spacing: number): Grid {
@@ -333,6 +376,14 @@ export function buildGrid(width: number, height: number, spacing: number): Grid 
     wave: new Uint16Array(count),
     waveAlt: new Uint16Array(count),
     glyph: new Uint8Array(count),
+    cover: {
+      mask: 0,
+      maskAlt: 0,
+      maskSource: 0,
+      maskEngram: 0,
+      maskTarget: 0,
+      maskPhoto: 0,
+    },
   };
 
   for (let row = 0; row < rows; row++) {
@@ -410,14 +461,53 @@ export function sampleMask(
   draw(ctx, width, height);
 
   const data = ctx.getImageData(0, 0, off.width, off.height).data;
+  let covered = 0;
+
+  // Four taps a quarter-pitch out from the centre, not one at the centre.
+  //
+  // A single tap makes coverage binary, and binary coverage is why the forms
+  // read as bright blocks: a machine ended at a hard rectangle edge with
+  // nothing between it and the ground, so the silhouette had a border instead
+  // of a falloff. Four taps give a cell partial coverage wherever an edge
+  // crosses it, which is what lets a form feather into the field and what makes
+  // the level ramp usable across an edge rather than only across a light.
+  //
+  // Cost is four index lookups against one, once per layout, into an ImageData
+  // buffer that is already being read in full.
+  const q = Math.max(1, Math.round(grid.spacing / 4));
+  const maxX = off.width - 1;
+  const maxY = off.height - 1;
+  // Red channel is enough: the mask is drawn in pure white on black.
+  const tap = (x: number, y: number) =>
+    data[
+      ((y < 0 ? 0 : y > maxY ? maxY : y) * off.width +
+        (x < 0 ? 0 : x > maxX ? maxX : x)) *
+        4
+    ];
 
   for (let i = 0; i < grid.count; i++) {
     const px = Math.round(grid.x[i]);
     const py = Math.round(grid.y[i]);
-    if (px < 0 || py < 0 || px >= off.width || py >= off.height) continue;
-    // Red channel is enough: the mask is drawn in pure white on black.
-    buffer[i] = data[(py * off.width + px) * 4] / 255;
+    if (px < -q || py < -q || px > maxX + q || py > maxY + q) continue;
+    const v =
+      (tap(px - q, py - q) +
+        tap(px + q, py - q) +
+        tap(px - q, py + q) +
+        tap(px + q, py + q)) /
+      1020;
+    buffer[i] = v;
+    covered += v;
   }
+
+  // How much of the grid this form actually occupies.
+  //
+  // Read by `renderFrame` to decide how far to suppress the ground wash. A gain
+  // is not a measure of visual weight: the engram is a diagram and covers about
+  // half of what the source cell's solid machine does, so suppressing the
+  // ground by gain alone took the same amount of texture out of the frame for a
+  // form that put half as much back, and the reconstruct shot came out visibly
+  // darker than the two either side of it.
+  grid.cover[into] = grid.count > 0 ? covered / grid.count : 0;
 }
 
 /**
@@ -545,13 +635,30 @@ export type FrameState = {
   /** 0..1 gain on the footer bookend mask. */
   altGain: number;
   /**
-   * 0..1 gains on the method's three forms. Cross-faded by Method.tsx as the
-   * sequence advances, so the field holds one body, then the structure behind
-   * it, then a different body.
+   * The method's handover: the form on its way out, the one arriving, and the
+   * line between them.
+   *
+   * Ahead of `wipeY` the outgoing form is still standing; behind it the
+   * incoming one has already resolved. `wipeSoft` is the feather half-width, so
+   * the line is an edge rather than a cut. Both names index the grid's mask
+   * buffers directly and are hoisted out of the per-cell loop.
    */
-  sourceGain: number;
-  engramGain: number;
-  targetGain: number;
+  formOut: FormName | null;
+  outGain: number;
+  formIn: FormName | null;
+  inGain: number;
+  wipeY: number;
+  wipeSoft: number;
+  /**
+   * A key light belonging to the form rather than to the cursor, in CSS pixels.
+   *
+   * It multiplies form coverage only, so it lights a machine without lifting
+   * the ground the machine stands on.
+   */
+  formLightX: number;
+  formLightY: number;
+  formLightR: number;
+  formLightGain: number;
   /** 0..1 gain on the photograph. */
   photoGain: number;
   /** Momentary brightening, 0..1 — used to pulse on waitlist submit. */
@@ -609,9 +716,16 @@ export function renderFrame(
     intro,
     scroll,
     altGain,
-    sourceGain,
-    engramGain,
-    targetGain,
+    formOut,
+    outGain,
+    formIn,
+    inGain,
+    wipeY,
+    wipeSoft,
+    formLightX,
+    formLightY,
+    formLightR,
+    formLightGain,
     photoGain,
     pulse,
     open,
@@ -676,9 +790,29 @@ export function renderFrame(
   //
   // The method's forms need exactly the same protection as the wordmark, so any
   // form on screen suppresses the background by the same amount.
+  //
+  // The method's two form channels are *blended* here, not summed, because a
+  // wipe partitions the frame rather than stacking on it: above the line only
+  // the incoming form exists and below it only the outgoing one, so what is on
+  // screen at any moment is one form's worth in total. Summing them made a
+  // sweep read as twice the subject, which drove the suppression to its ceiling
+  // and pulled the ground out from under the handover — the frame measurably
+  // dimmed in the middle of every sweep, which is the one moment it must not.
+  //
+  // And weighted by measured coverage, because a gain says a form is switched
+  // on and says nothing about how much frame it occupies. See `COVER_REF`.
+  const cover = grid.cover;
+  const outWeight = formOut ? outGain * weigh(cover[formOut]) : 0;
+  const inWeight = formIn ? inGain * weigh(cover[formIn]) : 0;
+  const blending = outWeight > 0 && inWeight > 0;
+  // Fraction of the frame the line has already crossed.
+  const wipeShare = blending ? clamp(wipeY / (height || 1), 0, 1) : 0;
+  const formShare = blending
+    ? outWeight * (1 - wipeShare) + inWeight * wipeShare
+    : outWeight + inWeight;
   const formPresence = Math.min(
     1,
-    maskGain + altGain + sourceGain + engramGain + targetGain + photoGain,
+    maskGain + altGain + photoGain + formShare,
   );
   const bareLight = 0.13 + 0.34 * (1 - formPresence);
   const scatter = 1 - intro;
@@ -732,6 +866,34 @@ export function renderFrame(
   // A band is an abs and a compare. The method's forms go the other way, since
   // they are fixed geometry and only their gains change.
   const bandActive = bandGain > 0.002;
+
+  // The handover, resolved to buffers once rather than per cell.
+  //
+  // A mask name costs a property load on the grid; done inside the loop that is
+  // 40,000 of them a frame for a value that cannot change during the frame. So
+  // both arrays and every scalar the blend needs are pulled out here, and the
+  // loop sees plain locals.
+  const maskIn = formIn && inGain > 0.002 ? grid[formIn] : null;
+  const maskOut = formOut && outGain > 0.002 ? grid[formOut] : null;
+  // Only worth blending when both are live. One form alone is a single
+  // multiply-add and needs no line at all.
+  const wiping = maskIn !== null && maskOut !== null;
+  const invWipe = 1 / Math.max(1, wipeSoft);
+
+  // The form's own key light. Same gate as the band: off-sequence this is one
+  // compare per frame, not per cell.
+  const formLit = formLightGain > 0.002;
+  const invFormR2 = 1 / Math.max(1, formLightR * formLightR);
+  /**
+   * How far the key light lifts a form, on top of everything else.
+   *
+   * Set so a fully lit cell lands at the top of the ramp and not past it: a
+   * cold form floor of 0.4 through the 0.75 global fade is 0.30, and 0.55 more
+   * puts it at 0.85, which quantises to level 6 or 7 depending on the cell's
+   * Bayer threshold. Hot core, and still a core rather than a stencil.
+   */
+  const KEY_LIFT = 0.55;
+
   /** Falloff of the scan band either side of its centre, in CSS pixels. */
   const BAND_HALF = 74;
   /** Thickness of each shockwave front, in CSS pixels. */
@@ -784,16 +946,23 @@ export function renderFrame(
     // field cells barely catch the light at all. Without that asymmetry the
     // letterforms wash out inside the halo and the wordmark disappears.
     // `maskAlt` is the footer bookend, gained in as the footer arrives.
-    let m =
-      mk * maskGain +
-      grid.maskAlt[i] * altGain +
-      // The method's forms. Three unconditional multiply-adds rather than a
-      // guard on the gains: a branch per cell costs more than the arithmetic
-      // it would skip, and off-sequence these are all zero anyway.
-      grid.maskSource[i] * sourceGain +
-      grid.maskEngram[i] * engramGain +
-      grid.maskTarget[i] * targetGain +
-      grid.maskPhoto[i] * photoGain;
+    let m = mk * maskGain + grid.maskAlt[i] * altGain + grid.maskPhoto[i] * photoGain;
+
+    // The method's forms, blended across the wipe line.
+    //
+    // `t` is 1 well above the line and 0 well below it, so behind the sweep the
+    // incoming form has fully resolved and ahead of it the outgoing one is
+    // still standing. The two branches are taken identically by every cell in a
+    // frame, so they predict perfectly; what they save is real work, since off
+    // the sequence there is nothing here to do at all.
+    if (wiping) {
+      const t = clamp((wipeY - py) * invWipe + 0.5, 0, 1);
+      m += maskIn![i] * inGain * t + maskOut![i] * outGain * (1 - t);
+    } else if (maskIn) {
+      m += maskIn[i] * inGain;
+    } else if (maskOut) {
+      m += maskOut[i] * outGain;
+    }
 
     if (bandActive) {
       const d = Math.abs(py - bandY);
@@ -823,6 +992,17 @@ export function renderFrame(
     const wash =
       (washBase + py * washSlope) * (WASH_FLOOR + (1 - WASH_FLOOR) * cloud);
 
+    // The form's own key light, evaluated only while the sequence is running.
+    //
+    // Quadratic falloff to zero at the radius, like the cursor's core term, so
+    // it has an edge you can see travelling rather than an unbounded glow.
+    let keyLit = 0;
+    if (formLit) {
+      const fx = px - formLightX;
+      const fy = py - formLightY;
+      const fd2 = (fx * fx + fy * fy) * invFormR2;
+      if (fd2 < 1) keyLit = (1 - fd2) * (1 - fd2) * formLightGain;
+    }
     // A form's brightness: a floor everywhere it exists, plus what the light
     // adds where it falls.
     //
@@ -834,7 +1014,9 @@ export function renderFrame(
     // stops between it and the ground shared 22%. Traversing the ramp is the
     // entire point of having one, so the light now carries a form from violet at
     // its far edge through lilac to a rose and white core.
-    const base = m * (0.42 + lit * 0.45) + lit * bareLight + wash;
+    //
+    // The key light is deliberately *not* in here. See `intensity` below.
+    const base = m * (0.4 + lit * 0.5) + lit * bareLight + wash;
 
     // Shimmer can only ever add `ambient`, so anything that still falls under
     // the visibility floor at full shimmer is dropped here — before paying for
@@ -846,11 +1028,28 @@ export function renderFrame(
     // Bayer threshold is 0.969, so nothing below 0.066 can ever be drawn however
     // lucky its cell is. Culling at that boundary rather than well under it pays
     // for the ground wash above, which puts many more cells in play.
-    if ((base + ambient) * globalFade <= 0.066) continue;
+    const keyed = m * keyLit * KEY_LIFT;
+    if ((base + ambient) * globalFade + keyed <= 0.066) continue;
 
     // Ambient shimmer keeps the dark field alive without reading as noise.
     const shimmer = SIN_LUT[(tIdx + grid.phase[i]) & (SIN_STEPS - 1)];
-    const intensity = (base + ambient * shimmer) * globalFade * gate;
+    // The key light is added *after* the global fade rather than folded into
+    // `base` with the cursor's light.
+    //
+    // `globalFade` bottoms out at FIELD_FLOOR, 0.75, everywhere past the hero:
+    // it exists so the field calms down once the wordmark has come apart. Put
+    // through it, a fully key-lit form cell reached 0.71 and quantised to level
+    // 5 or 6, so the method's hot core could not exist however the coefficients
+    // were set — measured across all four shots, level 7 was empty in every one
+    // the scan band did not happen to be crossing. Raising the coefficients
+    // instead would have driven the hero's wordmark, which is *not* faded,
+    // straight past the top of the ramp and flattened it back into a stencil.
+    //
+    // So the section's key light is exempt. It is a light someone aimed, not
+    // ambience left over from the hero, and it should not be dimmed by the
+    // hero's decay.
+    const intensity =
+      ((base + ambient * shimmer) * globalFade + keyed) * gate;
 
     // Ordered dither: the Bayer threshold biases the quantisation per cell,
     // turning smooth gradients into the crosshatch of the reference images.

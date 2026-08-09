@@ -38,12 +38,55 @@
  */
 export const RIPPLE_SLOTS = 5;
 
+/**
+ * Which mask buffer a form channel is pointing at.
+ *
+ * A name rather than a number, because `renderFrame` hoists the buffer out of
+ * its per-cell loop by looking it up on the grid once, and a name is what the
+ * grid is keyed by.
+ */
+export type FormName = "maskSource" | "maskEngram" | "maskTarget";
+
 /** Everything one section can ask the field to do. */
 type Channel = {
-  /** The method's three forms: a working cell, its structure, another body. */
-  source: number;
-  engram: number;
-  target: number;
+  /**
+   * The two forms in play, and the line between them.
+   *
+   * Only ever two, because a handover is a wipe and not a pile: ahead of
+   * `wipeY` the outgoing form is still standing, behind it the incoming one has
+   * already resolved. Three independent gains was the old shape, and it had the
+   * failure the wipe exists to remove — measured at 1920, total form gain fell
+   * to 0.17 for about 200px of scroll at the engram-to-target handover, which
+   * left the frame empty under copy that was busy naming what should have been
+   * in it. Worse, the ground wash is suppressed by form presence, so the
+   * background *rose* as the subject left and the transition read as the field
+   * swelling rather than as one body becoming another.
+   *
+   * With a wipe the two gains sum to roughly one at every point in the sweep,
+   * so there is no gap to fall into and nothing for the wash to react to.
+   */
+  formOut: FormName | null;
+  outGain: number;
+  formIn: FormName | null;
+  inGain: number;
+  /** The line, in CSS pixels down the viewport, and its feather half-width. */
+  wipeY: number;
+  wipeSoft: number;
+  /**
+   * A key light for whatever form is on screen.
+   *
+   * Without this the only light on the page is the cursor's, which has no
+   * relationship to where a form is: unlit, a form cell tops out at level 3 of
+   * 8, so which part of a machine was bright came down to where the mouse
+   * happened to be, and the engram shot held nothing above level 3 anywhere on
+   * screen. A form should carry its own hot core and cold edge, and the light
+   * should be doing something — reading the source, sitting in the engram's
+   * hub, crossing from one work point to the other.
+   */
+  lightX: number;
+  lightY: number;
+  lightR: number;
+  lightGain: number;
   /** A photograph, sampled through the same grid as everything else. */
   photo: number;
   /** A scan band: its centre down the viewport, and its strength. */
@@ -52,9 +95,16 @@ type Channel = {
 };
 
 const empty = (): Channel => ({
-  source: 0,
-  engram: 0,
-  target: 0,
+  formOut: null,
+  outGain: 0,
+  formIn: null,
+  inGain: 0,
+  wipeY: 0,
+  wipeSoft: 1,
+  lightX: 0,
+  lightY: 0,
+  lightR: 1,
+  lightGain: 0,
   photo: 0,
   bandY: 0,
   band: 0,
@@ -131,9 +181,16 @@ export const fieldState = {
 
 /** What the canvas actually draws, after every live channel is combined. */
 export type ComposedField = {
-  sourceGain: number;
-  engramGain: number;
-  targetGain: number;
+  formOut: FormName | null;
+  outGain: number;
+  formIn: FormName | null;
+  inGain: number;
+  wipeY: number;
+  wipeSoft: number;
+  formLightX: number;
+  formLightY: number;
+  formLightR: number;
+  formLightGain: number;
   photoGain: number;
   bandY: number;
   bandGain: number;
@@ -144,9 +201,16 @@ export type ComposedField = {
  * values straight into the frame state.
  */
 const composed: ComposedField = {
-  sourceGain: 0,
-  engramGain: 0,
-  targetGain: 0,
+  formOut: null,
+  outGain: 0,
+  formIn: null,
+  inGain: 0,
+  wipeY: 0,
+  wipeSoft: 1,
+  formLightX: 0,
+  formLightY: 0,
+  formLightR: 1,
+  formLightGain: 0,
   photoGain: 0,
   bandY: 0,
   bandGain: 0,
@@ -157,9 +221,16 @@ export function composeField(): ComposedField {
 
   // Only the method draws these, but they compose the same way so that adding a
   // second owner later cannot reintroduce the race this replaced.
-  composed.sourceGain = method.source;
-  composed.engramGain = method.engram;
-  composed.targetGain = method.target;
+  composed.formOut = method.formOut;
+  composed.outGain = method.outGain;
+  composed.formIn = method.formIn;
+  composed.inGain = method.inGain;
+  composed.wipeY = method.wipeY;
+  composed.wipeSoft = method.wipeSoft;
+  composed.formLightX = method.lightX;
+  composed.formLightY = method.lightY;
+  composed.formLightR = method.lightR;
+  composed.formLightGain = method.lightGain;
 
   // The proof shows the photograph and the deployment holds it faintly behind
   // its copy. Their ranges overlap by a viewport, and `max` is what makes that

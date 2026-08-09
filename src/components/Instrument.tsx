@@ -33,6 +33,23 @@ import { lerp, prefersReducedMotion, smoothstep } from "@/lib/motion";
  */
 type Waypoint = {
   id: string;
+  /**
+   * Anchor this waypoint at a fraction of a named ScrollTrigger's range instead
+   * of at the centre of a section.
+   *
+   * A section centre is the right anchor for a section that holds one
+   * composition, and the wrong one for a section that holds four. The method
+   * pins for 280% of a viewport and plays four shots inside that, but it had a
+   * single waypoint anchored at the centre of its spacer, so the instrument's
+   * method pose peaked at the halfway point of the sequence: the readout naming
+   * the form on screen sat at 0.40 opacity through the first shot, reached full
+   * where the field was mid-handover and holding nothing in particular, and was
+   * back down to 0.38 through the last. It was also still travelling in from
+   * the thesis for the whole of shot one, and already leaving for the proof by
+   * shot three, which is why the proof's bracket had opened to 33px around the
+   * whole viewport before the method had finished.
+   */
+  trackP?: number;
   /** Height of the rule. Above 1 parks it below the frame. */
   ruleY: number;
   /** Tick length in px at rest. */
@@ -46,14 +63,32 @@ type Waypoint = {
 
 const NO_BRACKET = [0.12, 0.22, 0.76, 0.56, 0] as const;
 
+/**
+ * The trigger the method's waypoints are anchored to. Created in Method.tsx.
+ */
+const METHOD_TRIGGER = "method";
+
 const WAYPOINTS: Waypoint[] = [
   // Under the wordmark, on a scale.
   { id: "hero", ruleY: 0.62, tick: 6, bracket: NO_BRACKET, readout: 0, readoutX: 0.5 },
   // High and quiet. This section is a paragraph to be read, so the instrument
   // gets out of the way rather than inventing something to point at.
   { id: "thesis", ruleY: 0.22, tick: 0, bracket: NO_BRACKET, readout: 0, readoutX: 0.5 },
-  // Below the copy, naming the form the field is holding.
-  { id: "method", ruleY: 0.8, tick: 6, bracket: NO_BRACKET, readout: 1, readoutX: 0.74 },
+  // Four poses for four shots, anchored inside the pin at the middle of each.
+  // The readout holds at full across all of them, because there is something
+  // named on screen for the whole of the sequence; what changes is where the
+  // rule sits and how much scale it carries, so the instrument reads as one
+  // thing following the work rather than as one thing sliding past it.
+  { id: "method", trackP: 0.13, ruleY: 0.79, tick: 7, bracket: NO_BRACKET, readout: 1, readoutX: 0.74 },
+  // The two shot boundaries at which the readout's *text* changes. Dipped, so
+  // the word swaps at its dimmest rather than snapping from one legible label
+  // to another. The last two shots share a readout, so there is nothing to hide
+  // at 0.78 and no waypoint for it.
+  { id: "method", trackP: 0.26, ruleY: 0.81, tick: 3, bracket: NO_BRACKET, readout: 0.12, readoutX: 0.72 },
+  { id: "method", trackP: 0.44, ruleY: 0.83, tick: 4, bracket: NO_BRACKET, readout: 1, readoutX: 0.7 },
+  { id: "method", trackP: 0.52, ruleY: 0.84, tick: 3, bracket: NO_BRACKET, readout: 0.12, readoutX: 0.73 },
+  { id: "method", trackP: 0.7, ruleY: 0.86, tick: 4, bracket: NO_BRACKET, readout: 1, readoutX: 0.76 },
+  { id: "method", trackP: 0.92, ruleY: 0.88, tick: 8, bracket: NO_BRACKET, readout: 1, readoutX: 0.76 },
   // The photograph is the subject, so it gets framed.
   {
     id: "proof",
@@ -147,6 +182,19 @@ export default function Instrument() {
       h = window.innerHeight;
       const max = Math.max(0, document.documentElement.scrollHeight - h);
       anchors = WAYPOINTS.map((wp) => {
+        // A tracked waypoint takes its position from a trigger's own range, so
+        // the instrument moves on the sequence's clock rather than on the
+        // section's. `getById` returns undefined below the pin threshold, where
+        // the method stacks and there is no sequence to track; the section
+        // centre is the right fallback there because that layout really does
+        // hold one composition.
+        if (wp.trackP !== undefined) {
+          const st = ScrollTrigger.getById(METHOD_TRIGGER);
+          if (st) {
+            const at = st.start + (st.end - st.start) * wp.trackP;
+            return Math.min(max, Math.max(0, at));
+          }
+        }
         const el = document.getElementById(wp.id);
         if (!el) return 0;
         const box = stableTrigger(el).getBoundingClientRect();

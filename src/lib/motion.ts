@@ -49,8 +49,20 @@ export const SCROLL = {
    * Two lags in series is what made the page feel disconnected from the hand.
    */
   scrub: 0.35,
-  /** Below this width, pinning fights touch scrolling — don't. */
-  pinMinWidth: 768,
+  /**
+   * Below this width the method stacks instead of pinning.
+   *
+   * It was 768, chosen only as "not a phone", and 768 cannot hold the layout it
+   * was authorising: the form takes the frame from 52% of the width outward, so
+   * at 768 the copy beside it gets a 238px column, which is not a column. It is
+   * also where pinning starts fighting touch scrolling.
+   *
+   * 1152 is the width of the page's own content container, which makes it the
+   * honest threshold: below the width at which the frame can hold two columns,
+   * the section stacks into the listed layout, and the field runs behind the
+   * copy as atmosphere instead of beside it as a subject.
+   */
+  pinMinWidth: 1152,
   /**
    * Where anything on the page arrives. One value, no exceptions.
    *

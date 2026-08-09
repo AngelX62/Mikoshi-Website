@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { clamp, prefersReducedMotion } from "@/lib/motion";
 
 /**
@@ -25,11 +26,22 @@ export default function ScrollRail() {
     let max = 1;
     let last = -1;
 
+    /**
+     * The document's scrollable length.
+     *
+     * Re-measured on ScrollTrigger's refresh as well as on resize, because the
+     * pins are what set this number and they are not in place at mount: the
+     * method alone adds 280% of a viewport. A rail measured once reports a
+     * percentage of the wrong document and drifts further the more the pins
+     * change. `DitherField.measureFooter` subscribes to the same event for the
+     * same reason.
+     */
     function measure() {
       max = Math.max(
         1,
         document.documentElement.scrollHeight - window.innerHeight,
       );
+      update();
     }
 
     function update() {
@@ -49,9 +61,11 @@ export default function ScrollRail() {
 
     window.addEventListener("scroll", update, { passive: true });
     window.addEventListener("resize", measure);
+    ScrollTrigger.addEventListener("refresh", measure);
     return () => {
       window.removeEventListener("scroll", update);
       window.removeEventListener("resize", measure);
+      ScrollTrigger.removeEventListener("refresh", measure);
     };
   }, []);
 
