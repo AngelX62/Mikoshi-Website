@@ -37,13 +37,20 @@
   --color-ink-dim: #a89e92;
   --color-ink-faint: #5e564c;
 
-  /* The single accent: amber, the hot end of the field's own ramp. Used in
+  /* The single accent: rose, the hot end of the field's own ramp. Used in
      exactly three places — hover, focus ring, and the waitlist glow. Restraint
      is the point; this is meant to read as the same heat the field carries at
-     its core rather than as decoration laid on top. Measured at 8.55:1 on the
-     ground, so it clears AA as text and 3:1 as a focus ring with room over. */
-  --color-accent: #e8913c;
-  --color-accent-soft: #f0aa66;
+     its core rather than as decoration laid on top. Measured at 8.50:1 on the
+     ground, so it clears AA as text and 3:1 as a focus ring with room over.
+
+     Declared as the hot end of the ramp, so it is derived rather than picked,
+     and that is load-bearing rather than tidy. It was an amber while L7 was, and
+     when the ramp collapsed to one hue family it had to come too: an amber
+     accent on a rose field would have put back into the chrome precisely the
+     second hue the field just spent a rewrite removing. It moves with L7 and
+     should keep doing so. */
+  --color-accent: #de8ea2;
+  --color-accent-soft: #eeb0c0;
 
   /* Corner falloff, so every screen reads as a shot rather than a web page.
      A colour rather than a hard-coded black in Vignette.tsx, because on a
@@ -105,11 +112,11 @@
   --color-ink-dim: #64594a;
   --color-ink-faint: #a89c8a;
 
-  /* The amber accent is invisible on a near-white ground, so it goes down the
+  /* The rose accent is invisible on a near-white ground, so it goes down the
      ramp rather than sideways. Same hue, enough depth to hold a focus ring:
-     5.72:1 here, against the dark theme's 8.55:1. */
-  --color-accent: #8f4410;
-  --color-accent-soft: #73340a;
+     6.33:1 here, against the dark theme's 8.50:1. */
+  --color-accent: #962a45;
+  --color-accent-soft: #7c1b33;
 
   /* Warm, and far weaker. Ink laid over a near-white ground reads at a fraction
      of the alpha that light needs over black; at the dark theme's 0.72 this is

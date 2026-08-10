@@ -50,21 +50,50 @@ export const LEVELS = 8;
  * saturated hue at all.
  *
  * **The field never reaches white, and that is the point.** The reference this
- * is drawn from puts no white anywhere in its subject: the flower runs navy
- * through magenta to an orange core, and white is reserved for the hairlines,
- * the thin circles and the mono labels. This page is already built that way,
- * with the field painting the subject and the instrument layer taking its ink
- * from the CSS tokens, so the division holds without a single structural
- * change. The cost is real and was accepted knowingly: an orange cannot be as
- * luminous as a near-white, so L7 falls from luma 229 to 168 and the hero's lit
- * core is orange now. The low four stops sit within a few luma of what they
- * replaced, so the ground wash, which is most of the marks on screen by a wide
- * margin, keeps exactly the weight it had.
+ * is drawn from puts no white anywhere in its subject, and white is reserved for
+ * the hairlines, the thin circles and the mono labels. This page is already
+ * built that way, with the field painting the subject and the instrument layer
+ * taking its ink from the CSS tokens, so the division holds without a single
+ * structural change. The cost is real and was accepted knowingly: a saturated
+ * hue cannot be as luminous as a near-white, so L7 falls from luma 229 to 169
+ * and the hero's lit core is a colour now rather than a highlight.
  *
- * **The top two stops are at their ceiling.** `solve` divides the target back
- * out by alpha, so the highest reachable red is `255 * levelAlpha(level)`: 242
- * at L7 and 222 at L6. Those numbers are not free to drift upward, and a stop
- * that exceeds them silently clamps and lands darker than it reads here.
+ * **One hue family, and this is the hard-won part.** The reference runs navy
+ * through magenta to an *orange* core, and copying that literally is what the
+ * first two versions of this table did. It read as garish, and the reason is
+ * worth writing down because the obvious fix does not work.
+ *
+ * The obvious fix is to desaturate, and it was tried: every stop above L2 mixed
+ * toward its own luma, taking peak saturation from 78% to 54%. It changed almost
+ * nothing, because **mixing a colour toward its own luma preserves hue exactly**.
+ * The problem was never the amount of chroma. It was that the ramp spanned 100
+ * degrees of hue between L4 and L7, and the dither interleaves levels at cell
+ * resolution, so a single lit letter was rendered in magenta and amber at once,
+ * cell by cell. Two saturated hues inside one object read as a rainbow however
+ * muted each one is.
+ *
+ * The proof that hue span alone is not the culprit: the violet ramp this page
+ * ran for months spanned a *wider* 117 degrees and never read as vibrant,
+ * because its top stop was 8% saturated. It was a near-white. Two tones where
+ * one is white read as lighting; two tones that both carry chroma read as
+ * colour. So the ramp now holds one family, 300 to 345 degrees, and a lit letter
+ * spans 33 degrees instead of 100.
+ *
+ * L1 and L2 keep their navy and are deliberately outside the family. They carry
+ * the ground wash, which is around four fifths of the marks on screen; at luma
+ * 27 and 44 against a lit letter at 169 they read as texture rather than as a
+ * hue; and the cold ground under a warm subject is the composition the reference
+ * is built on. The old violet ramp ran indigo to rose for the same reason.
+ *
+ * **Nothing here may drift upward, and L7 is why the core is pale.** `solve`
+ * divides the target back out by alpha, so the highest reachable value is
+ * `255 * levelAlpha(level)`, which is 242 at L7. Luma is `0.2126 R + 0.7152 G +
+ * 0.0722 B`, so brightness lives almost entirely in green, and a magenta is
+ * defined by having little green. At L7's target luma of 169 the most saturation
+ * any rose can carry under that ceiling is 39%. The amber this replaced managed
+ * 78% only because amber is yellow-adjacent and full of green. So the pale core
+ * is not a preference, it is the only thing the arithmetic allows short of
+ * dimming the brightest mark on the page.
  *
  * These are the colours **as they should appear on screen**, already composited
  * onto black. That is not how the previous version was written and it is the
@@ -91,11 +120,11 @@ const RAMP_ON_BLACK: ReadonlyArray<readonly [number, number, number]> = [
   // would double the effect and flatten the gradient the wash exists to make.
   [24, 24, 60], //          L1  navy, the ground speckle
   [44, 38, 98], //          L2  indigo
-  [82, 46, 128], //         L3  violet
-  [136, 58, 146], //        L4  magenta-violet
-  [200, 74, 132], //        L5  hot magenta
-  [218, 92, 66], //         L6  red-orange, where the heat starts
-  [242, 158, 54], //        L7  orange, the core
+  [99, 44, 99], //          L3  violet
+  [134, 61, 120], //        L4  magenta-violet
+  [177, 80, 137], //        L5  magenta
+  [193, 93, 134], //        L6  rose
+  [234, 150, 171], //       L7  pale rose, the core
 ];
 
 /**
@@ -137,14 +166,26 @@ const RAMP_ON_BLACK: ReadonlyArray<readonly [number, number, number]> = [
  * of the ramp, which is where the light is. On paper the top of the ramp is
  * nearly black, where 8-bit sRGB has no room for hue at all, and the bottom is
  * washed toward a near-neutral ground. So the colour lives in the middle here:
- * L4 carries magenta, L5 rose and L6 rust, and the channel spread across those
- * three is 71, 90 and 132 against the violet table's 48, 62 and 66.
+ * L4 carries magenta and L5 and L6 rose, and the channel spread across those
+ * three is 71, 86 and 82 against the violet table that preceded this one, which
+ * managed 48, 62 and 66.
  *
  * That improvement is not tuning, it is the hue. A warm stop at these lumas has
  * more room in 8-bit sRGB than a violet one does, because it spends its spread
  * by pushing blue *down*, and blue is the cheapest channel to lose: it carries
  * 0.0722 of the luma against green's 0.7152. A violet stop has to push blue up
  * instead, and there is a ceiling at 255.
+ *
+ * **L5, L6 and L7 moved onto one hue family with the dark table**, for the
+ * reason set out over there: two saturated hues inside a single lit object read
+ * as a rainbow, and this table had a rust at L6 sitting 47 degrees from its own
+ * L4. It now spans 9. Only those three stops moved, because the hue collapse
+ * holds every luma fixed, and every luma here is placed against its dark
+ * counterpart. So the mirror below still holds to within 2 at every stop and
+ * none of it had to be re-derived.
+ *
+ * The one number that changed character: peak saturation was 68% at the rust,
+ * the most saturated colour anywhere in the project, and is now 46%.
  *
  * The low three are still cool, mirroring the dark ramp's navy, and still bound
  * by the same hard ceiling: a faint mark is by definition close to the ground,
@@ -163,9 +204,9 @@ const RAMP_ON_PAPER: ReadonlyArray<readonly [number, number, number]> = [
   [200, 180, 214], //       L2  violet tint
   [190, 163, 200], //       L3  violet tint
   [204, 133, 170], //       L4  magenta
-  [196, 106, 120], //       L5  rose
-  [194, 96, 62], //         L6  rust, mirroring the dark ramp's red-orange
-  [58, 30, 26], //          L7  the darkest ink, a near-black rust. Not mirrored
+  [192, 106, 136], //       L5  rose
+  [178, 96, 126], //        L6  rose, mirroring the dark ramp's
+  [54, 29, 40], //          L7  the darkest ink, a near-black plum. Not mirrored
 ];
 
 /**

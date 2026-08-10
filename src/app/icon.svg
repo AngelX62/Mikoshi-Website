@@ -3,5 +3,5 @@
   <rect x="8" y="8" width="9" height="9" fill="#fafafa"/>
   <!-- The offset square carries the accent, so the mark holds the page's own
        division at 16px: the field's heat against the instrument's white. -->
-  <rect x="17" y="17" width="7" height="7" fill="#e8913c"/>
+  <rect x="17" y="17" width="7" height="7" fill="#de8ea2"/>
 </svg>
