@@ -10,7 +10,6 @@ import { lerp, prefersReducedMotion, smoothstep } from "@/lib/motion";
 // annotation once measured 3200 where the section really begins at 1800. The
 // rail's index needs the identical correction, so it lives in one place now.
 import { stableTrigger } from "@/lib/scroll";
-import { PROOF_BRACKET } from "@/lib/forms";
 
 /**
  * The instrument's scroll maths. Renders nothing.
@@ -26,16 +25,22 @@ import { PROOF_BRACKET } from "@/lib/forms";
  * geometry is interpolated from scroll position instead, so nothing appears and
  * nothing goes — one thing moves and reshapes for eight screens.
  *
- * **Absence is length, not opacity.** A tick or a bracket arm at zero length is
- * invisible without ever having faded. The readout is the one exception,
- * because a word cannot be given zero length.
+ * **Absence is length, not opacity.** A tick at zero length is invisible
+ * without ever having faded. The readout is the one exception, because a word
+ * cannot be given zero length.
+ *
+ * There used to be a corner bracket here as well, marking out a region of the
+ * frame. It had exactly one user, the proof beat's photograph, and that beat is
+ * gone (see page.tsx). Every remaining waypoint carried it at zero arm, so it
+ * drew nothing on any screen; the geometry, the interpolation and the painting
+ * are all removed rather than left as four dead numbers per pose.
  */
 
 /**
  * One composition, held when its section is centred in the viewport.
  *
- * Fractions, not pixels, so a resize needs no re-measuring: `ruleY` and the
- * bracket are fractions of the viewport, `arm` is a fraction of its short side.
+ * Fractions, not pixels, so a resize needs no re-measuring: `ruleY` is a
+ * fraction of the viewport height and `readoutX` of its width.
  */
 type Waypoint = {
   id: string;
@@ -51,23 +56,18 @@ type Waypoint = {
    * the form on screen sat at 0.40 opacity through the first shot, reached full
    * where the field was mid-handover and holding nothing in particular, and was
    * back down to 0.38 through the last. It was also still travelling in from
-   * the thesis for the whole of shot one, and already leaving for the proof by
-   * shot three, which is why the proof's bracket had opened to 33px around the
-   * whole viewport before the method had finished.
+   * the thesis for the whole of shot one, and already leaving for the section
+   * below before shot three had begun.
    */
   trackP?: number;
   /** Height of the rule. Above 1 parks it below the frame. */
   ruleY: number;
   /** Tick length in px at rest. */
   tick: number;
-  /** Region of interest, and the arm length that reveals it. */
-  bracket: readonly [x: number, y: number, w: number, h: number, arm: number];
   readout: number;
   /** Where the readout sits across the frame. */
   readoutX: number;
 };
-
-const NO_BRACKET = [0.12, 0.22, 0.76, 0.56, 0] as const;
 
 /**
  * The trigger the method's waypoints are anchored to. Created in Method.tsx.
@@ -76,53 +76,34 @@ const METHOD_TRIGGER = "method";
 
 const WAYPOINTS: Waypoint[] = [
   // Under the wordmark, on a scale.
-  { id: "hero", ruleY: 0.62, tick: 6, bracket: NO_BRACKET, readout: 0, readoutX: 0.5 },
+  { id: "hero", ruleY: 0.62, tick: 6, readout: 0, readoutX: 0.5 },
   // High and quiet. This section is a paragraph to be read, so the instrument
   // gets out of the way rather than inventing something to point at.
-  { id: "thesis", ruleY: 0.22, tick: 0, bracket: NO_BRACKET, readout: 0, readoutX: 0.5 },
+  { id: "thesis", ruleY: 0.22, tick: 0, readout: 0, readoutX: 0.5 },
   // Four poses for four shots, anchored inside the pin at the middle of each.
   // The readout holds at full across all of them, because there is something
   // named on screen for the whole of the sequence; what changes is where the
   // rule sits and how much scale it carries, so the instrument reads as one
   // thing following the work rather than as one thing sliding past it.
-  { id: "method", trackP: 0.13, ruleY: 0.79, tick: 7, bracket: NO_BRACKET, readout: 1, readoutX: 0.74 },
-  { id: "method", trackP: 0.44, ruleY: 0.83, tick: 4, bracket: NO_BRACKET, readout: 1, readoutX: 0.7 },
+  { id: "method", trackP: 0.13, ruleY: 0.79, tick: 7, readout: 1, readoutX: 0.74 },
+  { id: "method", trackP: 0.44, ruleY: 0.83, tick: 4, readout: 1, readoutX: 0.7 },
   // The one shot boundary at which the readout's *text* changes. Dipped, so the
   // word swaps at its dimmest rather than snapping from one legible label to
   // another. There used to be a second dip at 0.26, for the source-to-engram
   // change; with the engram gone the first two shots share a readout and there
   // is nothing to hide there, so a dip would be the instrument flinching at
   // nothing.
-  { id: "method", trackP: 0.52, ruleY: 0.84, tick: 3, bracket: NO_BRACKET, readout: 0.12, readoutX: 0.73 },
-  { id: "method", trackP: 0.7, ruleY: 0.86, tick: 4, bracket: NO_BRACKET, readout: 1, readoutX: 0.76 },
-  { id: "method", trackP: 0.92, ruleY: 0.88, tick: 8, bracket: NO_BRACKET, readout: 1, readoutX: 0.76 },
-  // The photograph is the subject, so it gets framed. The rectangle comes from
-  // `PROOF_BRACKET` rather than being written out again here, because the
-  // fallback silhouette is sized from the same numbers: the two used to be
-  // independent and the marks framed 587px of empty field while cutting 133px
-  // off the subject.
-  {
-    id: "proof",
-    ruleY: 0.9,
-    tick: 0,
-    bracket: [
-      PROOF_BRACKET.x,
-      PROOF_BRACKET.y,
-      PROOF_BRACKET.w,
-      PROOF_BRACKET.h,
-      0.05,
-    ],
-    readout: 0,
-    readoutX: 0.5,
-  },
-  { id: "deployment", ruleY: 0.55, tick: 0, bracket: NO_BRACKET, readout: 0, readoutX: 0.5 },
-  { id: "horizon", ruleY: 0.93, tick: 0, bracket: NO_BRACKET, readout: 0, readoutX: 0.5 },
+  { id: "method", trackP: 0.52, ruleY: 0.84, tick: 3, readout: 0.12, readoutX: 0.73 },
+  { id: "method", trackP: 0.7, ruleY: 0.86, tick: 4, readout: 1, readoutX: 0.76 },
+  { id: "method", trackP: 0.92, ruleY: 0.88, tick: 8, readout: 1, readoutX: 0.76 },
+  { id: "deployment", ruleY: 0.55, tick: 0, readout: 0, readoutX: 0.5 },
+  { id: "horizon", ruleY: 0.93, tick: 0, readout: 0, readoutX: 0.5 },
   // Released: the rule leaves through the bottom of the frame, so the
   // instrument exits with the page rather than resetting to the top. The footer
   // is the shortest section and the last, so its anchor is clamped to the end of
   // the scroll and gets roughly 600px rather than the 900 every other pair has;
   // anything asking for a large move here travels faster than the page does.
-  { id: "site-footer", ruleY: 1.15, tick: 0, bracket: NO_BRACKET, readout: 0, readoutX: 0.5 },
+  { id: "site-footer", ruleY: 1.15, tick: 0, readout: 0, readoutX: 0.5 },
 ];
 
 /**
@@ -141,14 +122,8 @@ export default function Instrument() {
     let anchors: number[] = [];
 
     function resolve(a: Waypoint, b: Waypoint, t: number) {
-      const unit = Math.min(w, h);
       instrument.ruleY = lerp(a.ruleY, b.ruleY, t) * h;
       instrument.tick = lerp(a.tick, b.tick, t);
-      instrument.bracketX = lerp(a.bracket[0], b.bracket[0], t) * w;
-      instrument.bracketY = lerp(a.bracket[1], b.bracket[1], t) * h;
-      instrument.bracketW = lerp(a.bracket[2], b.bracket[2], t) * w;
-      instrument.bracketH = lerp(a.bracket[3], b.bracket[3], t) * h;
-      instrument.arm = lerp(a.bracket[4], b.bracket[4], t) * unit;
       instrument.readout = lerp(a.readout, b.readout, t);
       instrument.readoutX = lerp(a.readoutX, b.readoutX, t) * w;
     }

@@ -12,11 +12,11 @@
  * This used to be a flat set of gains that every section wrote to directly, plus
  * a `resetFieldShapes()` that zeroed all of them. That is fine while only one
  * section is ever live, and the page stopped being that some time ago. Measured
- * at 1440x900, the proof runs from scroll 4320 to 6120 and the deployment from
- * 5220 to 7020: for a full viewport of scroll both are live and both were
- * writing `photoGain`, and when the proof left it zeroed the value the
- * deployment was driving that same frame. The method and the proof overlapped
- * the same way on the scan band.
+ * at 1440x900 when there was still a proof beat, it ran from scroll 4320 to
+ * 6120 and the deployment from 5220 to 7020: for a full viewport of scroll both
+ * were live and both were writing `photoGain`, and when the proof left it
+ * zeroed the value the deployment was driving that same frame. The method and
+ * the proof overlapped the same way on the scan band.
  *
  * Last writer won, the loser was whichever section was about to become the
  * subject, and the result was a drop at exactly the boundary where the page
@@ -31,12 +31,13 @@
 /**
  * How many shockwaves can be in flight at once.
  *
- * The thesis lands its lines about 90ms apart, each firing one, and they live
- * for a second. A single slot would just restart the same wave repeatedly and
- * read as a stutter. One slot per line lets them overlap into a burst of
- * fronts, which is the point.
+ * More than one, still, even though the thesis now strikes once and the horizon
+ * once on arrival. The two can overlap if a reader scrolls the thesis into view
+ * and reaches the horizon before the first has decayed, and a single slot would
+ * cut the first wave off mid-travel to restart it, which reads as a stutter
+ * rather than as two events.
  */
-export const RIPPLE_SLOTS = 5;
+export const RIPPLE_SLOTS = 4;
 
 /**
  * Which mask buffer a form channel is pointing at.
@@ -90,10 +91,9 @@ type Channel = {
    *
    * A light shaped like the gesture it belongs to. The observe and qualify
    * passes travel down the frame, so theirs is wide and short and reads as a
-   * scan band; the reconstruct reads the plate from end to end, so theirs is
-   * narrow and tall and stands across the whole record like a playhead; the
-   * re-embody crossing stays round. A single radius made all three the same
-   * blob moving in different directions.
+   * scan band; the reconstruct closes onto the work point, so theirs contracts
+   * to a tight core; the re-embody crossing stays round. A single radius made
+   * all three the same blob moving in different directions.
    */
   lightRX: number;
   lightRY: number;
@@ -126,11 +126,10 @@ const empty = (): Channel => ({
  * One channel per section that drives the field.
  *
  * Named after the section rather than the effect, because ownership is the
- * whole point: `Proof` may only ever touch `channels.proof`.
+ * whole point: `Deployment` may only ever touch `channels.deployment`.
  */
 export const channels = {
   method: empty(),
-  proof: empty(),
   deployment: empty(),
 };
 
@@ -161,12 +160,6 @@ export const instrument = {
   followY: 0,
   /** Tick length. Zero is how a scale is put away. */
   tick: 0,
-  /** Region of interest, and the arm length that reveals it. */
-  bracketX: 0,
-  bracketY: 0,
-  bracketW: 0,
-  bracketH: 0,
-  arm: 0,
   /** 0..1 on the readout, the one thing here that fades. */
   readout: 0,
   readoutX: 0,
@@ -184,7 +177,8 @@ export const fieldState = {
 
   /**
    * Shockwave origins, in CSS pixels from the top of the viewport. Fired by the
-   * thesis as each line lands, so the type and the field are one instrument.
+   * thesis as its closing line lands and by the horizon as it arrives, so the
+   * type and the field are one instrument.
    */
   rippleY: new Float32Array(RIPPLE_SLOTS),
   /** `performance.now()` when each was fired; -1 marks an empty slot. */
@@ -231,7 +225,7 @@ const composed: ComposedField = {
 };
 
 export function composeField(): ComposedField {
-  const { method, proof, deployment } = channels;
+  const { method, deployment } = channels;
 
   // Only the method draws these, but they compose the same way so that adding a
   // second owner later cannot reintroduce the race this replaced.
@@ -247,24 +241,23 @@ export function composeField(): ComposedField {
   composed.formLightRY = method.lightRY;
   composed.formLightGain = method.lightGain;
 
-  // The proof shows the photograph and the deployment holds it faintly behind
-  // its copy. Their ranges overlap by a viewport, and `max` is what makes that
-  // overlap read as one image being carried forward rather than as two sections
-  // taking turns: the proof's envelope is still falling while the deployment's
-  // is rising, so the larger of the two is always the one still in charge.
-  composed.photoGain = Math.max(proof.photo, deployment.photo);
-
-  // A band has a position as well as a strength, so it cannot be combined
-  // termwise: averaging two bands would put a third band between them, in a
-  // place neither section asked for. The stronger one wins outright and brings
-  // its own `y` with it.
-  if (proof.band >= method.band) {
-    composed.bandGain = proof.band;
-    composed.bandY = proof.bandY;
-  } else {
-    composed.bandGain = method.band;
-    composed.bandY = method.bandY;
-  }
+  // One owner each now, and both of these used to have two.
+  //
+  // The proof beat held the photograph as its subject and the deployment holds
+  // it faintly behind its copy; their ranges overlapped by a viewport, so this
+  // took the larger of the two and the overlap read as one image carried
+  // forward rather than as two sections taking turns. The proof and the method
+  // overlapped the same way on the scan band, which cannot be combined termwise
+  // at all: a band has a position as well as a strength, and averaging two
+  // would put a third band between them in a place neither section asked for.
+  //
+  // The proof beat is gone (see page.tsx), so both reduce to a single reader.
+  // The structure stays: a section still writes only its own channel, and if a
+  // second owner of either ever appears the merge belongs here rather than in
+  // whichever section happened to run last.
+  composed.photoGain = deployment.photo;
+  composed.bandGain = method.band;
+  composed.bandY = method.bandY;
 
   return composed;
 }

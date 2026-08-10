@@ -169,17 +169,8 @@ export function drawTarget(
   w: number,
   h: number,
 ): void {
-  drawTargetInto(ctx, frame(w, h));
-}
+  const b = frame(w, h);
 
-/**
- * The target cell, drawn into a box someone else chose.
- *
- * Split out because the proof beat needs the same silhouette in a different
- * place. Geometry lives here once so the two cannot drift; only the box
- * differs.
- */
-function drawTargetInto(ctx: CanvasRenderingContext2D, b: Box): void {
   // Overhead beam, full width.
   rect(ctx, b, 0.0, 0.0, 1.0, 0.11);
   // Carriage riding it.
@@ -230,61 +221,6 @@ function drawTargetInto(ctx: CanvasRenderingContext2D, b: Box): void {
  * three failures above: solid masses at least three cells across, time in it,
  * and no denser than the silhouettes either side or it unbalances the sequence.
  */
-
-/**
- * The proof beat's stand-in, until `public/cell.jpg` exists.
- *
- * The same target cell, drawn from a different box. `frame()` biases a form
- * into the right 46% of the viewport because the method puts copy down the
- * left, and the proof has no copy to clear: it is a full-bleed photograph with
- * a caption under it. Borrowing the method's placement put the subject at x 760
- * to 1400 at 1440, so it ran off the right edge, while the instrument's proof
- * bracket framed 173 to 1267 and therefore bracketed 587px of empty field and
- * cut 133px off the thing it was pointing at.
- *
- * A real photograph cover-fits the whole canvas, so the bracket is right and
- * the fallback was wrong. This centres it and gives it most of the frame, which
- * is what the bracket is drawn around and what the photograph will occupy.
- *
- * No new mask buffer: this fills `maskPhoto`, which already exists, so the
- * proof and the deployment keep sharing one image the way they do with a real
- * file.
- */
-export const PROOF_BRACKET = {
-  x: 0.12,
-  y: 0.22,
-  w: 0.76,
-  h: 0.56,
-} as const;
-
-/** How much of the bracket the silhouette fills, leaving the marks clear. */
-const PROOF_INSET = 0.86;
-
-export function drawProofFallback(
-  ctx: CanvasRenderingContext2D,
-  w: number,
-  h: number,
-): void {
-  // Sized from the bracket rather than from the viewport, so the framing marks
-  // and the thing they frame cannot disagree.
-  //
-  // The first version of this took 68% of the viewport width, which sounds
-  // modest and is not: the bracket is only 56% of the *height*, and this box is
-  // locked to 3:2, so a width that large puts the silhouette 60% taller than
-  // the marks around it. On a light ground, where the form is dark ink rather
-  // than dim glow, that is most of the screen as one solid mass.
-  const bw = Math.min(
-    w * PROOF_BRACKET.w * PROOF_INSET,
-    h * PROOF_BRACKET.h * PROOF_INSET * ASPECT,
-  );
-  const bh = bw / ASPECT;
-  drawTargetInto(ctx, {
-    w: bw,
-    h: bh,
-    x: (w - bw) / 2,
-    y: (PROOF_BRACKET.y + PROOF_BRACKET.h / 2) * h - bh / 2,
-  });
-}
 
 /**
  * Where the key light should sit for each form, in viewport pixels.

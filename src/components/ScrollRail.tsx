@@ -35,7 +35,6 @@ import { scrollToSection, sectionTop } from "@/lib/scroll";
 const STOPS: ReadonlyArray<{ id: string; label: string }> = [
   { id: "thesis", label: "Thesis" },
   { id: "method", label: "Method" },
-  { id: "proof", label: "Proof" },
   { id: "deployment", label: "Deployment" },
   { id: "horizon", label: "Horizon" },
   { id: "site-footer", label: "Contact" },

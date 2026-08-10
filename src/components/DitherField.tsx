@@ -15,8 +15,8 @@ import {
   type Grid,
 } from "@/lib/dither";
 import { THEME_EVENT, currentTheme } from "@/lib/theme";
-import { drawProofFallback, drawSource, drawTarget } from "@/lib/forms";
-import { proof } from "@/content";
+import { drawSource, drawTarget } from "@/lib/forms";
+import { photograph } from "@/content";
 import {
   RIPPLE_SLOTS,
   composeField,
@@ -208,11 +208,19 @@ export default function DitherField({ text }: Props) {
     }
 
     /**
-     * The photograph, or the target cell standing in for it.
+     * The photograph, if there is one.
      *
-     * The fallback is the point: the proof beat has to work before anyone has
-     * supplied a photo, and it has to keep working if the file 404s in
-     * production. Either way the section renders something true.
+     * **No stand-in.** The schematic target cell used to fill this buffer
+     * whenever a real file was missing, so the frame always had something in
+     * it. That existed to keep the proof beat working before anyone supplied a
+     * photo, and the proof beat is gone precisely because a drawing cannot be
+     * evidence. With no beat to prop up, a missing file should leave the buffer
+     * empty rather than put a machine on screen that nobody asked for.
+     *
+     * An empty buffer is not a special case anywhere downstream: `renderFrame`
+     * multiplies it by `photoGain` like any other mask and gets zero, so the
+     * deployment simply holds nothing behind its copy. A 404 degrades to the
+     * same quiet, which is why there is still no `onerror`.
      */
     let photo: HTMLImageElement | null = null;
 
@@ -228,24 +236,21 @@ export default function DitherField({ text }: Props) {
           height,
         );
       } else {
-        // Not `drawTarget`: that one is placed for the method's two-column
-        // frame. See `drawProofFallback`.
-        sampleMask(grid, width, height, "maskPhoto", drawProofFallback);
+        grid.maskPhoto.fill(0);
+        grid.cover.maskPhoto = 0;
       }
     }
 
-    if (proof.src) {
+    if (photograph.src) {
       const img = new Image();
       img.decoding = "async";
-      img.src = proof.src;
+      img.src = photograph.src;
       img.onload = () => {
         if (disposed) return;
         photo = img;
         applyPhoto();
         if (reduced) drawStatic();
       };
-      // No onerror handler beyond this: `applyPhoto` already falls back, and a
-      // missing file should degrade quietly rather than blank the section.
     }
 
     /** Cached so the frame loop never forces a layout to find the footer. */

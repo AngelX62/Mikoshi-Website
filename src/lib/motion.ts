@@ -44,8 +44,8 @@ export const SCROLL = {
    * Tight enough to feel direct, loose enough to smooth wheel jitter.
    *
    * At 0.6 every scrubbed section trailed the wheel by six tenths of a second,
-   * which stacked on top of Lenis's own smoothing: the method's forms and the
-   * proof's photograph arrived visibly after the scroll that asked for them.
+   * which stacked on top of Lenis's own smoothing: the method's forms arrived
+   * visibly after the scroll that asked for them.
    * Two lags in series is what made the page feel disconnected from the hand.
    */
   scrub: 0.35,

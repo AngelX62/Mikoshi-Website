@@ -141,10 +141,11 @@ export const fieldReadout = [
 ] as const;
 
 /**
- * The proof beat: a real cell, run through the same grid as everything else.
+ * A real cell, run through the same grid as everything else.
  *
  * TO ADD THE PHOTOGRAPH: drop the file in `public/` and set `src` below to
- * "/cell.jpg". Nothing else needs changing.
+ * "/cell.jpg". Nothing else needs changing; the deployment already holds this
+ * channel behind its copy and will start showing it.
  *
  * Supply a landscape shot of an actual machine-tending cell, high contrast with
  * a clear silhouette, 2000px or wider. The grid samples one pixel per cell and
@@ -152,13 +153,16 @@ export const fieldReadout = [
  * sharpness is thrown away. A picture that already reads as near black and
  * white will survive; a flat, evenly lit one will turn to grey noise.
  *
- * Empty ships no request at all. The field falls back to the schematic target
- * cell, which is also the safety net if a real file ever fails to load.
+ * **Empty draws nothing at all, and there is deliberately no fallback.** There
+ * used to be one: the schematic target cell stood in wherever a photograph was
+ * missing, so the page always had something in the frame. That is the right
+ * instinct for a decorative image and the wrong one here. The beat it filled
+ * was the proof beat, and a drawing cannot be evidence, so the safety net was
+ * holding up a claim rather than a picture. The beat is gone (see page.tsx) and
+ * so is the stand-in. A missing file now means a quiet field, which is honest.
  */
-export const proof = {
+export const photograph = {
   src: "",
-  label: "Proof",
-  caption: "A cell running work it was never programmed for.",
   /** Describes the photograph for anyone who cannot see the canvas. */
   alt: "A CNC machine-tending cell on a shop floor.",
 } as const;

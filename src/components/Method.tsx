@@ -448,8 +448,8 @@ export default function Method() {
           apply(self.progress, window.innerWidth, window.innerHeight),
         onRefresh: (self) =>
           apply(self.progress, window.innerWidth, window.innerHeight),
-        // Only this section's channel, so handing the forms back can no longer
-        // take the proof's photograph down with them where the two overlap.
+        // Only this section's channel, so handing the forms back cannot take
+        // another section's hold of the field down with them where they overlap.
         onLeave: () => releaseChannel("method"),
         onLeaveBack: () => releaseChannel("method"),
       });

@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { deployment } from "@/content";
+import { deployment, photograph } from "@/content";
 import { channels, releaseChannel } from "@/lib/fieldState";
 import { SCROLL, norm, prefersReducedMotion } from "@/lib/motion";
 import SectionLabel from "./SectionLabel";
@@ -17,9 +17,12 @@ import Wipe from "./Wipe";
  * cell, the operator and the payer without hedging. The commercial pair is the
  * part most sites leave out and the part an integrator reads first.
  *
- * Holds the photograph at low gain behind the copy. The proof beat just showed
- * a real cell; cutting to an empty field here would read as changing the
- * subject, and at this strength the image is atmosphere rather than competition.
+ * Holds the photograph at low gain behind the copy, and is now the only section
+ * that does. There was a proof beat above it showing a real cell full frame,
+ * which is where the image belonged; that beat is gone because there is no
+ * photograph and a schematic drawing cannot be evidence (see page.tsx). Until a
+ * file exists this channel drives an empty buffer and the section is copy over
+ * the plain field, which costs nothing and asserts nothing.
  */
 export default function Deployment() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -31,11 +34,10 @@ export default function Deployment() {
     const reduced = prefersReducedMotion();
 
     function apply(p: number) {
-      // A fraction of the weight the proof beat uses: here the photograph is
-      // behind copy rather than being the subject, so it stays atmosphere.
-      // Sized for a real photograph rather than the schematic fallback, which
-      // is sparser: a photo carries far more coverage at the same gain, and
-      // this is the only place on the page where type sits over a form.
+      // Deliberately low: the photograph is behind copy here rather than being
+      // the subject, so it stays atmosphere. Sized for a real photograph, which
+      // carries far more coverage at the same gain than any drawing would, and
+      // this is the only place on the page where type sits over an image.
       channels.deployment.photo =
         Math.min(norm(p, 0.05, 0.28), 1 - norm(p, 0.7, 0.95)) * 0.5;
     }
@@ -80,6 +82,14 @@ export default function Deployment() {
       className="relative z-10 flex min-h-screen flex-col justify-center px-6 py-32 md:flex-row md:items-center md:justify-start md:py-48 md:pl-24 md:pr-10"
     >
       <SectionLabel>{deployment.label}</SectionLabel>
+
+      {/*
+        The photograph is drawn on canvas, which is invisible to search engines
+        and screen readers, so its description lives here. It moved with the
+        image when the proof beat was removed; renders nothing until a real file
+        exists, since describing an empty buffer would be describing nothing.
+      */}
+      {photograph.src && <p className="sr-only">{photograph.alt}</p>}
 
       {/* A measure, not a centring device. See the note in Thesis.tsx. */}
       <div className="w-full max-w-6xl">

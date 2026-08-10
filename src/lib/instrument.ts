@@ -1,9 +1,9 @@
 /**
  * The instrument layer, drawn onto the field's own canvas.
  *
- * Thin annotation geometry over the dither: a dashed rule carrying a scale, a
- * fainter rule trailing it, and corner brackets where there is something worth
- * marking out. A page where nothing measures anything reads as flat however
+ * Thin annotation geometry over the dither: a dashed rule carrying a scale and
+ * a fainter rule trailing it. A page where nothing measures anything reads as
+ * flat however
  * good the field is, and MIKOSHI's fourth step is to physically qualify the
  * result, so a company selling judgement about whether work is good should look
  * like something being measured.
@@ -100,27 +100,6 @@ export function drawInstrument(
       const x = snap(t * width);
       ctx.moveTo(x, snap(g.ruleY));
       ctx.lineTo(x, snap(g.ruleY) + tick);
-    }
-    ctx.stroke();
-  }
-
-  // Corner brackets rather than a closed rectangle: a box reads as a frame
-  // around a picture, corners read as a region someone has marked out.
-  if (g.arm > 0.3) {
-    const { bracketX: bx, bracketY: by, bracketW: bw, bracketH: bh } = g;
-    ctx.globalAlpha = 0.9;
-    ctx.beginPath();
-    for (const [cx, cy, dx, dy] of [
-      [0, 0, 1, 1],
-      [1, 0, -1, 1],
-      [0, 1, 1, -1],
-      [1, 1, -1, -1],
-    ] as const) {
-      const x = snap(bx + cx * bw);
-      const y = snap(by + cy * bh);
-      ctx.moveTo(x + dx * g.arm, y);
-      ctx.lineTo(x, y);
-      ctx.lineTo(x, y + dy * g.arm * 1.4);
     }
     ctx.stroke();
   }
