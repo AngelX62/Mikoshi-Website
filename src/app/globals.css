@@ -15,27 +15,35 @@
      `RAMP_ON_PAPER[0]` in lib/dither.ts has to agree with the light value or
      the whole declared ramp lands somewhere else. */
   --color-ground: #000000;
-  --color-surface: #0a090c;
-  --color-edge: #211d28;
+  /* Navy-cast, to agree with levels 1 and 2 of the dither ramp. These are the
+     panel and hairline colours that sit directly on the ground, so they are
+     read against the coldest, most populated part of the field. */
+  --color-surface: #08070f;
+  --color-edge: #1e1b30;
 
-  /* Ink ramp. Carries the same violet cast as the dither ramp in lib/dither.ts,
-     so type and field read as one material rather than as grey text sitting on
-     a tinted background. `ink-dim` is the dimmest of these that still clears
-     4.5:1 on black, so body copy never drops below AA — anything dimmer is
-     decorative only. `ink-faint` measures 2.74:1 and is therefore never used
-     for text: it is a `bg-`, and the stroke colour for the instrument layer's
-     hairlines, which are decoration and carry no information of their own. */
-  --color-ink: #f6f4f9;
-  --color-ink-soft: #d3ccdd;
-  --color-ink-dim: #a49bb2;
-  --color-ink-faint: #575065;
+  /* Ink ramp. Neutral, with a slight warm cast, and *not* the hue of the field.
+     That separation is the whole composition: the dither ramp runs navy through
+     magenta to an orange core and never reaches white, and white belongs to the
+     labels and the hairlines. Ink that carried the field's hue would put a
+     third colour on the page and blur the one distinction it is built on.
 
-  /* The single accent: ashy lilac, the bright end of the field's own violet.
-     Used in exactly three places — hover, focus ring, and the waitlist glow.
-     Restraint is the point; a saturated violet here would read as decoration
-     laid on top rather than as the same light the field is made of. */
-  --color-accent: #b9a8d0;
-  --color-accent-soft: #cabce0;
+     `ink-dim` is the dimmest of these that still clears 4.5:1 on black, so body
+     copy never drops below AA — anything dimmer is decorative only.
+     `ink-faint` measures 2.91:1 and is therefore never used for text: it is a
+     `bg-`, and the stroke colour for the instrument layer's hairlines, which
+     are decoration and carry no information of their own. */
+  --color-ink: #f7f4f0;
+  --color-ink-soft: #d8d0c6;
+  --color-ink-dim: #a89e92;
+  --color-ink-faint: #5e564c;
+
+  /* The single accent: amber, the hot end of the field's own ramp. Used in
+     exactly three places — hover, focus ring, and the waitlist glow. Restraint
+     is the point; this is meant to read as the same heat the field carries at
+     its core rather than as decoration laid on top. Measured at 8.55:1 on the
+     ground, so it clears AA as text and 3:1 as a focus ring with room over. */
+  --color-accent: #e8913c;
+  --color-accent-soft: #f0aa66;
 
   /* Corner falloff, so every screen reads as a shot rather than a web page.
      A colour rather than a hard-coded black in Vignette.tsx, because on a
@@ -64,10 +72,10 @@
 
    Not a tint of the dark one and not a texture. The ground becomes a flat
    near-white and the field's marks become ink instead of light: same grid,
-   same pitch, same dot growth with tone, same violet through the mid tones.
-   A halftone is a print technique, and two of the reference images are
-   halftones on white, which is why the inversion holds up rather than merely
-   being possible.
+   same pitch, same dot growth with tone, and the same journey from a cool
+   speckle through magenta to a warm hot end, mirrored. A halftone is a print
+   technique, and two of the reference images are halftones on white, which is
+   why the inversion holds up rather than merely being possible.
 
    Applied by attribute rather than by `@media (prefers-color-scheme)`, because
    the visitor gets a switch. The inline script in layout.tsx stamps this
@@ -91,16 +99,17 @@
 
   /* Same ramp shape as the dark ink, read the other way up. `ink-dim` is again
      the dimmest that still clears 4.5:1 on the ground, so body copy never
-     drops below AA, and `ink-faint` is again decorative only. */
-  --color-ink: #171520;
-  --color-ink-soft: #3d3748;
-  --color-ink-dim: #5f5870;
-  --color-ink-faint: #a89fb0;
+     drops below AA, and `ink-faint` is again decorative only, at 2.21:1. */
+  --color-ink: #1a1610;
+  --color-ink-soft: #423b30;
+  --color-ink-dim: #64594a;
+  --color-ink-faint: #a89c8a;
 
-  /* The lilac accent is invisible on a near-white ground, so it goes down the
-     ramp rather than sideways. Same hue, enough depth to hold a focus ring. */
-  --color-accent: #5d3d80;
-  --color-accent-soft: #4a2f68;
+  /* The amber accent is invisible on a near-white ground, so it goes down the
+     ramp rather than sideways. Same hue, enough depth to hold a focus ring:
+     5.72:1 here, against the dark theme's 8.55:1. */
+  --color-accent: #8f4410;
+  --color-accent-soft: #73340a;
 
   /* Warm, and far weaker. Ink laid over a near-white ground reads at a fraction
      of the alpha that light needs over black; at the dark theme's 0.72 this is

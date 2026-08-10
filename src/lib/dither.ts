@@ -38,16 +38,33 @@ export const LEVELS = 8;
  * Hue has to be a dimension of the image, not a constant with brightness laid
  * over it.
  *
- * The shape of the ramp is *cold shadow, hot highlight*: it opens at an indigo
- * dark enough to read as near-black, holds ashy violet through the populated
- * midtones, and only picks up rose and a warm white at the top. So the page
- * still reads purple, and heat appears exactly where light actually lands — the
- * wordmark core, the cursor, the bloom.
+ * The shape of the ramp is *cold shadow, hot highlight*: it opens at a navy
+ * dark enough to read as near-black, climbs through violet and magenta across
+ * the populated midtones, and reaches red and then a saturated orange at the
+ * top. So heat appears exactly where light actually lands: the wordmark core,
+ * the cursor, the bloom.
  *
  * Heat belongs at the top for a measured reason, not a taste one. See
  * `ALPHA_BIAS`: chroma only survives compositing where alpha is high, and
  * levels 6 and 7 are the only place on this ramp with the headroom to hold a
  * saturated hue at all.
+ *
+ * **The field never reaches white, and that is the point.** The reference this
+ * is drawn from puts no white anywhere in its subject: the flower runs navy
+ * through magenta to an orange core, and white is reserved for the hairlines,
+ * the thin circles and the mono labels. This page is already built that way,
+ * with the field painting the subject and the instrument layer taking its ink
+ * from the CSS tokens, so the division holds without a single structural
+ * change. The cost is real and was accepted knowingly: an orange cannot be as
+ * luminous as a near-white, so L7 falls from luma 229 to 168 and the hero's lit
+ * core is orange now. The low four stops sit within a few luma of what they
+ * replaced, so the ground wash, which is most of the marks on screen by a wide
+ * margin, keeps exactly the weight it had.
+ *
+ * **The top two stops are at their ceiling.** `solve` divides the target back
+ * out by alpha, so the highest reachable red is `255 * levelAlpha(level)`: 242
+ * at L7 and 222 at L6. Those numbers are not free to drift upward, and a stop
+ * that exceeds them silently clamps and lands darker than it reads here.
  *
  * These are the colours **as they should appear on screen**, already composited
  * onto black. That is not how the previous version was written and it is the
@@ -65,13 +82,20 @@ const RAMP_ON_BLACK: ReadonlyArray<readonly [number, number, number]> = [
   // all: below about luminance 24 an 8-bit sRGB colour has no room left to show
   // hue. Measured at the first pass of these values, 61% of everything drawn
   // landed under that line. They are pitched just clear of it on purpose.
-  [31, 27, 56], //          L1  indigo, the ground speckle
-  [55, 46, 96], //          L2  indigo
-  [64, 52, 108], //         L3  deep violet
-  [92, 73, 144], //         L4  violet
-  [130, 101, 176], //       L5  lilac
-  [186, 132, 170], //       L6  rose, where the heat starts
-  [240, 226, 222], //       L7  hot white, warm cast
+  //
+  // Navy rather than the indigo they were, because the reference's ground is
+  // navy and it is *not* a background colour: it is dot density. The wash below
+  // is graded down the viewport from `WASH_TOP` to `WASH_BOTTOM`, so a dense
+  // crest of these two stops at the top of a frame is the reference's navy band
+  // and a thin one at the bottom is its black. Lifting `--color-ground` as well
+  // would double the effect and flatten the gradient the wash exists to make.
+  [24, 24, 60], //          L1  navy, the ground speckle
+  [44, 38, 98], //          L2  indigo
+  [82, 46, 128], //         L3  violet
+  [136, 58, 146], //        L4  magenta-violet
+  [200, 74, 132], //        L5  hot magenta
+  [218, 92, 66], //         L6  red-orange, where the heat starts
+  [242, 158, 54], //        L7  orange, the core
 ];
 
 /**
@@ -98,21 +122,34 @@ const RAMP_ON_BLACK: ReadonlyArray<readonly [number, number, number]> = [
  * The two themes now carry the same amount of contrast; they only spend it in
  * opposite directions.
  *
+ * **L7 is the one deliberate exception, and it is new.** The mirror rule is
+ * sound while the dark ramp's top is a near-white. It is not sound now that the
+ * top is a saturated orange at luma 168: mirrored literally, the darkest ink on
+ * paper would land at 64, a mid brown, lighter than the paper's own midtones
+ * and useless as the bottom of a ramp. So the top stop is set to a proper
+ * near-black rust and the symmetry is spent on the low and middle levels, which
+ * is where it was earned. The problem it was written to solve, a ground wash
+ * that vanished into the paper, lives entirely down there.
+ *
  * **And the chroma had to move.** Alpha rises with level in both themes, and
  * chroma only survives compositing where alpha is high — that is the whole
  * reason `ALPHA_BIAS` exists. On black that puts the usable colour at the top
  * of the ramp, which is where the light is. On paper the top of the ramp is
  * nearly black, where 8-bit sRGB has no room for hue at all, and the bottom is
  * washed toward a near-neutral ground. So the colour lives in the middle here:
- * L4 and L5 carry the violet and L6 the plum, and the channel spread across
- * those three is 48, 62 and 66 against the first version's 25, 42 and 36.
+ * L4 carries magenta, L5 rose and L6 rust, and the channel spread across those
+ * three is 71, 90 and 132 against the violet table's 48, 62 and 66.
  *
- * The low three are then pushed as far toward violet as their luma allows, 26,
- * 38 and 40, because the ground wash is most of the field and measured over a
- * clean patch of it the light theme was carrying 11.7 of channel spread against
- * the dark theme's 20.2. There is a hard ceiling on this: a faint mark is by
- * definition close to the ground, and the ground is near-neutral, so the two
- * themes cannot be made equal here. They are as close as the arithmetic gets.
+ * That improvement is not tuning, it is the hue. A warm stop at these lumas has
+ * more room in 8-bit sRGB than a violet one does, because it spends its spread
+ * by pushing blue *down*, and blue is the cheapest channel to lose: it carries
+ * 0.0722 of the luma against green's 0.7152. A violet stop has to push blue up
+ * instead, and there is a ceiling at 255.
+ *
+ * The low three are still cool, mirroring the dark ramp's navy, and still bound
+ * by the same hard ceiling: a faint mark is by definition close to the ground,
+ * and the ground is near-neutral, so the two themes cannot be made equal there.
+ * They are as close as the arithmetic gets.
  *
  * As with the dark ramp these are the colours **as they should appear on
  * screen**, already composited. `LEVEL_FILL` divides the ground back out, and
@@ -122,13 +159,13 @@ const RAMP_ON_BLACK: ReadonlyArray<readonly [number, number, number]> = [
  */
 const RAMP_ON_PAPER: ReadonlyArray<readonly [number, number, number]> = [
   [236, 232, 224], //       L0  never drawn; the ground itself
-  [210, 196, 222], //       L1  the ground speckle, and a real mark
-  [193, 172, 210], //       L2  pale violet
-  [187, 164, 204], //       L3  grey lilac
-  [163, 142, 190], //       L4  dusty lilac
-  [131, 109, 171], //       L5  violet
-  [136, 70, 116], //        L6  plum, mirroring the dark ramp's rose
-  [28, 18, 38], //          L7  the darkest ink, a near-black plum
+  [214, 200, 226], //       L1  the ground speckle, and a real mark
+  [200, 180, 214], //       L2  violet tint
+  [190, 163, 200], //       L3  violet tint
+  [204, 133, 170], //       L4  magenta
+  [196, 106, 120], //       L5  rose
+  [194, 96, 62], //         L6  rust, mirroring the dark ramp's red-orange
+  [58, 30, 26], //          L7  the darkest ink, a near-black rust. Not mirrored
 ];
 
 /**
@@ -303,6 +340,18 @@ setFieldTheme("dark");
  * unlike type, degrades linearly if a photograph ever puts thousands of cells
  * up here. It also happens to be the more honest mark: a dot matrix is what a
  * machine readout is, where an antialiased typeface is what a document is.
+ *
+ * **Two levels, and it cannot be more.** The reference the palette is drawn
+ * from makes *every* cell of its subject a character, not only the hottest, and
+ * that is the first thing anyone will reach for next. It does not survive the
+ * arithmetic. At the desktop pitch of about 5.9px a level 4 mark is 3.0px
+ * across, and `GLYPH_PX` puts a 3x5 matrix inside it at 0.84px an element,
+ * which is sub-pixel and renders as mush rather than as a character. The other
+ * way round, coarsening the grid to the reference's roughly 12px cell, is ruled
+ * out by the constraint `PITCH_PER_PX` already states: pitch is driven by the
+ * wordmark, and below about ten cells per letter the letterforms stop
+ * resolving. The reference is one still image and can pick its cell size; this
+ * grid has to spell MIKOSHI at every viewport width.
  *
  * Digits plus a registration cross. Each row is three bits, high bit leftmost.
  */

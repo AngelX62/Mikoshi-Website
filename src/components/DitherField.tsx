@@ -177,8 +177,11 @@ export default function DitherField({ text }: Props) {
       const token = (name: string, fallback: string) =>
         root.getPropertyValue(name).trim() || fallback;
       setInstrumentInk(
-        token("--color-ink-faint", "#575065"),
-        token("--color-ink-dim", "#a49bb2"),
+        // Fallbacks only, for the case where the tokens cannot be read. They
+        // are copies of the dark theme's values and have to move whenever
+        // globals.css does; nothing checks that they agree.
+        token("--color-ink-faint", "#5e564c"),
+        token("--color-ink-dim", "#a89e92"),
         `500 10px ${cssFont("--font-plex-mono", "monospace")}`,
       );
     }

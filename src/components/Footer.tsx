@@ -11,8 +11,8 @@ export default function Footer() {
       // third place and made the last thing on the page the one block that did
       // not belong to the sheet.
       //
-      // `ink-faint/40` rather than `border-edge`. Edge is #211d28, which is
-      // 2.2% luminance against a black ground and disappears entirely under the
+      // `ink-faint/40` rather than `border-edge`. Edge is #1e1b30, which is
+      // 1.3% luminance against a black ground and disappears entirely under the
       // field's texture, so the page's last two rules were rules nobody could
       // see. The horizon's loop directly above already uses `ink-faint` for the
       // same reason, and matching it ties the bottom of the page together.

@@ -39,8 +39,11 @@ export type InstrumentGeometry = typeof InstrumentState;
  * Colours, resolved once from the CSS tokens rather than hard-coded, so the
  * overlay and the type stay one material. Filled by `setInstrumentInk`.
  */
-let stroke = "rgba(87,80,101,1)";
-let ink = "rgba(164,155,178,1)";
+// `--color-ink-faint` and `--color-ink-dim` in decimal. Written out rather than
+// as hexes so they are legible here, which means a search for the token values
+// will not find them: they have to be moved by hand whenever those tokens move.
+let stroke = "rgba(94,86,76,1)";
+let ink = "rgba(168,158,146,1)";
 let font = "10px monospace";
 
 export function setInstrumentInk(

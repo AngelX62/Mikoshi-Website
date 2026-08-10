@@ -97,7 +97,7 @@ export default function Theme() {
               data-theme-value={option.value}
               // The unselected label is `ink-dim`, which is the dimmest token
               // that still clears 4.5:1 on either ground. `ink-faint` measures
-              // 2.08:1 on the light theme and is reserved for marks that carry
+              // 2.21:1 on the light theme and is reserved for marks that carry
               // no information; this one is the affordance.
               className={`transition-colors duration-300 ${
                 on ? "text-ink-soft" : "text-ink-dim hover:text-ink"

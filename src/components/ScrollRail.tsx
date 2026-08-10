@@ -155,10 +155,10 @@ export default function ScrollRail() {
                 e.preventDefault();
                 scrollToSection(stop.id);
               }}
-              // `ink-dim`, not `ink-faint`. One hover reveals all six labels at
-              // once and only the hovered one lifts, so five of them are on
+              // `ink-dim`, not `ink-faint`. One hover reveals all five labels
+              // at once and only the hovered one lifts, so four of them are on
               // screen in whatever the resting colour is: `ink-faint` measures
-              // 2.08:1 on the light ground and 2.74:1 on the dark one, and
+              // 2.21:1 on the light ground and 2.91:1 on the dark one, and
               // these are destinations, not decoration. The tick below keeps
               // `ink-faint` explicitly, so the resting frame is unchanged.
               className="
