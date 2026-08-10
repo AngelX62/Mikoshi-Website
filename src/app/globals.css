@@ -176,3 +176,185 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Print.
+
+   The site stays dark. Paper does not: printed as-is this was a blank sheet,
+   because the ground is a `background-color` that most printers drop and the
+   type is near-white, so what came out was white on white. The hero wordmark
+   is canvas pixels, so the page did not even carry its own name.
+
+   That matters for the actual audience. An integrator forwards a page like
+   this into a procurement thread as a PDF, and a manufacturer's engineer
+   prints it for a meeting. Neither of them is choosing a theme; they are trying
+   to keep a document.
+
+   So this is not a light theme, and it is not the site with its colours
+   inverted. It is the argument as a document: ink on white, the field gone,
+   every scrubbed and pinned state resolved to its finished position.
+   --------------------------------------------------------------------------- */
+@media print {
+  :root {
+    color-scheme: light;
+  }
+
+  html,
+  body {
+    background: #fff;
+    color: #111;
+  }
+
+  /* The field, the instrument, the vignette, the grain, the rail and the
+     cursor. All of it is light, and none of it survives being ink. */
+  canvas,
+  [data-chrome] {
+    display: none !important;
+  }
+
+  /* Screens are 100vh each and stacked; paper is not. Sections collapse to
+     their content and are kept off page boundaries where they can.
+
+     `height` as well as `min-height`, because the hero is `h-screen` rather
+     than `min-h-screen`: with only the min released it still reserved a full
+     1123px of A4 for a canvas that print has just hidden, and the document
+     opened on a blank sheet. */
+  section,
+  footer {
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 0 0 1.5rem !important;
+    break-inside: avoid;
+  }
+
+  /*
+    The hero's descriptor is the second half of the `h1` above it, and on screen
+    that is fine because only one of the two is ever visible. On paper both are,
+    and the page opened by saying the same sentence twice.
+  */
+  #hero p {
+    display: none;
+  }
+
+  /*
+    The hero wordmark and the photograph exist only on the canvas, so on paper
+    the text that was carrying them for assistive tech becomes the real content.
+
+    `clip-path` as well as `clip`: Tailwind's own `sr-only` utility hides with
+    `clip-path: inset(50%)`, which survives every other property being reset and
+    left the page title measuring 779x84 and painting nothing.
+  */
+  #hero h1,
+  #proof p.sr-only {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0 0 1rem;
+    clip: auto;
+    clip-path: none;
+    overflow: visible;
+    white-space: normal;
+  }
+
+  #hero h1 {
+    font-size: 30pt;
+    font-weight: 600;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+  }
+
+  /*
+    Everything the page animates has to be resolved, and `!important` is not
+    decoration here: the thesis lines and the method steps carry inline
+    transforms and opacities written imperatively by GSAP, which a stylesheet
+    rule cannot otherwise outrank. A page printed before the triggers fired
+    would be missing four fifths of its copy.
+  */
+  .line-mask,
+  .line-mask > span,
+  [data-step] {
+    position: static !important;
+    transform: none !important;
+    opacity: 1 !important;
+    overflow: visible !important;
+  }
+
+  [data-step] {
+    break-inside: avoid;
+  }
+
+  /* Unstacked from the fixed-height box they were cross-faded in. */
+  [data-step] + [data-step] {
+    margin-top: 2rem;
+  }
+
+  /*
+    The section labels sit rotated in a margin that print does not have.
+
+    `rotate` and `translate` as well as `transform`, because Tailwind 4 compiles
+    `rotate-180` and `-translate-y-1/2` to the standalone CSS properties rather
+    than into a `transform` list. Resetting only `transform` left every label
+    upside down and mirrored on the page, which is a worse result than leaving
+    them alone would have been.
+  */
+  #thesis > span,
+  #method > span,
+  #proof > span,
+  #deployment > span,
+  #horizon > span {
+    position: static !important;
+    writing-mode: horizontal-tb !important;
+    margin-bottom: 0.75rem;
+  }
+
+  /*
+    A block of its own, and it has to stay that way.
+
+    Lightning CSS folds `transform` and the standalone `rotate` / `translate` /
+    `scale` into a single `transform` whenever they share a declaration list.
+    That is a safe rewrite for authored transforms and a wrong one here: the
+    standalone properties compose *on top of* `transform`, so the merged
+    `transform: rotate(0) translate(0) scale(1)` it emitted cancelled nothing
+    and every label printed upside down and mirrored. With no `transform` in
+    this block there is nothing for it to fold into.
+  */
+  #thesis > span,
+  #method > span,
+  #proof > span,
+  #deployment > span,
+  #horizon > span {
+    rotate: 0deg !important;
+    translate: 0 0 !important;
+    scale: 1 !important;
+  }
+
+  /* A form is not a thing you can fill in on paper. The address below it is. */
+  form {
+    display: none;
+  }
+
+  a {
+    color: #111;
+    text-decoration: underline;
+  }
+
+  a[href^="mailto:"]::after {
+    content: " (" attr(href) ")";
+    font-weight: 400;
+  }
+
+  /* Dark-on-dark rules and dim ink both disappear against paper. */
+  .border-edge,
+  [class*="border-"] {
+    border-color: #bbb !important;
+  }
+
+  .text-ink,
+  .text-ink-soft,
+  .text-ink-dim,
+  .text-accent,
+  .text-accent-soft {
+    color: #111 !important;
+  }
+}

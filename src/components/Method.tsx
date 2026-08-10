@@ -481,8 +481,12 @@ export default function Method() {
         chip row ran 41px into the machine. Left-aligned, the panel's left edge
         is a constant, so the cap below is exact at every width instead of
         approximately right.
+
+        That used to be true only above 1152, because `mx-auto` still centred it
+        below. It is now true everywhere, which is both what the cap wants and
+        the left edge every other section hangs off.
       */}
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-12 min-[1152px]:mx-0 min-[1152px]:max-w-none">
+      <div className="flex w-full max-w-6xl flex-col gap-12 min-[1152px]:max-w-none">
         <div className="flex gap-6 md:gap-10">
           {/* The spine fills as the process advances: a progress bar that
               happens to be the section's left rule. */}
@@ -508,10 +512,19 @@ export default function Method() {
             ref={stepsRef}
             className="relative min-h-[22rem] flex-1 md:min-h-[24rem]"
             // Capped against the same split the form is placed from, so the two
-            // cannot drift. The 161px is the panel's own left offset plus a
-            // gutter: 96 of section padding, 41 of spine and gap, 24 of air.
+            // cannot drift. The 176px is the panel's own left offset plus a
+            // gutter: 96 of section padding, 41 of spine and gap, 24 of air,
+            // and 15 for the scrollbar.
+            //
+            // That last term is not padding. `vw` is the viewport including the
+            // scrollbar gutter, but the canvas the form is drawn on is sized to
+            // `clientWidth`, so the split the cap solves for and the split the
+            // form actually lands on are different numbers on any platform with
+            // a classic scrollbar. Measured at 1152 on Windows it ate 8px of the
+            // 24 of air. Subtracting a full gutter costs 15px of panel where
+            // there is no scrollbar and guarantees the clearance where there is.
             style={{
-              maxWidth: `min(42rem, calc(${FORM_SPLIT * 100}vw - 161px))`,
+              maxWidth: `min(42rem, calc(${FORM_SPLIT * 100}vw - 176px))`,
             }}
           >
             {method.steps.map((step) => (

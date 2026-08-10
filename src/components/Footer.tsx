@@ -6,9 +6,13 @@ export default function Footer() {
   return (
     <footer
       id="site-footer"
-      className="relative z-10 border-t border-edge px-6 py-20 md:px-10 md:py-28"
+      // Same gutter as every section above it. The footer used to set its own
+      // (`md:px-10`, centred on its own measure), which put its left edge in a
+      // third place and made the last thing on the page the one block that did
+      // not belong to the sheet.
+      className="relative z-10 border-t border-edge px-6 py-20 md:py-28 md:pl-24 md:pr-10"
     >
-      <div className="mx-auto max-w-6xl">
+      <div className="max-w-6xl">
         <span className="mb-12 block font-mono text-[11px] uppercase tracking-[0.22em] text-ink-dim">
           {waitlistCopy.label}
         </span>

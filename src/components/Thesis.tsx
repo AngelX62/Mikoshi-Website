@@ -90,11 +90,25 @@ export default function Thesis() {
   return (
     <section
       id="thesis"
-      className="relative z-10 flex min-h-screen items-center px-6 py-32 md:py-48 md:pl-24 md:pr-10"
+      // `flex-col` below `md` is load-bearing, not tidiness. `SectionLabel` is
+      // only `absolute` from `md` up; below that it is a static span, and in a
+      // row it becomes a sibling column that eats the left of the screen.
+      // Measured at 390 it took 54px of a 342px box and squeezed the copy into
+      // 273px, which is what made three of the seven hand-set breaks below wrap.
+      //
+      // `justify-center` centres on the main axis, which is vertical in the
+      // column and horizontal in the row, so it needs releasing at `md` or the
+      // copy floats back off the left edge.
+      className="relative z-10 flex min-h-screen flex-col justify-center px-6 py-32 md:flex-row md:items-center md:justify-start md:py-48 md:pl-24 md:pr-10"
     >
       <SectionLabel>{thesis.label}</SectionLabel>
 
-      <div ref={ref} className="mx-auto w-full max-w-4xl">
+      {/*
+        `max-w-4xl` is a measure, not a way of centring. Every section hangs off
+        the same left edge the label spine sits in the margin of, which is the
+        one thing that makes a page of separate frames read as a single sheet.
+      */}
+      <div ref={ref} className="w-full max-w-4xl">
 
         {/*
           The lower bound is set by the narrowest phone, not by taste. These

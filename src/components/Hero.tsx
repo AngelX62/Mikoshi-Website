@@ -73,6 +73,9 @@ export default function Hero() {
 
           <div
             data-intro
+            // Chrome, so print drops it: an instruction to scroll is nonsense on
+            // a sheet of paper.
+            data-chrome
             // Brighter than the other instrumentation on purpose: this sits in
             // the bottom-right corner, where the vignette is heaviest, and it's
             // wayfinding rather than decoration — it has to clear AA there.

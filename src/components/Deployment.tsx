@@ -71,11 +71,18 @@ export default function Deployment() {
     <section
       id="deployment"
       ref={sectionRef}
-      className="relative z-10 flex min-h-screen items-center px-6 py-32 md:py-48 md:pl-24 md:pr-10"
+      // See the note in Thesis.tsx: `flex-col` below `md` keeps the static
+      // section label out of the row. This section was the worse of the two,
+      // because "FIRST DEPLOYMENT" wraps to two lines and took 100px of a 342px
+      // box at 390, leaving the copy 227px.
+      // `md:justify-start` for the same reason as Thesis.tsx: the main axis
+      // flips at the breakpoint and `justify-center` would re-centre the copy.
+      className="relative z-10 flex min-h-screen flex-col justify-center px-6 py-32 md:flex-row md:items-center md:justify-start md:py-48 md:pl-24 md:pr-10"
     >
       <SectionLabel>{deployment.label}</SectionLabel>
 
-      <div className="mx-auto w-full max-w-6xl">
+      {/* A measure, not a centring device. See the note in Thesis.tsx. */}
+      <div className="w-full max-w-6xl">
 
         {/*
           One wipe for the section, staggering the two columns. The heading used

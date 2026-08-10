@@ -72,6 +72,7 @@ export default function ScrollRail() {
   return (
     <div
       aria-hidden="true"
+      data-chrome
       className="pointer-events-none fixed right-6 top-1/2 z-40 hidden -translate-y-1/2 flex-col items-center gap-3 md:flex"
     >
       <div className="relative h-24 w-px bg-edge">

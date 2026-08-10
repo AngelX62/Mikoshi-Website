@@ -75,7 +75,8 @@ export default function Horizon() {
     >
       <SectionLabel>{horizon.label}</SectionLabel>
 
-      <div className="mx-auto w-full max-w-4xl">
+      {/* A measure, not a centring device. See the note in Thesis.tsx. */}
+      <div className="w-full max-w-4xl">
         <Wipe stagger>
           <h2 className="mb-8 max-w-4xl text-[clamp(2.5rem,8vw,6rem)] font-medium leading-[0.98] tracking-[-0.035em]">
             {horizon.heading}

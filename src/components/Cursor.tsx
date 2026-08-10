@@ -75,6 +75,7 @@ export default function Cursor() {
     <div
       ref={dotRef}
       aria-hidden="true"
+      data-chrome
       className="pointer-events-none fixed left-0 top-0 z-[60] h-2 w-2 bg-ink opacity-0 mix-blend-difference transition-opacity duration-300"
     />
   );

@@ -9,6 +9,7 @@ export default function Vignette() {
   return (
     <div
       aria-hidden="true"
+      data-chrome
       className="pointer-events-none fixed inset-0 z-40"
       style={{
         background:
