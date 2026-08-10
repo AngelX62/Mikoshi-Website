@@ -14,7 +14,7 @@ import {
   prefersReducedMotion,
 } from "@/lib/motion";
 
-/** How far into a line's wipe the shockwave fires, in seconds. */
+/** How far into the last line's wipe the shockwave fires, in seconds. */
 const RIPPLE_OFFSET = 0.42;
 
 /**
@@ -25,10 +25,15 @@ const RIPPLE_OFFSET = 0.42;
  * task. The lines fire once on entry instead, arriving whole and legible, and
  * then the reader is left alone with the paragraph.
  *
- * What carries the section is the field behind it, not the type. Each line
- * punches a shockwave outward through the dither as it lands. The words
- * themselves never distort, so nothing here makes the paragraph harder to read.
- * It just stops the background being a bystander.
+ * **One shockwave, on the last line.** It used to be seven, one per line about
+ * 90ms apart, which is five slots of `RIPPLE_SLOTS` live at once and a second
+ * of continuous disturbance behind a paragraph whose entire job is to be read.
+ * Every line punching the field made the field the event and the sentence the
+ * accompaniment.
+ *
+ * The last line is the one that earns it: the first six set up a problem and
+ * that one is the claim. So the field goes quiet while the argument arrives and
+ * strikes once, on the sentence the section exists for.
  */
 export default function Thesis() {
   const ref = useRef<HTMLDivElement>(null);
@@ -47,16 +52,13 @@ export default function Thesis() {
     gsap.registerPlugin(ScrollTrigger);
 
     const ctx = gsap.context(() => {
-      // A timeline rather than one tween with `stagger`: a staggered tween
-      // fires its callbacks once for the whole group, and each line needs to
-      // punch the field at its own moment and its own height.
+      const last = lines[lines.length - 1];
+
       const tl = gsap.timeline({
         scrollTrigger: { trigger: el, start: SCROLL.enter, once: true },
       });
 
       lines.forEach((line, i) => {
-        const at = i * STAGGER.base;
-
         tl.fromTo(
           line,
           { yPercent: 115, opacity: 0 },
@@ -68,20 +70,20 @@ export default function Thesis() {
             // yPercent, not y: the type is clamped against viewport width, so a
             // pixel offset would under- or overshoot the mask at other sizes.
           },
-          at,
-        );
-
-        // Measured at fire time, not at setup: smooth scrolling means the line
-        // is somewhere else on screen by the time this runs.
-        tl.call(
-          () => {
-            const box = line.getBoundingClientRect();
-            rippleField(box.top + box.height / 2);
-          },
-          undefined,
-          at + RIPPLE_OFFSET,
+          i * STAGGER.base,
         );
       });
+
+      // Measured at fire time, not at setup: smooth scrolling means the line is
+      // somewhere else on screen by the time this runs.
+      tl.call(
+        () => {
+          const box = last.getBoundingClientRect();
+          rippleField(box.top + box.height / 2);
+        },
+        undefined,
+        (lines.length - 1) * STAGGER.base + RIPPLE_OFFSET,
+      );
     }, el);
 
     return () => ctx.revert();

@@ -121,7 +121,16 @@ export default function Deployment() {
               ))}
             </dl>
 
-            <p className="mt-8 text-sm leading-relaxed text-ink-dim">
+            {/*
+              `ink-soft`, not `ink-dim`. It clears AA either way, but this is
+              the one sentence on the page that states the commercial argument,
+              and it sits over a form the section is deliberately holding at low
+              gain behind its copy. Measured against flat ground it passes;
+              measured against a moving halftone it is the hardest line here to
+              read, and a ratio computed against an average is not what an eye
+              does with texture.
+            */}
+            <p className="mt-8 text-sm leading-relaxed text-ink-soft">
               {deployment.rationale}
             </p>
           </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { method } from "@/content";
@@ -8,8 +8,6 @@ import SectionLabel from "./SectionLabel";
 import { channels, fieldState, releaseChannel } from "@/lib/fieldState";
 import {
   FORM_SPLIT,
-  engramEntry,
-  engramGate,
   formBand,
   formUnit,
   sourceWorkPoint,
@@ -28,19 +26,18 @@ import {
  * The method.
  *
  * Four ordered steps, scrubbed through one pinned viewport. The field behind
- * the copy carries the argument: it holds a working cell, then the structure
- * underneath it, then a different cell running the same job, and finally that
- * cell being checked. The text names what is happening; the field is what
- * actually happens.
+ * the copy carries the argument: it holds a working cell while the work is read
+ * off it, then a different cell running the same job, then that cell being
+ * checked. The text names what is happening; the field is what actually
+ * happens.
  *
  * **One form becomes the next along a line.** The earlier version cross-faded
  * three independent gains, and cross-fading two silhouettes means each is at
  * half strength through the middle of the handover, which samples down to
  * noise. Backing them off far enough to avoid that opened a hole instead:
  * measured at 1920, total form gain fell to 0.17 for about 200px of scroll at
- * the engram-to-target handover, so step 03's copy announced a new body over an
- * empty frame, and the ground wash (suppressed by form presence) swelled into
- * the gap.
+ * the handover, so step 03's copy announced a new body over an empty frame, and
+ * the ground wash (suppressed by form presence) swelled into the gap.
  *
  * So a handover is a wipe. A line crosses the frame; ahead of it the old cell
  * is still standing, behind it the new one has already resolved. Presence stays
@@ -49,9 +46,10 @@ import {
  * the body copy for no reason but decoration.
  *
  * **Every shot has a light, and the light is doing something.** Reading down
- * the source, sitting in the engram's hub, crossing from the old work point to
- * the new one, verifying the finished cell. Shots two and three previously held
- * no motion at all.
+ * the source, closing onto the work point, crossing from the old work point to
+ * the new one, verifying the finished cell. Shots two and three once held no
+ * motion at all, and shot two now carries the whole of its beat, since the
+ * frame behind it holds the same silhouette as the shot before.
  *
  * Shapes are written to `fieldState`, a mutable singleton the canvas polls once
  * per frame, so scrubbing never re-renders React. The DOM writes below go
@@ -72,9 +70,16 @@ const SHOTS = [
   { from: 0.78, to: 1.0 },
 ] as const;
 
+/**
+ * The one handover, at the 02/03 boundary.
+ *
+ * There used to be two, because there used to be three forms. The Work Engram
+ * has been cut (see the note where it used to live in lib/forms.ts), so the
+ * source cell holds through the reconstruct step and hands over once, when the
+ * copy announces a different body.
+ */
 const SWEEPS = [
-  { from: 0.26, to: 0.36, out: "maskSource", in: "maskEngram" },
-  { from: 0.52, to: 0.62, out: "maskEngram", in: "maskTarget" },
+  { from: 0.52, to: 0.62, out: "maskSource", in: "maskTarget" },
 ] as const;
 
 /**
@@ -83,7 +88,7 @@ const SWEEPS = [
  *
  * The first runs from the start of the section to `PASS_END`, the second from
  * `PASS_START` to the end, which leaves the middle of the sequence to the
- * handovers.
+ * reconstruct hold and the handover.
  */
 const PASS_END = 0.245;
 const PASS_START = 0.79;
@@ -263,12 +268,7 @@ export default function Method() {
       } else {
         ch.formOut = null;
         ch.outGain = 0;
-        ch.formIn =
-          p < SWEEPS[0].from
-            ? "maskSource"
-            : p < SWEEPS[1].from
-              ? "maskEngram"
-              : "maskTarget";
+        ch.formIn = p < SWEEPS[0].from ? "maskSource" : "maskTarget";
         // Ramped in over the very start of the section rather than starting at
         // full: `apply` runs once at mount with whatever progress the trigger
         // reports, and the field is shared, so a form already at full gain at
@@ -286,9 +286,7 @@ export default function Method() {
       // light genuinely has to start a new pass from the top of the frame is
       // covered by a gain dip rather than by a jump you can see.
       const unit = formUnit(w, h);
-      const [sx] = sourceWorkPoint(w, h);
-      const [ex, ey] = engramEntry(w, h);
-      const [gx, gy] = engramGate(w, h);
+      const [sx, sy] = sourceWorkPoint(w, h);
       const [tx, ty] = targetWorkPoint(w, h);
       /**
        * Travel of a reading pass, clear of the form at each end.
@@ -308,34 +306,35 @@ export default function Method() {
         ch.lightY = passY(norm(p, 0, PASS_END));
         ch.lightRX = unit * LIGHT_R * 1.5;
         ch.lightRY = unit * LIGHT_R * 0.62;
-      } else if (p < SWEEPS[1].from) {
-        // Reconstruct. The light climbs off the bottom of the frame into the
-        // left edge of the plate, then reads it end to end. Narrow and tall, so
-        // it stands across the whole record at once: a playhead, not a spot.
+      } else if (p < SWEEPS[0].from) {
+        // Reconstruct. The scan that just crossed the whole machine closes down
+        // onto the one place the machine does its job, and holds there.
         //
-        // The plate is a closed cycle, so a playhead at one x crosses both the
-        // outward and the return leg together, which is what reading a
-        // chronophotograph actually looks like.
-        const enter = smoothstep(norm(p, PASS_END, 0.37));
-        const read = smoothstep(norm(p, 0.37, SWEEPS[1].from));
-        ch.lightX = lerp(lerp(sx, ex, enter), gx, read);
-        ch.lightY = lerp(lerp(passY(1), ey, enter), gy, read);
-        // Reshaping from the scan band the observe pass ended on, not from a
-        // round light. Starting these anywhere else pops the light's shape at
-        // p=0.245, where its gain is still full and nothing hides the change.
-        ch.lightRX = unit * lerp(LIGHT_R * 1.5, LIGHT_R * 0.42, enter);
-        ch.lightRY = unit * lerp(LIGHT_R * 0.62, LIGHT_R * 1.35, enter);
+        // The step is about recovering why the work succeeds, so the gesture is
+        // narrowing rather than travelling: a wide band reading everything
+        // becomes a tight core sitting on the work point. It is also the only
+        // way this shot can still be doing something now that the engram is
+        // gone and the frame is holding the same silhouette as the step before
+        // it. Without it, two consecutive shots would be one still picture.
+        const close = smoothstep(norm(p, PASS_END, 0.42));
+        ch.lightX = sx;
+        ch.lightY = lerp(passY(1), sy, close);
+        // Contracting from the shape the observe pass ended on, not starting a
+        // new one. Anything else pops the light at p=0.245, where its gain is
+        // still full and nothing hides the change.
+        ch.lightRX = unit * lerp(LIGHT_R * 1.5, LIGHT_R * 0.5, close);
+        ch.lightRY = unit * lerp(LIGHT_R * 0.62, LIGHT_R * 0.5, close);
       } else if (p < PASS_START) {
-        // Re-embody. One light crossing from the gate to the new body's work
-        // point, carrying what the plate just certified into another machine.
-        // This is the section's argument in a single gesture, so it is the one
-        // move given the whole width of a shot to complete, and it rounds out
-        // as it goes because it is travelling rather than reading.
+        // Re-embody. One light crossing from the old work point to the new
+        // one, carrying the job into another machine. This is the section's
+        // argument in a single gesture, so it is the one move given the whole
+        // width of a shot to complete, and it rounds out as it goes because it
+        // is travelling rather than reading.
         const t = smoothstep(norm(p, 0.56, 0.74));
-        ch.lightX = lerp(gx, tx, t);
-        ch.lightY = lerp(gy, ty, t);
-        ch.lightRX = unit * lerp(LIGHT_R * 0.42, LIGHT_R, t);
-        ch.lightRY = unit * lerp(LIGHT_R * 1.35, LIGHT_R, t);
+        ch.lightX = lerp(sx, tx, t);
+        ch.lightY = lerp(sy, ty, t);
+        ch.lightRX = unit * lerp(LIGHT_R * 0.5, LIGHT_R, t);
+        ch.lightRY = unit * lerp(LIGHT_R * 0.5, LIGHT_R, t);
       } else {
         // Qualify. A second pass, over the finished cell this time, and the
         // same shape as the first so the two read as one instrument.
@@ -510,7 +509,7 @@ export default function Method() {
           */}
           <div
             ref={stepsRef}
-            className="relative min-h-[22rem] flex-1 md:min-h-[24rem]"
+            className="relative min-h-[22rem] flex-1 md:min-h-[24rem] min-[1152px]:max-w-(--panel-cap)"
             // Capped against the same split the form is placed from, so the two
             // cannot drift. The 176px is the panel's own left offset plus a
             // gutter: 96 of section padding, 41 of spine and gap, 24 of air,
@@ -523,9 +522,27 @@ export default function Method() {
             // a classic scrollbar. Measured at 1152 on Windows it ate 8px of the
             // 24 of air. Subtracting a full gutter costs 15px of panel where
             // there is no scrollbar and guarantees the clearance where there is.
-            style={{
-              maxWidth: `min(42rem, calc(${FORM_SPLIT * 100}vw - 176px))`,
-            }}
+            //
+            // **Only above the pin threshold, and that is not tidiness.** The
+            // cap solves for a frame with the form beside the copy, which is
+            // the only layout `frame()` biases the form right for. Below 1152
+            // the form centres, the steps are listed and the field drops to
+            // 0.42 gain behind them, so there is nothing to clear — and the
+            // expression goes catastrophically wrong down there, because it is
+            // an offset in pixels subtracted from a fraction of the width.
+            // Measured at 390 it computes to 26.8px, which is what the panel,
+            // the heading and every chip were: one word per line, on every
+            // phone, from 320 all the way to 1152.
+            //
+            // Applied through a custom property rather than an inline style so
+            // a media query can switch it off. An inline `maxWidth` cannot be
+            // overridden by a stylesheet, which is what put it at every width
+            // in the first place.
+            style={
+              {
+                "--panel-cap": `min(42rem, calc(${FORM_SPLIT * 100}vw - 176px))`,
+              } as CSSProperties
+            }
           >
             {method.steps.map((step) => (
               <div

@@ -9,9 +9,6 @@ import { prefersReducedMotion } from "@/lib/motion";
 import SectionLabel from "./SectionLabel";
 import Wipe from "./Wipe";
 
-/** Seconds between rings while the section is in view. */
-const RING_INTERVAL = 2.6;
-
 /**
  * Where this goes.
  *
@@ -19,10 +16,16 @@ const RING_INTERVAL = 2.6;
  * section directly after a concrete product section undoes the concrete product
  * section.
  *
- * The field keeps emitting slow rings from the middle of the frame for as long
- * as this is on screen. It is the one section whose subject is continuous
- * rather than staged, so it gets the only motion on the page that is driven by
- * a clock instead of by scroll position.
+ * **One ring, on arrival.** This used to run a `setInterval` firing a ring
+ * every 2.6 seconds for as long as the section was on screen, on the grounds
+ * that its subject is continuous rather than staged. It was the only motion on
+ * the whole page driven by a clock rather than by the reader's own hand, which
+ * meant it was also the only thing that moved while you were standing still
+ * trying to read, forever, until you scrolled away. A section that never
+ * settles is a section you cannot finish.
+ *
+ * It strikes once as the section arrives and is then still. Same gesture, no
+ * metronome.
  */
 export default function Horizon() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -33,38 +36,20 @@ export default function Horizon() {
 
     gsap.registerPlugin(ScrollTrigger);
 
-    let timer: ReturnType<typeof setInterval> | undefined;
-    const fire = () => rippleField(window.innerHeight * 0.5);
-
-    const stop = () => {
-      clearInterval(timer);
-      timer = undefined;
-    };
-
-    const start = () => {
-      if (timer) return;
-      fire();
-      timer = setInterval(fire, RING_INTERVAL * 1000);
-    };
-
     const ctx = gsap.context(() => {
       ScrollTrigger.create({
         trigger: section,
         start: "top 70%",
         end: "bottom 30%",
-        // Only while visible: a timer left running would keep striking the
-        // field from a section nobody is looking at.
-        onEnter: start,
-        onEnterBack: start,
-        onLeave: stop,
-        onLeaveBack: stop,
+        // Both directions, so coming back up the page is an arrival too. Not
+        // `once`: the ring is what marks entering this section, and a reader who
+        // scrolls past and returns has entered it again.
+        onEnter: () => rippleField(window.innerHeight * 0.5),
+        onEnterBack: () => rippleField(window.innerHeight * 0.5),
       });
     }, section);
 
-    return () => {
-      stop();
-      ctx.revert();
-    };
+    return () => ctx.revert();
   }, []);
 
   return (

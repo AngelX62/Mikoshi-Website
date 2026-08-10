@@ -75,7 +75,14 @@ export default function Cursor() {
     <div
       ref={dotRef}
       aria-hidden="true"
-      className="pointer-events-none fixed left-0 top-0 z-[60] h-2 w-2 bg-ink opacity-0 mix-blend-difference transition-opacity duration-300"
+      // `mix-blend-difference` only in the dark theme, and that is not a
+      // preference. The square is `bg-ink`, so on a light ground it is
+      // near-black, and difference against a near-white page returns near-white:
+      // the cursor disappears completely at exactly the moment it is the only
+      // pointer on screen, because the native one is hidden. On the light ground
+      // a plain ink square is both visible and correct, since there is nothing
+      // luminous underneath for it to need to invert against.
+      className="pointer-events-none fixed left-0 top-0 z-[60] h-2 w-2 bg-ink opacity-0 mix-blend-difference transition-opacity duration-300 [:root[data-theme=light]_&]:mix-blend-normal"
     />
   );
 }

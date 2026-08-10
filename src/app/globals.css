@@ -6,8 +6,15 @@
    (e.g. `text-ink-dim`, `bg-void`, `duration-slow`).
    --------------------------------------------------------------------------- */
 @theme {
-  /* Ground. Pure black, as in every reference image. */
-  --color-void: #000000;
+  /* Ground. Pure black, as in every reference image.
+
+     Named for the role rather than the colour, because there are two of them
+     now: the light theme redefines every token in this block and `void` would
+     have been a lie down there. The canvas is cleared rather than filled, so
+     whatever this is, it is what every dot on the page composites over — and
+     `RAMP_ON_PAPER[0]` in lib/dither.ts has to agree with the light value or
+     the whole declared ramp lands somewhere else. */
+  --color-ground: #000000;
   --color-surface: #0a090c;
   --color-edge: #211d28;
 
@@ -30,6 +37,12 @@
   --color-accent: #b9a8d0;
   --color-accent-soft: #cabce0;
 
+  /* Corner falloff, so every screen reads as a shot rather than a web page.
+     A colour rather than a hard-coded black in Vignette.tsx, because on a
+     near-white ground a black falloff is a grey picture frame. */
+  --vignette-mid: rgb(0 0 0 / 0.42);
+  --vignette-edge: rgb(0 0 0 / 0.72);
+
   /* IBM Plex. Drawn for an engineering company, which is the register this site
      wants: precise and slightly severe, rather than the softer grotesques that
      have become the default for dark technical pages. */
@@ -46,14 +59,64 @@
   color-scheme: dark;
 }
 
+/* ---------------------------------------------------------------------------
+   The light theme.
+
+   Not a tint of the dark one and not a texture. The ground becomes a flat
+   near-white and the field's marks become ink instead of light: same grid,
+   same pitch, same dot growth with tone, same violet through the mid tones.
+   A halftone is a print technique, and two of the reference images are
+   halftones on white, which is why the inversion holds up rather than merely
+   being possible.
+
+   Applied by attribute rather than by `@media (prefers-color-scheme)`, because
+   the visitor gets a switch. The inline script in layout.tsx stamps this
+   before first paint from localStorage, falling back to the system preference,
+   so there is no flash of the wrong ground on a static export with no server
+   to decide.
+
+   `RAMP_ON_PAPER` in lib/dither.ts carries the field's half of this. The two
+   have to agree on `--color-ground`.
+   --------------------------------------------------------------------------- */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  /* Not pure white, and lower than the first pass at #f3f1ec. A ground that
+     bright leaves the ramp's populated low end within a few percent of it, so
+     the field's texture disappears and the page reads as type on blank paper.
+     Must match `RAMP_ON_PAPER[0]` in lib/dither.ts exactly. */
+  --color-ground: #ece8e0;
+  --color-surface: #e2ddd3;
+  --color-edge: #cfc8bc;
+
+  /* Same ramp shape as the dark ink, read the other way up. `ink-dim` is again
+     the dimmest that still clears 4.5:1 on the ground, so body copy never
+     drops below AA, and `ink-faint` is again decorative only. */
+  --color-ink: #171520;
+  --color-ink-soft: #3d3748;
+  --color-ink-dim: #5f5870;
+  --color-ink-faint: #a89fb0;
+
+  /* The lilac accent is invisible on a near-white ground, so it goes down the
+     ramp rather than sideways. Same hue, enough depth to hold a focus ring. */
+  --color-accent: #5d3d80;
+  --color-accent-soft: #4a2f68;
+
+  /* Warm, and far weaker. Ink laid over a near-white ground reads at a fraction
+     of the alpha that light needs over black; at the dark theme's 0.72 this is
+     a grey border around the page. */
+  --vignette-mid: rgb(120 96 64 / 0.06);
+  --vignette-edge: rgb(96 76 56 / 0.13);
+}
+
 html {
-  background-color: var(--color-void);
+  background-color: var(--color-ground);
   /* Lenis drives scrolling; native smooth behaviour would fight it. */
   scroll-behavior: auto;
 }
 
 body {
-  background-color: var(--color-void);
+  background-color: var(--color-ground);
   color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -72,7 +135,7 @@ body {
 
 ::selection {
   background-color: var(--color-accent);
-  color: var(--color-void);
+  color: var(--color-ground);
 }
 
 :focus-visible {

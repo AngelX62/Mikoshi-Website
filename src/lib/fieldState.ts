@@ -45,7 +45,7 @@ export const RIPPLE_SLOTS = 5;
  * its per-cell loop by looking it up on the grid once, and a name is what the
  * grid is keyed by.
  */
-export type FormName = "maskSource" | "maskEngram" | "maskTarget";
+export type FormName = "maskSource" | "maskTarget";
 
 /** Everything one section can ask the field to do. */
 type Channel = {
@@ -56,7 +56,7 @@ type Channel = {
    * `wipeY` the outgoing form is still standing, behind it the incoming one has
    * already resolved. Three independent gains was the old shape, and it had the
    * failure the wipe exists to remove — measured at 1920, total form gain fell
-   * to 0.17 for about 200px of scroll at the engram-to-target handover, which
+   * to 0.17 for about 200px of scroll at a handover, which
    * left the frame empty under copy that was busy naming what should have been
    * in it. Worse, the ground wash is suppressed by form presence, so the
    * background *rose* as the subject left and the transition read as the field
@@ -78,10 +78,10 @@ type Channel = {
    * Without this the only light on the page is the cursor's, which has no
    * relationship to where a form is: unlit, a form cell tops out at level 3 of
    * 8, so which part of a machine was bright came down to where the mouse
-   * happened to be, and the engram shot held nothing above level 3 anywhere on
+   * happened to be, and the middle shot held nothing above level 3 anywhere on
    * screen. A form should carry its own hot core and cold edge, and the light
-   * should be doing something — reading the source, sitting in the engram's
-   * hub, crossing from one work point to the other.
+   * should be doing something — reading the source, closing onto its work
+   * point, crossing from that point to the other.
    */
   lightX: number;
   lightY: number;

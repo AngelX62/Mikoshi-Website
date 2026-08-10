@@ -75,6 +75,63 @@ const RAMP_ON_BLACK: ReadonlyArray<readonly [number, number, number]> = [
 ];
 
 /**
+ * The same ramp for a light ground, where the field prints instead of emitting.
+ *
+ * Same shape, inverted role. On black a cell that catches more light is
+ * brighter; on a near-white ground it carries more ink. So level still means
+ * "how much of the field is excited here" and `DOT_SCALE` still grows with it,
+ * which is what a halftone is in the first place: shadows are fat dots,
+ * highlights are specks. Nothing about the geometry changes. Only what the
+ * marks are made of.
+ *
+ * **Derived from the dark ramp's distances, not from its colours.** The first
+ * version of this table was written by eye, picking light equivalents for each
+ * dark stop, and it came out washed out for a reason worth recording. Level 1
+ * on black sits 30 luma above its ground and is unmistakably a mark; the light
+ * L1 was written at 231 against a 243 ground, which is 12 luma, a 5% step, and
+ * therefore nothing. The ground wash is most of the field by a wide margin, so
+ * most of the field simply vanished and the page read as type on blank paper
+ * rather than as a sampled surface.
+ *
+ * Each stop below is placed at `groundLuma - darkLuma` on Rec. 709 luma, so a
+ * level is exactly as far from the paper as its counterpart is from the black.
+ * The two themes now carry the same amount of contrast; they only spend it in
+ * opposite directions.
+ *
+ * **And the chroma had to move.** Alpha rises with level in both themes, and
+ * chroma only survives compositing where alpha is high — that is the whole
+ * reason `ALPHA_BIAS` exists. On black that puts the usable colour at the top
+ * of the ramp, which is where the light is. On paper the top of the ramp is
+ * nearly black, where 8-bit sRGB has no room for hue at all, and the bottom is
+ * washed toward a near-neutral ground. So the colour lives in the middle here:
+ * L4 and L5 carry the violet and L6 the plum, and the channel spread across
+ * those three is 48, 62 and 66 against the first version's 25, 42 and 36.
+ *
+ * The low three are then pushed as far toward violet as their luma allows, 26,
+ * 38 and 40, because the ground wash is most of the field and measured over a
+ * clean patch of it the light theme was carrying 11.7 of channel spread against
+ * the dark theme's 20.2. There is a hard ceiling on this: a faint mark is by
+ * definition close to the ground, and the ground is near-neutral, so the two
+ * themes cannot be made equal here. They are as close as the arithmetic gets.
+ *
+ * As with the dark ramp these are the colours **as they should appear on
+ * screen**, already composited. `LEVEL_FILL` divides the ground back out, and
+ * every stop has been checked to be reachable at its own alpha: the binding
+ * constraint on a light ground is the *low* end, where `target` must stay above
+ * `ground * (1 - alpha)`.
+ */
+const RAMP_ON_PAPER: ReadonlyArray<readonly [number, number, number]> = [
+  [236, 232, 224], //       L0  never drawn; the ground itself
+  [210, 196, 222], //       L1  the ground speckle, and a real mark
+  [193, 172, 210], //       L2  pale violet
+  [187, 164, 204], //       L3  grey lilac
+  [163, 142, 190], //       L4  dusty lilac
+  [131, 109, 171], //       L5  violet
+  [136, 70, 116], //        L6  plum, mirroring the dark ramp's rose
+  [28, 18, 38], //          L7  the darkest ink, a near-black plum
+];
+
+/**
  * Alpha is deliberately *not* linear in level.
  *
  * Below about luminance 24 there is no room left in 8-bit sRGB to see any
@@ -91,17 +148,80 @@ function levelAlpha(level: number): number {
   return Math.pow(level / (LEVELS - 1), ALPHA_BIAS) * 0.95;
 }
 
+/** Which ground the field is painting onto. */
+export type FieldTheme = "dark" | "light";
+
+/**
+ * The ramp in force, and the ground it is declared against.
+ *
+ * The canvas is cleared rather than filled, so the page's background colour is
+ * what every mark composites over. These two must therefore agree with the
+ * `--color-ground` token or the declared ramp lands somewhere else entirely.
+ */
+let ramp = RAMP_ON_BLACK;
+let ground: readonly [number, number, number] = [0, 0, 0];
+
 /**
  * What to actually paint, so that painting it at `levelAlpha` lands on the
- * target above. Baked into strings once at module load, so the draw loop builds
- * nothing per frame.
+ * target above. Rebuilt on a theme change, never per frame.
  */
-const LEVEL_FILL: string[] = Array.from({ length: LEVELS }, (_, level) => {
-  const alpha = levelAlpha(level) || 1;
-  const c = (i: number) =>
-    Math.min(255, Math.round(RAMP_ON_BLACK[level][i] / alpha));
-  return `rgba(${c(0)},${c(1)},${c(2)},${alpha.toFixed(3)})`;
-});
+let LEVEL_FILL: string[] = [];
+/** Bloom ring colours, pre-strung for the same reason. */
+let BLOOM_FILL: string[][] = [];
+/** Bloom ring alphas in force, which differ per ground. See `BLOOM_LIGHT_SCALE`. */
+let BLOOM_ALPHA: number[] = [];
+
+/**
+ * Solve for the source colour that composites onto the ground as the target.
+ *
+ * `source-over` gives `out = source * a + ground * (1 - a)`, so
+ *
+ *     source = (target - ground * (1 - a)) / a
+ *
+ * The dark theme is the `ground = 0` case of this, which is why the previous
+ * version of this file could get away with a bare `target / alpha`. Every level
+ * of both ramps has been checked to land inside 0..255 in all three channels on
+ * its own ground, which is also why the alpha curve is shared: it did not need
+ * to change to make the light ramp representable.
+ */
+function solve(target: number, groundChannel: number, alpha: number): number {
+  const c = (target - groundChannel * (1 - alpha)) / alpha;
+  return c < 0 ? 0 : c > 255 ? 255 : Math.round(c);
+}
+
+function buildFills(light: boolean): void {
+  LEVEL_FILL = Array.from({ length: LEVELS }, (_, level) => {
+    const alpha = levelAlpha(level) || 1;
+    const c = (i: number) => solve(ramp[level][i], ground[i], alpha);
+    return `rgba(${c(0)},${c(1)},${c(2)},${alpha.toFixed(3)})`;
+  });
+
+  BLOOM_ALPHA = BLOOM_RINGS.map((ring) =>
+    light ? ring.alpha * BLOOM_LIGHT_SCALE : ring.alpha,
+  );
+
+  BLOOM_FILL = Array.from({ length: LEVELS }, (_, level) =>
+    BLOOM_RINGS.map((_ring, r) => {
+      const a = BLOOM_ALPHA[r];
+      const c = (i: number) => solve(ramp[level][i], ground[i], a);
+      return `rgba(${c(0)},${c(1)},${c(2)},${a})`;
+    }),
+  );
+}
+
+/**
+ * Switches the ground the field paints onto.
+ *
+ * Called by `DitherField` when the theme changes, before the next layout. The
+ * grid, the masks, the alpha curve, the dot sizes and every piece of geometry
+ * are untouched: a theme here is a palette and nothing else.
+ */
+export function setFieldTheme(theme: FieldTheme): void {
+  const light = theme === "light";
+  ramp = light ? RAMP_ON_PAPER : RAMP_ON_BLACK;
+  ground = light ? RAMP_ON_PAPER[0] : [0, 0, 0];
+  buildFills(light);
+}
 
 /**
  * Dot size per level, as a multiple of `grid.dotSize`.
@@ -148,6 +268,24 @@ const BLOOM_RINGS: ReadonlyArray<{ scale: number; alpha: number }> = [
   { scale: 2.6, alpha: 0.05 },
   { scale: 1.7, alpha: 0.09 },
 ];
+
+/**
+ * How much of that survives on a light ground.
+ *
+ * Not the same number, and not a taste call. Bloom on black adds light to
+ * nothing, so the ring lands at luminance 21 and is barely there. The same
+ * alpha on a near-white ground is ink laid over 243, which lands at 221 — a
+ * visible grey ring around every hot mark, and a hot mark on a light ground is
+ * the *darkest* thing in the frame, so the ring reads as a smudge rather than
+ * as bleed. A ground this bright also cannot reach the declared target at 5%
+ * coverage at all: `solve` clamps to pure ink and the ring becomes a plain
+ * darkening. Halved, it does what bloom is for, which is to stop the hottest
+ * marks ending on a hard edge.
+ */
+const BLOOM_LIGHT_SCALE = 0.5;
+
+/** Seeds the ramp. Down here because `buildFills` needs `BLOOM_RINGS`. */
+setFieldTheme("dark");
 
 /**
  * The hot levels are drawn as characters rather than as dots.
@@ -207,14 +345,23 @@ export const DOT_RATIO = 0.42;
 /**
  * The coverage at which one of the method's forms counts as fully present.
  *
- * Measured, not chosen: at 1920x1080 the source cell covers 0.054 of the grid,
- * the target 0.047 and the engram 0.019. The engram is a diagram rather than a
- * body, so it is nearly three times sparser than the silhouette either side of
- * it, and suppressing the ground wash by gain alone took the same texture out
- * of the frame for all three. Pinned here to the densest of them, the source
- * cell suppresses the ground exactly as much as it always did and the engram
- * lets two thirds of it back in, which is what stops the reconstruct shot
- * reading as a hole between two pictures.
+ * Measured, not chosen: at 1920x1080 the source cell covers 0.054 of the grid
+ * and the target 0.047. A gain says a form is switched on and says nothing
+ * about how much frame it occupies, so suppressing the ground wash by gain
+ * alone takes the same texture out of the frame whatever is actually in it.
+ * Pinned to the denser of the two, the source cell suppresses the ground
+ * exactly as much as it always did and the target lets a little back in.
+ *
+ * **This once mattered a great deal more than it does now**, and the note is
+ * kept because the shape of the problem will come back if a third form ever
+ * does. The method used to run a Work Engram between these two, a diagram
+ * covering 0.019, nearly three times sparser than the silhouettes either side
+ * of it. Weighted by gain alone that shot came out visibly darker than its
+ * neighbours; weighted by straight proportion it came out *brighter*, measured
+ * 3.66 mean luminance against 2.5 and 2.1. The floor below is what held all
+ * three inside a narrow band. With two silhouettes of similar density it barely
+ * does anything, and it is left in place rather than tuned out because it costs
+ * one compare and it is the thing that makes an unlike form safe to add.
  *
  * Applied only to the method's two channels. The wordmark, the footer bookend
  * and the photograph each have one fixed shape and one meaning, so weighting
@@ -222,16 +369,7 @@ export const DOT_RATIO = 0.42;
  */
 const COVER_REF = 0.054;
 
-/**
- * How much of the wash a form displaces, from its coverage.
- *
- * Not a bare ratio. Straight proportion let the engram back so much ground that
- * the reconstruct shot came out *brighter* than the two silhouettes either side
- * of it, measured 3.66 mean luminance against 2.5 and 2.1, which trades one
- * unevenness for its mirror image. The floor keeps the three shots inside a
- * narrow band while still letting a sparse form keep more of its ground than a
- * solid one.
- */
+/** How much of the wash a form displaces, from its coverage. See above. */
 const COVER_FLOOR = 0.55;
 const weigh = (cover: number) =>
   cover > COVER_REF
@@ -294,12 +432,11 @@ export type Grid = {
    * They have to read as two different bodies doing one job, which is the whole
    * argument, so they differ in proportion and handedness rather than position.
    *
-   * `maskEngram` is deliberately not a picture of anything. It is nodes and
-   * chords, a causal structure, because the middle step is where the work stops
-   * being a shape and becomes the reason the shape works.
+   * There is no third form. The middle step holds the source cell, which is
+   * the body the work is still attached to while it is being recovered. See
+   * the note where the engram used to be drawn, in lib/forms.ts.
    */
   maskSource: Float32Array;
-  maskEngram: Float32Array;
   maskTarget: Float32Array;
   /**
    * A photograph, sampled through the same grid as everything else.
@@ -365,7 +502,6 @@ export function buildGrid(width: number, height: number, spacing: number): Grid 
     mask: new Float32Array(count),
     maskAlt: new Float32Array(count),
     maskSource: new Float32Array(count),
-    maskEngram: new Float32Array(count),
     maskTarget: new Float32Array(count),
     maskPhoto: new Float32Array(count),
     driftX: new Float32Array(count),
@@ -380,7 +516,6 @@ export function buildGrid(width: number, height: number, spacing: number): Grid 
       mask: 0,
       maskAlt: 0,
       maskSource: 0,
-      maskEngram: 0,
       maskTarget: 0,
       maskPhoto: 0,
     },
@@ -424,7 +559,6 @@ export type MaskTarget =
   | "mask"
   | "maskAlt"
   | "maskSource"
-  | "maskEngram"
   | "maskTarget"
   | "maskPhoto";
 
@@ -501,12 +635,8 @@ export function sampleMask(
 
   // How much of the grid this form actually occupies.
   //
-  // Read by `renderFrame` to decide how far to suppress the ground wash. A gain
-  // is not a measure of visual weight: the engram is a diagram and covers about
-  // half of what the source cell's solid machine does, so suppressing the
-  // ground by gain alone took the same amount of texture out of the frame for a
-  // form that put half as much back, and the reconstruct shot came out visibly
-  // darker than the two either side of it.
+  // Read by `renderFrame` to decide how far to suppress the ground wash, since
+  // a gain is not a measure of visual weight. See `COVER_REF`.
   grid.cover[into] = grid.count > 0 ? covered / grid.count : 0;
 }
 
@@ -1112,11 +1242,12 @@ export function renderFrame(
 
     // Halos first, widest first, so the crisp mark lands on top of its own glow.
     if (level >= BLOOM_FROM) {
-      const [r, g, b] = RAMP_ON_BLACK[level];
-      for (const ring of BLOOM_RINGS) {
+      const fills = BLOOM_FILL[level];
+      for (let r = 0; r < BLOOM_RINGS.length; r++) {
+        const ring = BLOOM_RINGS[r];
         const rx = (mark * ring.scale) / 2;
         const ry = rx + smear / 2;
-        ctx.fillStyle = `rgba(${r},${g},${b},${ring.alpha})`;
+        ctx.fillStyle = fills[r];
         ctx.beginPath();
         for (let k = 0; k < n; k++) {
           const i = ids[k];

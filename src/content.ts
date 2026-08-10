@@ -89,6 +89,10 @@ export const method = {
       index: "02",
       readout: "Reconstruct",
       title: "Recover why it succeeds",
+      // The field holds the source cell through this step now, so the sentence
+      // carries the abstraction on its own. It has to name the distinction the
+      // picture used to draw: a record of the motion against the reason it
+      // worked.
       body: "A recording tells you what moved. A Work Engram holds why it worked.",
       inputs: [
         "Intent",
@@ -123,10 +127,15 @@ export const method = {
  * copy. These name the *form on screen*, which is the one thing the step's own
  * title and index do not: the reader can already see it is step three, so a
  * third label saying so is noise. Naming the body being drawn is information.
+ *
+ * Two names across four shots, because there are two bodies. The middle entry
+ * used to read "Work engram" and the form it named no longer exists. A readout
+ * that names something not on screen is worse than no readout, and this one
+ * sits directly under the thing it claims to be describing.
  */
 export const fieldReadout = [
   "Source cell",
-  "Work engram",
+  "Source cell",
   "Target cell",
   "Target cell",
 ] as const;

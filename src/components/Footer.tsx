@@ -10,9 +10,29 @@ export default function Footer() {
       // (`md:px-10`, centred on its own measure), which put its left edge in a
       // third place and made the last thing on the page the one block that did
       // not belong to the sheet.
-      className="relative z-10 border-t border-edge px-6 py-20 md:py-28 md:pl-24 md:pr-10"
+      //
+      // `ink-faint/40` rather than `border-edge`. Edge is #211d28, which is
+      // 2.2% luminance against a black ground and disappears entirely under the
+      // field's texture, so the page's last two rules were rules nobody could
+      // see. The horizon's loop directly above already uses `ink-faint` for the
+      // same reason, and matching it ties the bottom of the page together.
+      className="relative z-10 border-t border-ink-faint/40 px-6 py-20 md:py-28 md:pl-24 md:pr-10"
     >
-      <div className="max-w-6xl">
+      {/*
+        Full width, like the horizon's loop, and not `max-w-6xl`.
+
+        The measure put the contact block at x 1248 on a 1920 screen: not beside
+        the form, not at the page's right gutter where the rail and the loop's
+        last verb sit, but at a third place that is simply where a 1152px
+        container ran out. That is what made the space between the two columns
+        read as 680px of dead frame rather than as composition — the gap is
+        where the field re-condenses the wordmark, which is the closing image of
+        the whole page and the one thing that should be allowed to occupy it.
+
+        Spread to the same gutters as every other section, the block lands on
+        the page's own right edge and the watermark gets the middle.
+      */}
+      <div>
         <span className="mb-12 block font-mono text-[11px] uppercase tracking-[0.22em] text-ink-dim">
           {waitlistCopy.label}
         </span>
@@ -54,7 +74,7 @@ export default function Footer() {
           </div>
         </Wipe>
 
-        <div className="mt-20 flex flex-col gap-2 border-t border-edge pt-8 font-mono text-[11px] uppercase tracking-[0.18em] text-ink-dim md:flex-row md:justify-between">
+        <div className="mt-20 flex flex-col gap-2 border-t border-ink-faint/40 pt-8 font-mono text-[11px] uppercase tracking-[0.18em] text-ink-dim md:flex-row md:justify-between">
           <span>{footer.copyright}</span>
           <span>{site.tagline}</span>
         </div>

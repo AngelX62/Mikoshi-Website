@@ -5,6 +5,12 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { instrument } from "@/lib/fieldState";
 import { lerp, prefersReducedMotion, smoothstep } from "@/lib/motion";
+// A pinned section is `position: fixed` while pinned, so measuring it gives
+// where it is on screen rather than where it sits in the page: the method's
+// annotation once measured 3200 where the section really begins at 1800. The
+// rail's index needs the identical correction, so it lives in one place now.
+import { stableTrigger } from "@/lib/scroll";
+import { PROOF_BRACKET } from "@/lib/forms";
 
 /**
  * The instrument's scroll maths. Renders nothing.
@@ -80,21 +86,32 @@ const WAYPOINTS: Waypoint[] = [
   // rule sits and how much scale it carries, so the instrument reads as one
   // thing following the work rather than as one thing sliding past it.
   { id: "method", trackP: 0.13, ruleY: 0.79, tick: 7, bracket: NO_BRACKET, readout: 1, readoutX: 0.74 },
-  // The two shot boundaries at which the readout's *text* changes. Dipped, so
-  // the word swaps at its dimmest rather than snapping from one legible label
-  // to another. The last two shots share a readout, so there is nothing to hide
-  // at 0.78 and no waypoint for it.
-  { id: "method", trackP: 0.26, ruleY: 0.81, tick: 3, bracket: NO_BRACKET, readout: 0.12, readoutX: 0.72 },
   { id: "method", trackP: 0.44, ruleY: 0.83, tick: 4, bracket: NO_BRACKET, readout: 1, readoutX: 0.7 },
+  // The one shot boundary at which the readout's *text* changes. Dipped, so the
+  // word swaps at its dimmest rather than snapping from one legible label to
+  // another. There used to be a second dip at 0.26, for the source-to-engram
+  // change; with the engram gone the first two shots share a readout and there
+  // is nothing to hide there, so a dip would be the instrument flinching at
+  // nothing.
   { id: "method", trackP: 0.52, ruleY: 0.84, tick: 3, bracket: NO_BRACKET, readout: 0.12, readoutX: 0.73 },
   { id: "method", trackP: 0.7, ruleY: 0.86, tick: 4, bracket: NO_BRACKET, readout: 1, readoutX: 0.76 },
   { id: "method", trackP: 0.92, ruleY: 0.88, tick: 8, bracket: NO_BRACKET, readout: 1, readoutX: 0.76 },
-  // The photograph is the subject, so it gets framed.
+  // The photograph is the subject, so it gets framed. The rectangle comes from
+  // `PROOF_BRACKET` rather than being written out again here, because the
+  // fallback silhouette is sized from the same numbers: the two used to be
+  // independent and the marks framed 587px of empty field while cutting 133px
+  // off the subject.
   {
     id: "proof",
     ruleY: 0.9,
     tick: 0,
-    bracket: [0.12, 0.22, 0.76, 0.56, 0.05],
+    bracket: [
+      PROOF_BRACKET.x,
+      PROOF_BRACKET.y,
+      PROOF_BRACKET.w,
+      PROOF_BRACKET.h,
+      0.05,
+    ],
     readout: 0,
     readoutX: 0.5,
   },
@@ -114,20 +131,6 @@ const WAYPOINTS: Waypoint[] = [
  * Low enough that a flick visibly separates the pair and stillness closes it.
  */
 const FOLLOW_EASE = 0.055;
-
-/**
- * The element whose position actually tracks the document.
- *
- * A pinned section is `position: fixed` for as long as it is pinned, so
- * measuring it gives where it is on screen rather than where it sits in the
- * page — the method's annotation once measured 3200 where the section really
- * begins at 1800. ScrollTrigger leaves a `.pin-spacer` in the flow holding
- * exactly that geometry, so anything pinned is measured through its spacer.
- */
-function stableTrigger(section: HTMLElement): HTMLElement {
-  const parent = section.parentElement;
-  return parent?.classList.contains("pin-spacer") ? parent : section;
-}
 
 export default function Instrument() {
   useEffect(() => {

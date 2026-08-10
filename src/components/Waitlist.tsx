@@ -46,7 +46,9 @@ export default function Waitlist() {
       <h2 className="mb-3 text-xl font-medium tracking-[-0.01em] md:text-2xl">
         {waitlist.heading}
       </h2>
-      <p className="mb-7 text-sm leading-relaxed text-ink-dim">{waitlist.body}</p>
+      {/* See the note in Deployment.tsx. This one sits over the footer's
+          re-condensing wordmark, which is the busiest ground on the page. */}
+      <p className="mb-7 text-sm leading-relaxed text-ink-soft">{waitlist.body}</p>
 
       <form onSubmit={onSubmit} noValidate>
         <div className="group relative flex items-center border-b border-edge transition-colors duration-500 focus-within:border-accent">

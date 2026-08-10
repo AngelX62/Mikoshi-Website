@@ -7,6 +7,7 @@ import Grain from "@/components/Grain";
 import Instrument from "@/components/Instrument";
 import ScrollRail from "@/components/ScrollRail";
 import Vignette from "@/components/Vignette";
+import { THEME_BOOT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
 /**
@@ -56,8 +57,13 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#000000",
-  colorScheme: "dark",
+  // Both grounds, so the browser chrome matches whichever one is on rather
+  // than framing a near-white page in black.
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+    { media: "(prefers-color-scheme: light)", color: "#ece8e0" },
+  ],
+  colorScheme: "dark light",
 };
 
 export default function RootLayout({
@@ -69,7 +75,24 @@ export default function RootLayout({
       className={`${plexSans.variable} ${plexMono.variable}`}
       suppressHydrationWarning
     >
-      <body className="bg-void antialiased">
+      <head>
+        {/*
+          Stamps `data-theme` before the first paint. This is a static export,
+          so nothing on a server can decide the ground: without this the page
+          paints black and then swaps to near-white once React hydrates, which
+          is a full-viewport flash on every load for anyone who chose light.
+          Render-blocking on purpose, and tiny. See lib/theme.ts.
+
+          `THEME_BOOT_SCRIPT` is a module constant assembled entirely from
+          string literals at build time. Nothing from a request, a URL, a store
+          or a user reaches it, so there is no interpolation point to inject
+          into. The value it *reads* at runtime, `localStorage`, never leaves
+          the script: it is compared against two literals and discarded unless
+          it matches one of them.
+        */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+      </head>
+      <body className="bg-ground antialiased">
         <SmoothScroll />
         {children}
         {/* Sits above the field and below the copy. Mounted here rather than

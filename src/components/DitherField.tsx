@@ -9,11 +9,13 @@ import {
   sampleImageMask,
   sampleMask,
   sampleTextMask,
+  setFieldTheme,
   spacingFor,
   type Buckets,
   type Grid,
 } from "@/lib/dither";
-import { drawEngram, drawSource, drawTarget } from "@/lib/forms";
+import { THEME_EVENT, currentTheme } from "@/lib/theme";
+import { drawProofFallback, drawSource, drawTarget } from "@/lib/forms";
 import { proof } from "@/content";
 import {
   RIPPLE_SLOTS,
@@ -198,10 +200,9 @@ export default function DitherField({ text }: Props) {
         into: "maskAlt",
       });
 
-      // The method's three forms. Rasterised once per layout rather than per
+      // The method's two forms. Rasterised once per layout rather than per
       // frame: they never move, only their gains change as the sequence runs.
       sampleMask(grid, width, height, "maskSource", drawSource);
-      sampleMask(grid, width, height, "maskEngram", drawEngram);
       sampleMask(grid, width, height, "maskTarget", drawTarget);
       applyPhoto();
     }
@@ -227,7 +228,9 @@ export default function DitherField({ text }: Props) {
           height,
         );
       } else {
-        sampleMask(grid, width, height, "maskPhoto", drawTarget);
+        // Not `drawTarget`: that one is placed for the method's two-column
+        // frame. See `drawProofFallback`.
+        sampleMask(grid, width, height, "maskPhoto", drawProofFallback);
       }
     }
 
@@ -563,6 +566,27 @@ export default function DitherField({ text }: Props) {
       }
     }
 
+    /**
+     * The ground changed under the field.
+     *
+     * The ramp declares its colours as they should appear *already composited*
+     * onto the page's background, and the canvas is cleared rather than filled,
+     * so the two have to be switched together or every mark on the page is
+     * painted for a background that is no longer there.
+     *
+     * `applyInstrumentInk` inside `layout` re-reads the overlay's stroke
+     * colours from the same CSS tokens the copy uses, which is why this is a
+     * relayout rather than just a fill rebuild. It is also why nothing here
+     * touches the grid or the masks: geometry does not depend on the ground.
+     */
+    function onThemeChange() {
+      setFieldTheme(currentTheme());
+      layout();
+      if (reduced) drawStatic();
+      else start();
+    }
+
+    setFieldTheme(currentTheme());
     layout();
     measureFooter();
 
@@ -590,6 +614,7 @@ export default function DitherField({ text }: Props) {
     window.addEventListener("keydown", onSkip);
     window.addEventListener("resize", onResize);
     window.addEventListener(FIELD_PULSE_EVENT, onPulse);
+    window.addEventListener(THEME_EVENT, onThemeChange);
     document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
@@ -605,6 +630,7 @@ export default function DitherField({ text }: Props) {
       window.removeEventListener("keydown", onSkip);
       window.removeEventListener("resize", onResize);
       window.removeEventListener(FIELD_PULSE_EVENT, onPulse);
+      window.removeEventListener(THEME_EVENT, onThemeChange);
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [text]);
