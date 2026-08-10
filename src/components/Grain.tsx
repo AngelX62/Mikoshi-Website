@@ -11,7 +11,6 @@ export default function Grain() {
   return (
     <div
       aria-hidden="true"
-      data-chrome
       // No blend mode. The element itself never repaints, but `mix-blend-overlay`
       // across the full viewport forces the compositor to read back and re-blend
       // the backdrop on every frame the canvas changes, which is every frame. At
