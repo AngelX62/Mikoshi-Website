@@ -31,9 +31,10 @@
 /**
  * How many shockwaves can be in flight at once.
  *
- * More than one, still, even though the thesis now strikes once and the horizon
- * once on arrival. The two can overlap if a reader scrolls the thesis into view
- * and reaches the horizon before the first has decayed, and a single slot would
+ * More than one, still, and now with a third source. The thesis strikes once as
+ * its closing line lands, the vision once on arrival, and the vision again when
+ * a reader opens its full statement. Any two can overlap: the arrival ring is
+ * still travelling when the control is within reach, and a single slot would
  * cut the first wave off mid-travel to restart it, which reads as a stutter
  * rather than as two events.
  */
@@ -177,7 +178,7 @@ export const fieldState = {
 
   /**
    * Shockwave origins, in CSS pixels from the top of the viewport. Fired by the
-   * thesis as its closing line lands and by the horizon as it arrives, so the
+   * thesis as its closing line lands and by the vision as it arrives, so the
    * type and the field are one instrument.
    */
   rippleY: new Float32Array(RIPPLE_SLOTS),

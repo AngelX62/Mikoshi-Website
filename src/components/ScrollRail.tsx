@@ -36,7 +36,7 @@ const STOPS: ReadonlyArray<{ id: string; label: string }> = [
   { id: "thesis", label: "Thesis" },
   { id: "method", label: "Method" },
   { id: "deployment", label: "Deployment" },
-  { id: "horizon", label: "Horizon" },
+  { id: "vision", label: "Vision" },
   { id: "site-footer", label: "Contact" },
 ];
 

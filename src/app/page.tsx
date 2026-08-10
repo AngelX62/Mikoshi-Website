@@ -2,16 +2,21 @@ import Hero from "@/components/Hero";
 import Thesis from "@/components/Thesis";
 import Method from "@/components/Method";
 import Deployment from "@/components/Deployment";
-import Horizon from "@/components/Horizon";
+import Vision from "@/components/Vision";
 import Footer from "@/components/Footer";
 
 /**
  * Claim, mechanism, product, direction.
  *
  * The thesis states what MIKOSHI ports, the method shows how, the deployment
- * names what ships first, and the horizon says where it goes. Reordering these
+ * names what ships first, and the vision says where it goes. Reordering these
  * breaks the argument: the mechanism is only credible after the claim, and the
- * horizon is only credible after something concrete.
+ * vision is only credible after something concrete.
+ *
+ * The vision was the Horizon, a single claim with a loop under it, and it now
+ * carries the full statement. It holds most of that statement behind a
+ * disclosure rather than appending it, so the order above still ends on
+ * something concrete for a reader who does not open it. See Vision.tsx.
  *
  * **There was a proof beat between the method and the deployment**, a full
  * screen holding a photograph of a real cell with one line of type under it.
@@ -31,7 +36,7 @@ export default function Home() {
       <Thesis />
       <Method />
       <Deployment />
-      <Horizon />
+      <Vision />
       <Footer />
     </main>
   );

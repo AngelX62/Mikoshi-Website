@@ -97,7 +97,7 @@ const WAYPOINTS: Waypoint[] = [
   { id: "method", trackP: 0.7, ruleY: 0.86, tick: 4, readout: 1, readoutX: 0.76 },
   { id: "method", trackP: 0.92, ruleY: 0.88, tick: 8, readout: 1, readoutX: 0.76 },
   { id: "deployment", ruleY: 0.55, tick: 0, readout: 0, readoutX: 0.5 },
-  { id: "horizon", ruleY: 0.93, tick: 0, readout: 0, readoutX: 0.5 },
+  { id: "vision", ruleY: 0.93, tick: 0, readout: 0, readoutX: 0.5 },
   // Released: the rule leaves through the bottom of the frame, so the
   // instrument exits with the page rather than resetting to the top. The footer
   // is the shortest section and the last, so its anchor is clamped to the end of

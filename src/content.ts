@@ -4,7 +4,7 @@
  * Three rules govern this file.
  *
  * **Prose does not enumerate.** The mono chips under each method step and the
- * loop under the horizon already list things. When a sentence lists them too,
+ * loop under the vision already list things. When a sentence lists them too,
  * the page says everything twice and every paragraph reads as an inventory. Let
  * the lists list. A sentence earns its place by saying something the list next
  * to it cannot: why the step is hard, what it costs, what would go wrong.
@@ -179,11 +179,53 @@ export const deployment = {
   rationale: "The second cell stops costing what the first one did.",
 } as const;
 
-/** Where this goes. The loop below already lists the verbs, so the body does not. */
-export const horizon = {
-  label: "Horizon",
-  heading: "The portability layer for physical work.",
-  body: "Right now a job belongs to the machine it was commissioned on. It should belong to whoever needs it done.",
+/**
+ * Where this goes.
+ *
+ * This was the Horizon, one claim and the loop under it, and it is now the
+ * vision in full. The section it replaced carried two sharper lines than
+ * anything here ("The portability layer for physical work." and "Right now a
+ * job belongs to the machine it was commissioned on. It should belong to
+ * whoever needs it done."), and they were retired rather than kept because both
+ * say what `belief` and `more.paragraphs` say at greater length. Two statements
+ * of one idea in one section is the thing rule one of this file exists to stop.
+ *
+ * **Most of the words here are not on screen by default**, and that is the
+ * shape of the section rather than a compromise in it. The page is 7,622px with
+ * a third of that inside one pin, and 400 words of manifesto appended to the
+ * bottom would have been another 2,000. What is always visible are the claims:
+ * the heading, the belief, the three bodies, the kicker. `more` holds the
+ * argument for those claims, behind a control. See Vision.tsx.
+ *
+ * The trim is deliberate and two passages are missing from the draft this came
+ * from. One enumerated intent, constraints, failure and recovery, which is
+ * method step 02's chip list said again in prose. The other announced that we
+ * are beginning with CNC machine tending, which is the entire Deployment
+ * section said again. A reader reaches this having just read both.
+ */
+export const vision = {
+  label: "Vision",
+  /** Two lines, wiped in sequence. Kept short enough not to wrap at 1280. */
+  heading: ["The machine may change.", "What it learned should not."],
+  belief: "We believe physical capability should be able to travel.",
+  /** The three bodies, and the line that turns them into an argument. */
+  bodies: "An industrial arm. A mobile robot. A humanoid.",
+  bodiesNote: "Each body is different. The intelligence continues.",
+  more: {
+    /** On the control; the open state swaps to `close`. */
+    cta: "Read the full vision",
+    close: "Close the full vision",
+    /** Named for assistive tech, which gets no dashed rule to read. */
+    label: "The full vision",
+    paragraphs: [
+      "MIKOSHI is building physical intelligence that can learn from experience, survive a change of body, and continue becoming more capable.",
+      "Today, when a robot learns a difficult physical task, much of that capability remains bound to one machine, one setup, and one carefully engineered environment. Change the robot or the conditions, and much of the work begins again.",
+      "MIKOSHI preserves more than motion. When that understanding moves into a new machine, it adapts to the body's reach, senses, tools, and limits, then finds its own way to achieve the same outcome.",
+      "As experience compounds, MIKOSHI can develop deeper physical common sense and combine the lessons of countless machines. Over time, it could reach a level of physical understanding that no single human or robot could acquire alone.",
+      "Our destination is physical intelligence that endures across machines, grows across generations, and takes form wherever a capable body can carry it.",
+    ],
+  },
+  kicker: "Bodies will change. The intelligence will continue.",
   loop: ["Perceive", "Understand", "Imagine", "Execute", "Improve"],
 } as const;
 

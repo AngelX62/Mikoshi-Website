@@ -14,12 +14,12 @@ export default function Footer() {
       // `ink-faint/40` rather than `border-edge`. Edge is #1e1b30, which is
       // 1.3% luminance against a black ground and disappears entirely under the
       // field's texture, so the page's last two rules were rules nobody could
-      // see. The horizon's loop directly above already uses `ink-faint` for the
+      // see. The vision's loop directly above already uses `ink-faint` for the
       // same reason, and matching it ties the bottom of the page together.
       className="relative z-10 border-t border-ink-faint/40 px-6 py-20 md:py-28 md:pl-24 md:pr-10"
     >
       {/*
-        Full width, like the horizon's loop, and not `max-w-6xl`.
+        Full width, like the vision's loop, and not `max-w-6xl`.
 
         The measure put the contact block at x 1248 on a 1920 screen: not beside
         the form, not at the page's right gutter where the rail and the loop's
