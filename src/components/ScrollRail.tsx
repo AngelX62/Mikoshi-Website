@@ -40,22 +40,36 @@ const STOPS: ReadonlyArray<{ id: string; label: string }> = [
   { id: "site-footer", label: "Contact" },
 ];
 
+/**
+ * How far up the viewport the footer's top edge may come before the rail goes.
+ *
+ * A fraction of viewport height. The rail is centred vertically, so this is
+ * really asking "is the footer about to be under me". Half a screen puts the
+ * exit inside the same window in which `DitherField` brings the bookend
+ * wordmark up, so the instrument hands the frame to the closing image rather
+ * than two unrelated things happening at two unrelated moments.
+ */
+const RETIRE_AT = 0.5;
+
 export default function ScrollRail() {
+  const navRef = useRef<HTMLElement>(null);
   const fillRef = useRef<HTMLDivElement>(null);
   const readoutRef = useRef<HTMLSpanElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
+    const nav = navRef.current;
     const fill = fillRef.current;
     const readout = readoutRef.current;
     const list = listRef.current;
-    if (!fill || !readout || !list) return;
+    if (!nav || !fill || !readout || !list) return;
 
     const items = Array.from(list.querySelectorAll<HTMLElement>("[data-stop]"));
 
     let max = 1;
     let last = -1;
     let lastActive = -1;
+    let retired = false;
     /** Document offset of each stop, in the order of `STOPS`. */
     let anchors: number[] = [];
 
@@ -103,6 +117,29 @@ export default function ScrollRail() {
       // Biased by a third of a viewport so a section counts as current once it
       // is genuinely the subject, not the instant its top edge crosses the
       // bottom of the screen.
+      // The rail retires into the footer.
+      //
+      // It is a fixed overlay pinned 24px from the window edge, and each of its
+      // links is a 40px box, so it reaches 64px in. Every section stops at 40px
+      // (`md:pr-10`), and the footer is the only one that puts content hard
+      // against that edge. Measured at the bottom of the page the readout landed
+      // on `hello@mikoshi.com`, and at shorter viewports the active tick lands
+      // beside the MIKOSHI wordmark and reads as a stray dash. Which of those
+      // you get depends on viewport height, which is why it looked intermittent.
+      //
+      // Nothing here is solved by nudging a gutter, because a hovered label
+      // expands 144px further in and no gutter can be that wide. The rail exists
+      // to go forward through an argument, and at the footer there is nowhere
+      // forward to go, so it leaves. `inert` as well as invisible: a faded
+      // control that still takes Tab is worse than one that is gone.
+      const footerTop = anchors.length ? anchors[anchors.length - 1] : Infinity;
+      const gone = footerTop - y < window.innerHeight * RETIRE_AT;
+      if (gone !== retired) {
+        retired = gone;
+        nav!.dataset.retired = String(gone);
+        nav!.inert = gone;
+      }
+
       const at = y + window.innerHeight * 0.34;
       let active = -1;
       for (let i = 0; i < anchors.length; i++) if (at >= anchors[i]) active = i;
@@ -135,13 +172,34 @@ export default function ScrollRail() {
 
   return (
     <nav
+      ref={navRef}
       aria-label="Sections"
       // `group` so one hover anywhere on the rail reveals every label at once.
       // Revealing only the label under the pointer would make finding a
       // destination a search rather than a glance.
-      className="group pointer-events-none fixed right-6 top-1/2 z-40 hidden -translate-y-1/2 flex-col items-end gap-3 md:flex"
+      //
+      // `data-retired` is written from the scroll handler; see `update`. Opacity
+      // rather than length, which is the opposite of the rule the labels below
+      // work to, because this is the whole instrument leaving rather than one
+      // part of it being absent. The instrument overlay exits the same way,
+      // travelling out of frame as the page ends.
+      //
+      // `motion-reduce:transition-none` for the reason recorded in Vision.tsx:
+      // globals.css collapses transitions to 0.01ms rather than removing them,
+      // and a transition that has started but not advanced pins the property at
+      // its start value.
+      data-retired="false"
+      className="
+        group pointer-events-none fixed right-6 top-1/2 z-40 hidden
+        -translate-y-1/2 flex-col items-end gap-3 md:flex
+        transition-opacity duration-500 ease-out-expo
+        data-[retired=true]:opacity-0 motion-reduce:transition-none
+      "
     >
-      <ul ref={listRef} className="pointer-events-auto flex flex-col items-end">
+      <ul
+        ref={listRef}
+        className="pointer-events-auto flex flex-col items-end group-data-[retired=true]:pointer-events-none"
+      >
         {STOPS.map((stop) => (
           <li key={stop.id} data-stop data-active="false" className="group/stop">
             <a
@@ -172,6 +230,24 @@ export default function ScrollRail() {
                 Absence is length, not opacity, which is the rule the instrument
                 layer already works to. A label at zero width has not faded, it
                 simply is not there, and it costs the resting frame nothing.
+
+                **9rem is not a layout number and lowering it achieves nothing.**
+                It was cut to 7rem once, to pull a revealed label off the
+                vision's closing rows at narrow widths, and measurement showed
+                that changed exactly nothing: the labels take their natural
+                widths, and the widest of them, `Deployment`, sets to 78px. The
+                cap only binds below that, where it starts truncating. Measured
+                at 1024 the leftmost revealed label sat at x 891 under a 9rem,
+                7rem and 6rem cap alike, and only moved at 3rem, by clipping two
+                labels. So the ceiling is a guard against a future long label,
+                not a lever on the layout.
+
+                A revealed label can still touch the loop's last cell below
+                about 1150px wide, because the label opens leftward from a rail
+                pinned 24px off the edge while the loop's fifth column runs to
+                the same gutter. That is hover-only and structural; it wants the
+                closing rows inset or the grid deferred to a wider breakpoint,
+                not a smaller number here.
               */}
               <span
                 className="

@@ -446,8 +446,30 @@ export default function Method() {
         scrub: SCROLL.scrub,
         onUpdate: (self) =>
           apply(self.progress, window.innerWidth, window.innerHeight),
-        onRefresh: (self) =>
-          apply(self.progress, window.innerWidth, window.innerHeight),
+        // **A refresh may only re-apply a channel this section still owns.**
+        //
+        // `apply` ramps the form in over the first 6% of the range and there is
+        // no matching ramp at the other end, so `apply(1)` leaves the target
+        // cell at full gain and `onLeave` is the only thing that ever clears it.
+        // This callback used to run `apply(self.progress)` unconditionally, and
+        // it fires on every *global* refresh whether or not the trigger is
+        // active: a refresh raised while the reader was already past the method
+        // re-armed the target cell at 0.95, `onLeave` had fired long ago and
+        // would not fire again, and the silhouette stayed on the field until
+        // the reader scrolled back up into this section and out of it.
+        //
+        // Where that landed was the footer, whose bookend wordmark is capped at
+        // 0.42 so it reads as a watermark under the copy. A form at 0.95 is
+        // more than twice that, so the machine won the frame and sat on top of
+        // the closing image. Opening or closing the vision's disclosure refreshes
+        // twice, which is what made an old latent bug easy to hit.
+        onRefresh: (self) => {
+          if (self.isActive) {
+            apply(self.progress, window.innerWidth, window.innerHeight);
+          } else {
+            releaseChannel("method");
+          }
+        },
         // Only this section's channel, so handing the forms back cannot take
         // another section's hold of the field down with them where they overlap.
         onLeave: () => releaseChannel("method"),
