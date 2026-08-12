@@ -10,6 +10,48 @@ import SectionLabel from "./SectionLabel";
 import Wipe from "./Wipe";
 
 /**
+ * The escalation, one step per beat.
+ *
+ * Each beat is larger and brighter than the one above it, so the argument has a
+ * shape before it has been read: a problem stated quietly, the claim the site
+ * has been making all along, the turn, and then the thing this section exists
+ * for, set larger than any other body text on the page.
+ *
+ * The scale is the argument, which is why it is not a fallback when the section
+ * runs long. Flattening the fourth beat would buy about thirty pixels and cost
+ * the reason the section was rewritten.
+ *
+ * Indexed against `vision.beats`, so the two are edited together or not at all.
+ */
+const BEAT = [
+  "text-base leading-relaxed text-ink-dim",
+  "text-base leading-relaxed text-ink-soft md:text-lg",
+  "text-lg leading-snug text-ink md:text-xl",
+  "text-xl font-medium leading-snug tracking-[-0.01em] text-ink md:text-2xl",
+];
+
+/**
+ * The two rows that close the page, and the one class they share.
+ *
+ * `flex flex-wrap` on a phone and a true five-column grid from `md`. The grid
+ * is what makes the closing pair work: five verbs above five words, aligned
+ * cell for cell, so Perceive sits over Humanity and Improve over Anywhere. It
+ * used to be `justify-between`, which spreads items to the edges but gives no
+ * columns, so the correspondence would have been approximate. Approximate is
+ * worse than absent here, because a near-miss reads as a mistake.
+ *
+ * Below `md` the correspondence is dropped rather than faked. Five items do not
+ * fit one line at 390, and a spread wrapped row leaves the last two marooned at
+ * opposite edges with a hole between them.
+ */
+const CLOSING_ROW = `
+  flex w-full flex-wrap items-center gap-x-6 gap-y-3
+  border-t border-dashed border-ink-faint/45 pt-6
+  font-mono text-[11px] uppercase tracking-[0.22em]
+  md:grid md:grid-cols-5 md:gap-x-4 md:tracking-[0.3em]
+`;
+
+/**
  * Where this goes, and the page's closing movement.
  *
  * This was the Horizon: one claim, one paragraph, and the loop. Its docblock
@@ -18,26 +60,50 @@ import Wipe from "./Wipe";
  * why the manifesto is not simply appended here.
  *
  * **The claims are on screen. The argument is behind a control.** Collapsed,
- * this is one viewport: the heading, the belief, the three bodies, the kicker,
- * the loop. The five paragraphs that support them sit inside a disclosure and
- * cost a reader nothing until asked for. The page was 7,622px with a third of
- * that inside one pin before this section existed, and it is 7,622px after.
- * Somebody who wants the full argument opens it; somebody who wants the pitch
- * has already had it, and the Deployment section above is still the last thing
- * they read at full attention.
+ * the heading, the four beats and the control fit one viewport. The eleven
+ * paragraphs that support them sit inside a disclosure and cost a reader
+ * nothing until asked for. The page was 7,622px with a third of that inside one
+ * pin before this section existed, and it is 7,622px after. Somebody who wants
+ * the full argument opens it; somebody who wants the pitch has already had it,
+ * and the Deployment section above is still the last thing they read at full
+ * attention.
+ *
+ * **The section says one sentence twice.** It opens in display type and closes
+ * in 11px mono, and the mono setting is the point rather than a shortage of
+ * space: the same words, having been argued for, come back as a readout. The
+ * loop and the bookend are the last two rows on the page, and below them the
+ * field re-condenses the wordmark for the footer.
  *
  * **One ring, on arrival, and one on opening.** The metronome that used to live
  * here is gone and is not coming back: a `setInterval` fired a ring every 2.6
  * seconds for as long as the section was on screen, which made it the only
  * thing on the page moving while you stood still trying to read. Both rings now
- * answer something the reader did.
+ * answer something the reader did. There is deliberately no third source for
+ * the bookend; `RIPPLE_SLOTS` is 4 and a ring nobody asked for is the metronome
+ * coming back in a new shape.
  */
 export default function Vision() {
   const sectionRef = useRef<HTMLElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const panelId = useId();
+
+  /**
+   * The arrival ring, fired from the heading rather than from the middle of the
+   * frame.
+   *
+   * It used to originate at `innerHeight * 0.5`, which is a place nothing is.
+   * The wave now comes out of the line it belongs to, so the type and the field
+   * read as one instrument. Falls back to the old centre if the heading has not
+   * mounted, which cannot happen from a ScrollTrigger on its own section but
+   * costs one expression to rule out.
+   */
+  const rippleFromHeading = useCallback(() => {
+    const box = headingRef.current?.getBoundingClientRect();
+    rippleField(box ? box.top + box.height / 2 : window.innerHeight * 0.5);
+  }, []);
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -53,18 +119,18 @@ export default function Vision() {
         // Both directions, so coming back up the page is an arrival too. Not
         // `once`: the ring is what marks entering this section, and a reader who
         // scrolls past and returns has entered it again.
-        onEnter: () => rippleField(window.innerHeight * 0.5),
-        onEnterBack: () => rippleField(window.innerHeight * 0.5),
+        onEnter: rippleFromHeading,
+        onEnterBack: rippleFromHeading,
       });
     }, section);
 
     return () => ctx.revert();
-  }, []);
+  }, [rippleFromHeading]);
 
   /**
    * Tell ScrollTrigger the document just changed length.
    *
-   * Opening this adds roughly 1,400px below the fold. Two things cache
+   * Opening this adds roughly 1,700px below the fold. Two things cache
    * measurements and re-measure on this event and on nothing else: the rail
    * caches the scrollable maximum and every section's offset, and the
    * instrument caches its waypoint anchors. Without this the rail reports a
@@ -116,60 +182,52 @@ export default function Vision() {
       // looking at leaves. Top-anchored, the section can only ever grow
       // downward.
       //
-      // `md:py-32` is measured rather than chosen. The collapsed section has a
-      // one-viewport budget and at `py-40` the loop's bottom edge landed at
-      // 802px against an 800px fold at 1280x800, which is a miss by two pixels
-      // and still a miss. This clears it by 32 and reads closer to centred at
-      // 1440 as well, where the content block is about 640 tall in 900.
+      // `md:py-32` is measured rather than chosen. What has to clear the fold
+      // is the heading, the four beats and the control; the loop and the
+      // bookend sit below it by design, since reaching them is the reward for
+      // pressing past the control rather than something to be seen at once.
       className="relative z-10 flex min-h-screen flex-col justify-start px-6 py-24 md:py-32 md:pl-24 md:pr-10"
     >
       <SectionLabel>{vision.label}</SectionLabel>
 
-      <div className="w-full max-w-4xl">
-        <Wipe stagger>
-          {/*
-            One heading, two hand-set lines. The break is authored rather than
-            left to the measure, because the turn is the sentence: the first
-            line concedes and the second refuses, and a break landing anywhere
-            else throws that away.
+      {/*
+        One heading, two hand-set lines, and both wipe together rather than in
+        sequence. The break is authored in content.ts because the turn is the
+        sentence: the first line is the capability and the second is the scope.
 
-            Both lines live inside the one `h2` and neither is hidden. An
-            earlier draft split them into two headings and marked the second
-            `aria-hidden` to keep the outline clean, which handed anyone using a
-            screen reader half a sentence. The stagger is not worth that, so the
-            pair arrives together and the sequencing happens between the heading
-            and the line under it.
-          */}
-          <h2 className="mb-8 max-w-4xl text-[clamp(2.25rem,6.4vw,4.75rem)] font-medium leading-[1.02] tracking-[-0.035em]">
-            <span className="block">{vision.heading[0]}</span>
-            <span className="block">{vision.heading[1]}</span>
-          </h2>
+        Both lines live inside the one `h2` and neither is hidden. An earlier
+        draft split them into two headings and marked the second `aria-hidden`
+        to keep the outline clean, which handed anyone using a screen reader
+        half a sentence.
+      */}
+      <Wipe className="w-full">
+        <h2
+          ref={headingRef}
+          className="max-w-4xl text-[clamp(2.25rem,6.4vw,4.75rem)] font-medium leading-[1.02] tracking-[-0.035em]"
+        >
+          <span className="block">{vision.heading[0]}</span>
+          <span className="block">{vision.heading[1]}</span>
+        </h2>
+      </Wipe>
 
-          <p className="max-w-2xl text-base leading-relaxed text-ink-soft md:text-lg">
-            {vision.belief}
+      {/*
+        The four beats, staggered, so the escalation arrives in the order it
+        argues in. `space-y-6` sits on the wipe masks rather than on the
+        paragraphs, so the gaps stay outside the clipped boxes and do not travel
+        with the type as it lands.
+      */}
+      <Wipe stagger className="mt-10 w-full max-w-2xl space-y-6 md:mt-12">
+        {vision.beats.map((beat, i) => (
+          <p key={beat} className={BEAT[i]}>
+            {beat}
           </p>
-        </Wipe>
-
-        {/*
-          The three bodies. One line, not three: at display scale they took a
-          third of the collapsed viewport and this section has a one-screen
-          budget to keep. The note under them is `text-ink` because it is the
-          half that argues; the bodies themselves are only the setup.
-        */}
-        <div className="mt-12 max-w-2xl md:mt-14">
-          <p className="text-lg leading-snug text-ink-soft md:text-xl">
-            {vision.bodies}
-          </p>
-          <p className="mt-2 text-lg leading-snug text-ink md:text-xl">
-            {vision.bodiesNote}
-          </p>
-        </div>
-      </div>
+        ))}
+      </Wipe>
 
       {/*
         The disclosure.
 
-        Full width, like the loop below it, because it is the same device: a
+        Full width, like the two rows below it, because it is the same device: a
         mono label sitting on a dashed rule. The page has exactly one register
         of chrome and a component that looked like a general-purpose accordion
         would be the only thing on the site that reads as a widget.
@@ -226,10 +284,13 @@ export default function Vision() {
           this one matches what `ScrollRail` already does to reveal its labels,
           so the page has one way of saying "absent" rather than two.
 
-          The ceiling is deliberately far above any height the prose reaches, so
-          it never clips: measured at 516px on a desktop measure and around
-          786px at 390, against 1,600px here. The cost of a ceiling that loose
-          is that the transition keeps travelling after the content has finished
+          **The ceiling is 240rem and it used to be 100rem, which would now
+          clip.** It was set against 516px of prose on a desktop measure and
+          786px at 390. The statement is about 340 words: at 390 that is roughly
+          48 lines at 29px plus ten paragraph gaps, near 1,700px against a
+          1,600px ceiling, so the last paragraph would have been cut off on a
+          phone with nothing reporting it. A ceiling this loose costs only that
+          the transition keeps travelling after the content has finished
           appearing, which is why the easing is the symmetric one rather than
           `ease-out-expo`. Nothing is visible past the point where max-height
           passes the content.
@@ -243,9 +304,9 @@ export default function Vision() {
           max-height transition `running` at `currentTime: 0`, the computed
           value pinned to `0px`, and the panel 0 tall while `aria-expanded` said
           true, which is a control that reports opening something and opens
-          nothing. Removing `transition-property` resolved it to 1600px in the
-          same frame. So the reduced-motion path takes no transition at all, and
-          the panel's height stops depending on an animation ever running.
+          nothing. Removing `transition-property` resolved it in the same frame.
+          So the reduced-motion path takes no transition at all, and the panel's
+          height stops depending on an animation ever running.
 
           `inert` while collapsed: the prose stays in the DOM, so it is in the
           static export for crawlers, but neither Tab nor a screen reader
@@ -257,7 +318,7 @@ export default function Vision() {
           aria-label={vision.more.label}
           role="region"
           inert={!open}
-          style={{ maxHeight: open ? "100rem" : 0 }}
+          style={{ maxHeight: open ? "240rem" : 0 }}
           className="overflow-hidden transition-[max-height] duration-700 ease-in-out-soft motion-reduce:transition-none"
         >
           <div className="max-w-2xl space-y-6 pt-10 text-base leading-relaxed text-ink-soft md:text-lg">
@@ -269,40 +330,40 @@ export default function Vision() {
       </div>
 
       {/*
-        The kicker. `text-ink` and larger than the body, because it is the last
-        assertion the page makes before the contact form.
-      */}
-      <p className="mt-14 max-w-3xl text-xl font-medium leading-snug tracking-[-0.01em] text-ink md:mt-16 md:text-2xl">
-        {vision.kicker}
-      </p>
+        The close: five above five.
 
-      {/*
-        The loop breaks out of the container the rest of the page lives in.
-        Full width, spread edge to edge on a dashed rule, it stops being a list
-        under a paragraph and becomes a scale the section is measured against.
-        This is the one place the reference's device is quoted directly, and it
-        lands here because this is the one section whose subject is a cycle
-        rather than a step.
+        Both rows break out of the measure the rest of the section lives in and
+        span the full frame, so the section funnels through its middle and opens
+        again at the bottom. Two dashed rules rather than one, because rule, row,
+        rule, row is a table with a header, which is what this is; one rule would
+        leave the bookend floating under the loop instead of bound to it.
 
-        `justify-between` rather than gaps: what carries the idea is that the
-        verbs are distributed across the whole frame, not that they are near
-        each other. Only from `md`, though. Five verbs do not fit on one line on
-        a phone, and spreading a wrapped row leaves the last two marooned at
-        opposite edges with a hole between them, which reads as broken rather
-        than as distributed.
+        The loop is the one place the reference's device is quoted directly, and
+        it lands here because this is the section whose subject is a cycle.
       */}
-      <ol
-        className="
-          mt-14 flex w-full flex-wrap items-center gap-x-6 gap-y-3
-          border-t border-dashed border-ink-faint/45 pt-6
-          font-mono text-[11px] uppercase tracking-[0.22em] text-ink-soft
-          md:mt-16 md:justify-between md:gap-x-4 md:tracking-[0.3em]
-        "
-      >
+      <ol className={`mt-14 text-ink-soft md:mt-16 ${CLOSING_ROW}`}>
         {vision.loop.map((verb) => (
           <li key={verb}>{verb}</li>
         ))}
       </ol>
+
+      {/*
+        The same sentence as the heading, in the smallest type on the page.
+
+        Five words in five cells, one under each verb. It is `text-ink` against
+        the loop's `text-ink-soft` so the weight sits on the promise rather than
+        on the mechanism, and it is the last type before the footer, where the
+        field re-condenses the wordmark.
+
+        A paragraph of spans rather than a list: the words are a sentence, and
+        anything reading this aloud should get the sentence. That it is the same
+        sentence as the h2 is the design, not a duplication to be suppressed.
+      */}
+      <p className={`mt-6 text-ink ${CLOSING_ROW}`}>
+        {vision.bookend.map((word) => (
+          <span key={word}>{word}</span>
+        ))}
+      </p>
     </section>
   );
 }

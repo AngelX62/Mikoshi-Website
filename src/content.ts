@@ -180,37 +180,90 @@ export const deployment = {
 } as const;
 
 /**
- * Where this goes.
+ * The bookend, held as five words rather than as a sentence.
  *
- * This was the Horizon, one claim and the loop under it, and it is now the
- * vision in full. The section it replaced carried two sharper lines than
- * anything here ("The portability layer for physical work." and "Right now a
- * job belongs to the machine it was commissioned on. It should belong to
- * whoever needs it done."), and they were retired rather than kept because both
- * say what `belief` and `more.paragraphs` say at greater length. Two statements
- * of one idea in one section is the thing rule one of this file exists to stop.
+ * It is said twice: at the top of the section in display type, and at the
+ * bottom in 11px mono, where the five words become five grid cells sitting
+ * under the five verbs of `vision.loop`. So the closing row needs the words
+ * separately, and the heading needs them joined, and holding the array as the
+ * single source is what stops the two occurrences drifting apart when somebody
+ * edits one of them.
+ *
+ * Five words against five verbs is not a coincidence that was engineered; it is
+ * one that was found in the copy and then used. Do not add a sixth word.
+ */
+const BOOKEND = ["Humanity", "can", "build", "anything,", "anywhere."] as const;
+
+/**
+ * Where the display setting breaks the bookend across two lines.
+ *
+ * Hand-set rather than left to the measure. The break has to fall after
+ * "build", so the first line is the capability and the second is the scope; a
+ * break anywhere else splits a noun from its own adjective. Three words also
+ * happens to be what fits: at the 4.75rem cap the longer of the two lines
+ * measures about 720px inside a 896px column.
+ */
+const BOOKEND_BREAK = 3;
+
+/**
+ * Where this goes, and the page's most ambitious claim.
+ *
+ * **The section is an escalation, not a claim.** It used to state one thing,
+ * that capability should survive a change of body. `beats` now walks from the
+ * problem to that claim and then past it, to inventing processes nobody
+ * demonstrated. Vision.tsx sets each beat larger and brighter than the last, so
+ * the argument is legible as a shape before a word of it is read. The order is
+ * load-bearing and the fourth beat is the one the section exists for.
  *
  * **Most of the words here are not on screen by default**, and that is the
  * shape of the section rather than a compromise in it. The page is 7,622px with
  * a third of that inside one pin, and 400 words of manifesto appended to the
- * bottom would have been another 2,000. What is always visible are the claims:
- * the heading, the belief, the three bodies, the kicker. `more` holds the
- * argument for those claims, behind a control. See Vision.tsx.
+ * bottom would have been another 2,000. `more` holds the argument behind a
+ * control. What is always visible is the escalation itself, because a reader
+ * who never opens the panel still has to learn what changed.
  *
- * The trim is deliberate and two passages are missing from the draft this came
- * from. One enumerated intent, constraints, failure and recovery, which is
- * method step 02's chip list said again in prose. The other announced that we
- * are beginning with CNC machine tending, which is the entire Deployment
- * section said again. A reader reaches this having just read both.
+ * **One passage is cut from the draft this came from**, and only one: an
+ * enumeration of intent, constraints, material behaviour, prerequisites,
+ * failure modes and recovery, which is method step 02's chip list said again in
+ * prose. Rule one of this file exists for exactly that. The sentence keeps its
+ * claim and loses the list.
+ *
+ * An earlier pass also cut "We begin in industrial production", on the grounds
+ * that it restated the Deployment section. **That was wrong and it is back.**
+ * Deployment says what ships first; this says why industrial production is
+ * where an intelligence like this has to start, because outcomes there can be
+ * measured and the work has to survive contact with reality. That is a reason,
+ * and rule one asks for exactly the sentence the list beside it cannot give.
+ *
+ * "Work Engram" on first use, "Engram" after, so the site keeps one name for
+ * the artifact and method step 02 stays the place it is defined.
+ *
+ * Retired here: "Bodies will change. The intelligence will continue.", which
+ * was the kicker. The last paragraph of `more` says it better and at full
+ * length, and the section now closes on the bookend instead.
  */
 export const vision = {
   label: "Vision",
-  /** Two lines, wiped in sequence. Kept short enough not to wrap at 1280. */
-  heading: ["The machine may change.", "What it learned should not."],
-  belief: "We believe physical capability should be able to travel.",
-  /** The three bodies, and the line that turns them into an argument. */
-  bodies: "An industrial arm. A mobile robot. A humanoid.",
-  bodiesNote: "Each body is different. The intelligence continues.",
+  bookend: BOOKEND,
+  /** Derived, so the h2 and the closing row can never disagree. */
+  heading: [
+    BOOKEND.slice(0, BOOKEND_BREAK).join(" "),
+    BOOKEND.slice(BOOKEND_BREAK).join(" "),
+  ],
+  /**
+   * Four beats: the problem, the transfer, the turn, the invention.
+   *
+   * Left as plain sentences with no hand-set breaks. These are beats, not
+   * headings, and at the sizes Vision.tsx gives them each one sets on a single
+   * line inside a 672px column, so a break would be a decision the measure has
+   * already made.
+   */
+  beats: [
+    "Today a process that works is trapped where it was built.",
+    "MIKOSHI turns it into reusable causal knowledge of a physical transformation.",
+    "The machine may change. What it learned should not.",
+    "Then it begins inventing processes nobody has demonstrated.",
+  ],
   more: {
     /** On the control; the open state swaps to `close`. */
     cta: "Read the full vision",
@@ -218,14 +271,24 @@ export const vision = {
     /** Named for assistive tech, which gets no dashed rule to read. */
     label: "The full vision",
     paragraphs: [
-      "MIKOSHI is building physical intelligence that can learn from experience, survive a change of body, and continue becoming more capable.",
-      "Today, when a robot learns a difficult physical task, much of that capability remains bound to one machine, one setup, and one carefully engineered environment. Change the robot or the conditions, and much of the work begins again.",
-      "MIKOSHI preserves more than motion. When that understanding moves into a new machine, it adapts to the body's reach, senses, tools, and limits, then finds its own way to achieve the same outcome.",
-      "As experience compounds, MIKOSHI can develop deeper physical common sense and combine the lessons of countless machines. Over time, it could reach a level of physical understanding that no single human or robot could acquire alone.",
-      "Our destination is physical intelligence that endures across machines, grows across generations, and takes form wherever a capable body can carry it.",
+      "Humanity's ability to build is limited not only by materials or machines, but by where physical knowledge lives.",
+      "Today, a successful process is often trapped in a person, a factory, a robot, or a carefully engineered environment. Robots can learn motions and policies, but much of that learning disappears when the body, tool, material, or conditions change. The desired outcome may remain the same; the work must be engineered again.",
+      "MIKOSHI is building physical synthesis intelligence: intelligence that learns how physical outcomes come into existence.",
+      "It forms understanding by acting in the world, observing consequences, testing hypotheses, qualifying results, and learning from failure. It preserves not only what happened, but what caused success.",
+      "MIKOSHI captures this understanding in Work Engrams.",
+      "An Engram is not a recording of one machine's motions. It is reusable causal knowledge of a physical transformation. Because it describes what must remain true rather than what one body happened to do, it can be adapted to an industrial arm, a mobile manipulator, a humanoid, a machine tool, or machines that do not yet exist.",
+      "But transferring known work is only the beginning.",
+      "As verified Engrams accumulate, MIKOSHI aims to combine them, test them, and discover new ways to achieve physical outcomes no human or robot explicitly demonstrated. Given a goal, available materials, tools, machines, and constraints, it should be able to determine whether that outcome is possible, and invent a qualified process for producing it.",
+      "We begin in industrial production, where outcomes can be measured and intelligence must survive contact with reality. Every migrated process, intervention, failure, recovery, and qualified result contributes to a growing body of physical understanding.",
+      "The destination is an intelligence through which civilization can turn intent into physical reality wherever capable machines exist: across factories, infrastructure, remote environments, and eventually beyond Earth.",
+      "Bodies will change. Tools will change. Environments will change. The intelligence will continue learning how the world can be transformed.",
     ],
   },
-  kicker: "Bodies will change. The intelligence will continue.",
+  /**
+   * Five verbs, and the reason the closing pair works: `BOOKEND` is five words,
+   * so the two rows align cell for cell. Perceive sits over Humanity, Improve
+   * over Anywhere. Changing the length of either list breaks the other.
+   */
   loop: ["Perceive", "Understand", "Imagine", "Execute", "Improve"],
 } as const;
 
