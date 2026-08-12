@@ -228,6 +228,25 @@ const BOOKEND_BREAK = 3;
  * prose. Rule one of this file exists for exactly that. The sentence keeps its
  * claim and loses the list.
  *
+ * **The rest of the lists were turned into sentences rather than deleted.** The
+ * draft carried nine comma-separated enumerations across eleven paragraphs: the
+ * places a process gets trapped, the five things the intelligence does to form
+ * understanding, the bodies an Engram can move to, the inputs a goal is solved
+ * against, the kinds of result that feed it back. Every claim in them is still
+ * here. What changed is that a list of four abstractions became a thing a
+ * reader can picture, usually by naming one instead of five: "a person, a
+ * factory, a robot, or a carefully engineered environment" is now an operator
+ * who knows the sound the cut should make, a fixture made for one part, and a
+ * machine with habits nobody wrote down. A comma series is how a specification
+ * sounds, and this is the one part of the site whose whole job is to sound like
+ * a person meant it.
+ *
+ * Two series survive on purpose, both of them figures rather than inventories:
+ * "by doing it, by watching what happens, and by being wrong often enough to
+ * find out why", which is carried by the repeated "by", and "to an arm, to a
+ * humanoid, or to a machine nobody has built yet", which escalates and has to
+ * land on the last item.
+ *
  * An earlier pass also cut "We begin in industrial production", on the grounds
  * that it restated the Deployment section. **That was wrong and it is back.**
  * Deployment says what ships first; this says why industrial production is
@@ -260,7 +279,7 @@ export const vision = {
    */
   beats: [
     "Today a process that works is trapped where it was built.",
-    "MIKOSHI turns it into reusable causal knowledge of a physical transformation.",
+    "MIKOSHI learns why it works, in a form another machine can use.",
     "The machine may change. What it learned should not.",
     "Then it begins inventing processes nobody has demonstrated.",
   ],
@@ -271,17 +290,18 @@ export const vision = {
     /** Named for assistive tech, which gets no dashed rule to read. */
     label: "The full vision",
     paragraphs: [
-      "Humanity's ability to build is limited not only by materials or machines, but by where physical knowledge lives.",
-      "Today, a successful process is often trapped in a person, a factory, a robot, or a carefully engineered environment. Robots can learn motions and policies, but much of that learning disappears when the body, tool, material, or conditions change. The desired outcome may remain the same; the work must be engineered again.",
+      "The limit on what humanity can build is not really materials, and not really machines. It is that physical knowledge stays where it was made.",
+      "A process that works is held in place by everything around it. The operator knows the sound the cut should make. The fixture was made for one part. The machine has habits nobody wrote down.",
+      "Robots can learn a motion and hold a policy. Change the body or the material and most of that learning goes with it. What you wanted made has not changed. The work of getting there starts over.",
       "MIKOSHI is building physical synthesis intelligence: intelligence that learns how physical outcomes come into existence.",
-      "It forms understanding by acting in the world, observing consequences, testing hypotheses, qualifying results, and learning from failure. It preserves not only what happened, but what caused success.",
-      "MIKOSHI captures this understanding in Work Engrams.",
-      "An Engram is not a recording of one machine's motions. It is reusable causal knowledge of a physical transformation. Because it describes what must remain true rather than what one body happened to do, it can be adapted to an industrial arm, a mobile manipulator, a humanoid, a machine tool, or machines that do not yet exist.",
+      "It learns the way anyone learns something physical. By doing it, by watching what happens, and by being wrong often enough to find out why.",
+      "What it keeps is not a record of what happened. It is the reason the work came out right, and we call that a Work Engram.",
+      "An Engram is not a recording of what one machine did. It holds what has to stay true for the work to come out right, which is a different kind of thing entirely. Because it describes the requirement rather than the gesture, it can be given to an arm, to a humanoid, or to a machine nobody has built yet.",
       "But transferring known work is only the beginning.",
-      "As verified Engrams accumulate, MIKOSHI aims to combine them, test them, and discover new ways to achieve physical outcomes no human or robot explicitly demonstrated. Given a goal, available materials, tools, machines, and constraints, it should be able to determine whether that outcome is possible, and invent a qualified process for producing it.",
-      "We begin in industrial production, where outcomes can be measured and intelligence must survive contact with reality. Every migrated process, intervention, failure, recovery, and qualified result contributes to a growing body of physical understanding.",
-      "The destination is an intelligence through which civilization can turn intent into physical reality wherever capable machines exist: across factories, infrastructure, remote environments, and eventually beyond Earth.",
-      "Bodies will change. Tools will change. Environments will change. The intelligence will continue learning how the world can be transformed.",
+      "As qualified Engrams accumulate, they stop being separate. MIKOSHI should be able to put them together and reach an outcome nobody demonstrated. Give it the result you need and the shop you have, and it should tell you whether that result is reachable, then work out a process that gets there and prove it on the floor.",
+      "We begin in industrial production, because that is where an outcome can be measured and where an intelligence has to survive contact with reality. Every cell we move teaches it something, and so does every one that fights back.",
+      "The destination is an intelligence that turns intent into physical reality wherever there is a machine capable of the work. In a factory now. In places that are hard to reach. Eventually beyond Earth.",
+      "Bodies will change. Tools will change. Environments will change. The intelligence that learned how the work comes out right will still be learning.",
     ],
   },
   /**
