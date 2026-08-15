@@ -200,10 +200,6 @@ export default function Deployment() {
               {ownership.label}
             </span>
 
-            <p className="mb-5 text-base leading-snug text-ink">
-              {ownership.lead}
-            </p>
-
             <dl className="border-t border-edge">
               {ownership.rights.map((right) => (
                 <div
@@ -221,7 +217,20 @@ export default function Deployment() {
             </dl>
 
             <p className="mt-5 text-sm leading-relaxed text-ink-soft">
-              {ownership.licence}
+              {ownership.terms}
+            </p>
+
+            {/*
+              The closing promise, and the only line in this block set in `ink`.
+
+              It is the answer to the question the whole block is circling, so it
+              takes the emphasis position and the weight, the same way the
+              vision's fourth beat does: everything above it is terms, and this
+              is the thing a reader will actually remember and repeat to whoever
+              has to approve the pilot.
+            */}
+            <p className="mt-6 text-base leading-snug text-ink md:text-lg">
+              {ownership.promise}
             </p>
           </div>
         </Wipe>

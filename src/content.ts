@@ -374,20 +374,32 @@ export const vision = {
  * the worst in the gap. For a site whose job is winning design partners, that
  * gap was the most expensive thing on it.
  *
- * **Every line here comes from the rights table MIKOSHI already wrote**, and
- * nothing is extrapolated from it. Two questions that table does not answer are
- * deliberately absent rather than guessed: where the work runs, and whether a
- * cell keeps running after an engagement ends. "Customer-owned and exclusively
- * controlled" implies the second and does not state it, and an implication is
- * not a term. Both are worth adding the moment they are decided.
+ * **Every line here comes from what MIKOSHI already decided**, and nothing is
+ * extrapolated from it. An earlier pass left out where the work runs and what
+ * happens at the end of an engagement, because the rights table did not cover
+ * them and an implication is not a term. Both are now answered and both are
+ * here, which is why this block is the length it is: each sentence retires one
+ * specific reason a plant closes the tab.
  *
- * The six-layer breakdown behind this is more than a landing page carries. What
- * is here is the claim; the table belongs in a contract.
+ * **The opening claim was cut.** It read "Your work remains yours. MIKOSHI
+ * gives it continuity.", which is true and is what the first row of the record
+ * says four words later. `promise` is the sharper version of the same thought
+ * and it earns the closing position; two statements of one idea in one block is
+ * the thing rule one exists to stop.
+ *
+ * Left out on purpose: the six-layer rights breakdown, and the split into a
+ * perpetual Run Right and a recurring Continuity Service. The first belongs in
+ * a contract. The second is a pricing structure and would double this block to
+ * answer a question nobody has asked yet at this point in the page; `promise`
+ * already carries its shape, which is what a reader needs here.
+ *
+ * The kill-switch line is deliberately scoped to a commercial dispute rather
+ * than stated absolutely, because narrowly pre-agreed safety exceptions do
+ * exist. "There is no kill switch" would have been the stronger sentence and
+ * the false one.
  */
 export const ownership = {
   label: "Ownership",
-  /** The whole answer in one line, and the section's closing reassurance. */
-  lead: "Your work remains yours. MIKOSHI gives it continuity.",
   /**
    * A record, and a flat one, because these are three independent facts about
    * three different parties. The commercial pair below it is a diagram for the
@@ -398,8 +410,16 @@ export const ownership = {
     { party: "MIKOSHI", holds: "Owns the intelligence infrastructure" },
     { party: "The robot", holds: "Owns nothing" },
   ],
-  licence:
-    "MIKOSHI takes only the licence it needs to host, adapt and run your Engram, and does not train anyone else's systems on it unless you opt in.",
+  /**
+   * Three answers in one paragraph: where it runs, what MIKOSHI may do with it,
+   * and whether the line can be stopped from outside. Every clause is a fear
+   * somebody already has before they reach this section.
+   */
+  terms:
+    "The Engram executes locally, on the cell or edge system you control, and cloud connectivity is optional. MIKOSHI takes only the licence it needs to host, adapt and run it, and does not train anyone else's systems on it unless you opt in. There is no kill switch for a commercial dispute.",
+  /** MIKOSHI's own words, and the best sentence in the brief. */
+  promise:
+    "When the engagement ends, improvement may stop. Proven work does not.",
 } as const;
 
 export const waitlist = {
