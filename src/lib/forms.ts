@@ -260,3 +260,19 @@ export function formBand(w: number, h: number): [top: number, bottom: number] {
   const b = frame(w, h);
   return [b.y, b.y + b.h];
 }
+
+/**
+ * The horizontal extent of the form's box, in viewport pixels.
+ *
+ * The same narrow accessor onto `frame` as `formBand` and for the same reason:
+ * the box is private, and everything outside this file that needs a piece of it
+ * asks for exactly the piece it needs rather than for the box.
+ *
+ * Its one caller is the dimension line the instrument lays across the target
+ * cell at the qualifying shot, which has to span the part it is measuring
+ * rather than an arbitrary fraction of the screen.
+ */
+export function formSpan(w: number, h: number): [left: number, right: number] {
+  const b = frame(w, h);
+  return [b.x, b.x + b.w];
+}

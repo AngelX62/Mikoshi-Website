@@ -141,6 +141,21 @@ export const fieldReadout = [
 ] as const;
 
 /**
+ * What the dimension line reads at the qualifying shot.
+ *
+ * A word, not a figure, and that is the whole point. A number here would be
+ * invented, which rule three of this file forbids outright, and it would also be
+ * measuring the wrong thing: nobody buys a cell because the gantry is 640mm
+ * across. Step 04's own body already says what is actually being measured, that
+ * the cell is done when it makes good parts, so the caliper reads that.
+ *
+ * It is the one moment on the page where the instrument stops annotating and
+ * takes a reading, which is the argument the method spends 280% of a viewport
+ * making. See lib/instrument.ts.
+ */
+export const fieldMeasure = "Good parts";
+
+/**
  * A real cell, run through the same grid as everything else.
  *
  * TO ADD THE PHOTOGRAPH: drop the file in `public/` and set `src` below to

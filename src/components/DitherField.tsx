@@ -24,7 +24,7 @@ import {
   instrument,
 } from "@/lib/fieldState";
 import { drawInstrument, setInstrumentInk } from "@/lib/instrument";
-import { fieldReadout } from "@/content";
+import { fieldMeasure, fieldReadout } from "@/content";
 import { clamp, prefersReducedMotion } from "@/lib/motion";
 
 const MAX_DPR = 2;
@@ -361,6 +361,7 @@ export default function DitherField({ text }: Props) {
         width,
         fieldReadout[fieldState.shot] ?? "",
         0,
+        fieldMeasure,
       );
     }
 
@@ -461,6 +462,7 @@ export default function DitherField({ text }: Props) {
         width,
         fieldReadout[fieldState.shot] ?? "",
         velocity,
+        fieldMeasure,
       );
 
       // Quality control.

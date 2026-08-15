@@ -164,6 +164,36 @@ export const instrument = {
   /** 0..1 on the readout, the one thing here that fades. */
   readout: 0,
   readoutX: 0,
+  /**
+   * The leader: where the label on the rule is pointing.
+   *
+   * The instrument used to draw a rule, a scale and a word, none of which was
+   * attached to anything, which makes an apparatus into a decoration. The
+   * reference's device is a label tied to a *place* in the image, so the
+   * readout now runs a dashed leader up to the work point of whichever form is
+   * on screen and lands a small circle on it.
+   *
+   * In viewport pixels, resolved by `Instrument` from `sourceWorkPoint` and
+   * `targetWorkPoint`, which is also where the key light is aimed. The leader
+   * and the light therefore agree by construction rather than by two sets of
+   * numbers happening to match.
+   */
+  leaderX: 0,
+  leaderY: 0,
+  leaderGain: 0,
+  /**
+   * The dimension line, laid across the target cell at the qualifying shot.
+   *
+   * The method spends 280% of a viewport arguing that MIKOSHI proves work
+   * physically, and its last step is called Qualify. This is the one frame where
+   * the instrument stops annotating and takes a reading: a span with a tick at
+   * each end across the part, with the acceptance written into the break in the
+   * line. A caliper rather than a pointer.
+   */
+  spanX0: 0,
+  spanX1: 0,
+  spanY: 0,
+  spanGain: 0,
 };
 
 /**

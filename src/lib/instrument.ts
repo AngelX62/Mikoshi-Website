@@ -56,6 +56,11 @@ export function setInstrumentInk(
   font = fontSpec;
 }
 
+/** Radius of the circle a leader lands in. Small enough to read as a target. */
+const LANDING = 3.5;
+/** Half-length of the ticks that close a dimension line. */
+const SPAN_TICK = 5;
+
 export function drawInstrument(
   ctx: CanvasRenderingContext2D,
   g: InstrumentGeometry,
@@ -63,6 +68,15 @@ export function drawInstrument(
   readout: string,
   /** Eased scroll velocity, -1..1. The scale breathes with it. */
   velocity: number,
+  /**
+   * What the dimension line reads, at the one shot that draws one.
+   *
+   * A word rather than a figure, and deliberately: a number here would be
+   * invented, which is the one thing the copy rules in content.ts forbid
+   * outright. What MIKOSHI actually measures is whether the parts are good, so
+   * that is what the caliper says.
+   */
+  measure: string = "",
 ): void {
   ctx.save();
   ctx.lineWidth = 1;
@@ -105,6 +119,71 @@ export function drawInstrument(
       ctx.lineTo(x, snap(g.ruleY) + tick);
     }
     ctx.stroke();
+  }
+
+  // The leader.
+  //
+  // One straight dashed run and a circle, rather than a shoulder and an elbow.
+  // The rule is already the shoulder: the readout sits on it, so a line leaving
+  // the rule at exactly the readout's x reads as "this label, at this point,
+  // is about that place" with nothing else needed to say it.
+  //
+  // Drawn before the readout so the word stays the top thing in its own patch
+  // of frame, and fainter than the rule so the apparatus does not start
+  // competing with the specimen it is annotating.
+  if (g.leaderGain > 0.01) {
+    ctx.globalAlpha = 0.5 * g.leaderGain;
+    ctx.setLineDash(DASH);
+    ctx.beginPath();
+    ctx.moveTo(snap(g.readoutX), snap(g.ruleY));
+    ctx.lineTo(snap(g.leaderX), snap(g.leaderY));
+    ctx.stroke();
+    ctx.setLineDash(NO_DASH);
+
+    ctx.globalAlpha = 0.85 * g.leaderGain;
+    ctx.beginPath();
+    ctx.arc(g.leaderX, g.leaderY, LANDING, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // The dimension line, and the only place on the page anything is measured.
+  //
+  // The line breaks for its own label rather than carrying it above, because a
+  // figure sitting inside the run is what makes a dimension line a dimension
+  // line rather than a rule with a caption. Ends are closed with ticks, which
+  // is the drafting convention this whole register is quoting.
+  if (g.spanGain > 0.01 && g.spanX1 > g.spanX0) {
+    const y = snap(g.spanY);
+    const label = measure.toUpperCase();
+    ctx.font = font;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const half = label ? ctx.measureText(label).width / 2 + 9 : 0;
+    const mid = (g.spanX0 + g.spanX1) / 2;
+
+    ctx.globalAlpha = 0.75 * g.spanGain;
+    ctx.beginPath();
+    if (half > 0) {
+      ctx.moveTo(snap(g.spanX0), y);
+      ctx.lineTo(snap(mid - half), y);
+      ctx.moveTo(snap(mid + half), y);
+      ctx.lineTo(snap(g.spanX1), y);
+    } else {
+      ctx.moveTo(snap(g.spanX0), y);
+      ctx.lineTo(snap(g.spanX1), y);
+    }
+    for (const x of [g.spanX0, g.spanX1]) {
+      ctx.moveTo(snap(x), y - SPAN_TICK);
+      ctx.lineTo(snap(x), y + SPAN_TICK);
+    }
+    ctx.stroke();
+
+    if (label) {
+      ctx.globalAlpha = 0.95 * g.spanGain;
+      ctx.fillStyle = ink;
+      ctx.fillText(label, mid, y);
+    }
+    ctx.textBaseline = "alphabetic";
   }
 
   if (g.readout > 0.01 && readout) {

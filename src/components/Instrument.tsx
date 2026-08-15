@@ -4,7 +4,13 @@ import { useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { instrument } from "@/lib/fieldState";
-import { lerp, prefersReducedMotion, smoothstep } from "@/lib/motion";
+import {
+  formBand,
+  formSpan,
+  sourceWorkPoint,
+  targetWorkPoint,
+} from "@/lib/forms";
+import { SCROLL, lerp, prefersReducedMotion, smoothstep } from "@/lib/motion";
 // A pinned section is `position: fixed` while pinned, so measuring it gives
 // where it is on screen rather than where it sits in the page: the method's
 // annotation once measured 3200 where the section really begins at 1800. The
@@ -67,6 +73,22 @@ type Waypoint = {
   readout: number;
   /** Where the readout sits across the frame. */
   readoutX: number;
+  /**
+   * Which form's work point the leader lands on, and how present it is.
+   *
+   * A name rather than a coordinate, because the coordinate depends on the
+   * viewport and these poses do not. `resolve` turns the name into pixels
+   * through the same functions the key light uses, so the leader points exactly
+   * where the light is lit.
+   *
+   * Interpolating between a waypoint that names the source and one that names
+   * the target sweeps the landing point from one form to the other, which is
+   * the retract-and-redraw a shot change wants and costs nothing to get.
+   */
+  leader?: "source" | "target";
+  leaderGain?: number;
+  /** The dimension line across the target. Only the qualifying shot draws one. */
+  spanGain?: number;
 };
 
 /**
@@ -85,17 +107,28 @@ const WAYPOINTS: Waypoint[] = [
   // named on screen for the whole of the sequence; what changes is where the
   // rule sits and how much scale it carries, so the instrument reads as one
   // thing following the work rather than as one thing sliding past it.
-  { id: "method", trackP: 0.13, ruleY: 0.79, tick: 7, readout: 1, readoutX: 0.74 },
-  { id: "method", trackP: 0.44, ruleY: 0.83, tick: 4, readout: 1, readoutX: 0.7 },
+  // The leader rides with the readout. Where the word names a form, the line
+  // says which part of it, so the pair reads as one annotation rather than as a
+  // caption floating near a picture.
+  { id: "method", trackP: 0.13, ruleY: 0.79, tick: 7, readout: 1, readoutX: 0.74, leader: "source", leaderGain: 0.9 },
+  { id: "method", trackP: 0.44, ruleY: 0.83, tick: 4, readout: 1, readoutX: 0.7, leader: "source", leaderGain: 1 },
   // The one shot boundary at which the readout's *text* changes. Dipped, so the
   // word swaps at its dimmest rather than snapping from one legible label to
   // another. There used to be a second dip at 0.26, for the source-to-engram
   // change; with the engram gone the first two shots share a readout and there
   // is nothing to hide there, so a dip would be the instrument flinching at
   // nothing.
-  { id: "method", trackP: 0.52, ruleY: 0.84, tick: 3, readout: 0.12, readoutX: 0.73 },
-  { id: "method", trackP: 0.7, ruleY: 0.86, tick: 4, readout: 1, readoutX: 0.76 },
-  { id: "method", trackP: 0.92, ruleY: 0.88, tick: 8, readout: 1, readoutX: 0.76 },
+  // The leader dips with the word and names the target on the far side of the
+  // dip, so the landing point sweeps from one form to the other underneath the
+  // one moment both are at their faintest. The handover happens where nobody is
+  // reading, which is the same reason the dip exists at all.
+  { id: "method", trackP: 0.52, ruleY: 0.84, tick: 3, readout: 0.12, readoutX: 0.73, leader: "target", leaderGain: 0.1 },
+  { id: "method", trackP: 0.7, ruleY: 0.86, tick: 4, readout: 1, readoutX: 0.76, leader: "target", leaderGain: 1 },
+  // Qualify. The instrument stops pointing and measures: a dimension line across
+  // the cell it has just watched being built, reading what the step is actually
+  // about. Everything below this waypoint carries no span, so it fades out with
+  // the section rather than being switched off.
+  { id: "method", trackP: 0.92, ruleY: 0.88, tick: 8, readout: 1, readoutX: 0.76, leader: "target", leaderGain: 1, spanGain: 1 },
   { id: "deployment", ruleY: 0.55, tick: 0, readout: 0, readoutX: 0.5 },
   { id: "vision", ruleY: 0.93, tick: 0, readout: 0, readoutX: 0.5 },
   // Released: the rule leaves through the bottom of the frame, so the
@@ -126,6 +159,42 @@ export default function Instrument() {
       instrument.tick = lerp(a.tick, b.tick, t);
       instrument.readout = lerp(a.readout, b.readout, t);
       instrument.readoutX = lerp(a.readoutX, b.readoutX, t) * w;
+
+      // **Annotation only where the copy is beside the form.**
+      //
+      // `frame` puts the form in the right-hand pane above the pin threshold and
+      // centres it below, where the copy sits on top of it. A leader drawn into
+      // a centred form would cross body text on its way, and a dimension line
+      // would run under a paragraph. Both are off in that layout, so the
+      // narrow arrangement loses an annotation rather than gaining a mess.
+      const wide = w >= SCROLL.pinMinWidth;
+
+      // Recomputed per resolve rather than cached against the viewport: this is
+      // four multiplies inside a function that already interpolates five values,
+      // and a cache here would be one more thing to invalidate on resize.
+      const source = sourceWorkPoint(w, h);
+      const target = targetWorkPoint(w, h);
+      const landing = (wp: Waypoint) =>
+        wp.leader === "target" ? target : source;
+      const from = landing(a);
+      const to = landing(b);
+
+      instrument.leaderX = lerp(from[0], to[0], t);
+      instrument.leaderY = lerp(from[1], to[1], t);
+      instrument.leaderGain = wide
+        ? lerp(a.leaderGain ?? 0, b.leaderGain ?? 0, t)
+        : 0;
+
+      const [left, right] = formSpan(w, h);
+      instrument.spanX0 = left;
+      instrument.spanX1 = right;
+      // Above the part, not below it. Below, the run would cross the leader on
+      // its way up from the rule, and two dashed things crossing at a shallow
+      // angle reads as a mistake rather than as a drawing.
+      instrument.spanY = formBand(w, h)[0] - 26;
+      instrument.spanGain = wide
+        ? lerp(a.spanGain ?? 0, b.spanGain ?? 0, t)
+        : 0;
     }
 
     /** Finds the two waypoints a scroll position falls between. */
