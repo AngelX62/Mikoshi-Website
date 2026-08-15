@@ -1,14 +1,34 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { waitlist } from "@/content";
-import { isValidEmail, submitWaitlist } from "@/lib/waitlist";
+import { footer, waitlist } from "@/content";
+import {
+  CELL_MAX,
+  WaitlistUnconfigured,
+  isValidEmail,
+  submitWaitlist,
+} from "@/lib/waitlist";
 import { pulseField } from "./DitherField";
 
-type Status = "idle" | "submitting" | "success" | "error";
+type Status = "idle" | "submitting" | "success" | "error" | "unconfigured";
 
+/**
+ * Two fields on two hairlines, and a form that cannot claim success it did not
+ * have.
+ *
+ * **The cell line comes first**, because it is what the copy above actually
+ * asks for and because an address alone is a lead nobody can prioritise. It is
+ * optional, so the fast path is still one field and a button.
+ *
+ * **`unconfigured` is a status, not an error.** With no endpoint configured the
+ * submission cannot go anywhere, and the honest response is to say so and give
+ * the reader the address in the footer rather than to show them the generic
+ * failure, which would imply the form is fine and the network was not. See the
+ * note at the top of lib/waitlist.ts.
+ */
 export default function Waitlist() {
   const [email, setEmail] = useState("");
+  const [cell, setCell] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState("");
 
@@ -26,20 +46,38 @@ export default function Waitlist() {
     setMessage("");
 
     try {
-      await submitWaitlist(email);
+      await submitWaitlist(email, cell);
       setStatus("success");
       setMessage(waitlist.success);
       setEmail("");
+      setCell("");
       // Sending an address is itself a sample — the field flares to acknowledge
       // it. Cheaper and more on-concept than a checkmark.
       pulseField();
-    } catch {
-      setStatus("error");
-      setMessage(waitlist.errorGeneric);
+    } catch (err) {
+      if (err instanceof WaitlistUnconfigured) {
+        setStatus("unconfigured");
+        setMessage(waitlist.errorUnconfigured);
+      } else {
+        setStatus("error");
+        setMessage(waitlist.errorGeneric);
+      }
     }
   }
 
   const isDone = status === "success";
+  const locked = status === "submitting" || isDone;
+
+  /** Clears a stale result the moment the reader starts changing the input. */
+  const touched = () => {
+    if (status === "error" || status === "unconfigured") {
+      setStatus("idle");
+      setMessage("");
+    }
+  };
+
+  const row =
+    "group relative flex items-center border-b border-edge transition-colors duration-500 focus-within:border-accent";
 
   return (
     <div className="w-full max-w-md">
@@ -51,7 +89,28 @@ export default function Waitlist() {
       <p className="mb-7 text-sm leading-relaxed text-ink-soft">{waitlist.body}</p>
 
       <form onSubmit={onSubmit} noValidate>
-        <div className="group relative flex items-center border-b border-edge transition-colors duration-500 focus-within:border-accent">
+        {/* The answer to the question the copy just asked. */}
+        <div className={row}>
+          <label htmlFor="waitlist-cell" className="sr-only">
+            {waitlist.cellLabel}
+          </label>
+          <input
+            id="waitlist-cell"
+            type="text"
+            name="cell"
+            maxLength={CELL_MAX}
+            placeholder={waitlist.cellPlaceholder}
+            value={cell}
+            disabled={locked}
+            onChange={(e) => {
+              setCell(e.target.value);
+              touched();
+            }}
+            className="w-full bg-transparent py-4 pr-4 text-base text-ink outline-none placeholder:text-ink-dim disabled:opacity-50"
+          />
+        </div>
+
+        <div className={`${row} mt-2`}>
           <label htmlFor="waitlist-email" className="sr-only">
             Email address
           </label>
@@ -64,14 +123,10 @@ export default function Waitlist() {
             inputMode="email"
             placeholder={waitlist.placeholder}
             value={email}
-            disabled={status === "submitting" || isDone}
+            disabled={locked}
             onChange={(e) => {
               setEmail(e.target.value);
-              // Clear a stale error as soon as the user starts fixing it.
-              if (status === "error") {
-                setStatus("idle");
-                setMessage("");
-              }
+              touched();
             }}
             aria-invalid={status === "error"}
             aria-describedby="waitlist-status"
@@ -80,7 +135,7 @@ export default function Waitlist() {
 
           <button
             type="submit"
-            disabled={status === "submitting" || isDone}
+            disabled={locked}
             className="shrink-0 whitespace-nowrap py-4 font-mono text-[11px] uppercase tracking-[0.22em] text-ink-dim transition-colors duration-300 hover:text-accent focus-visible:text-accent disabled:opacity-40"
           >
             {status === "submitting" || isDone ? (
@@ -109,10 +164,23 @@ export default function Waitlist() {
           role="status"
           aria-live="polite"
           className={`mt-3 min-h-5 font-mono text-[11px] uppercase tracking-[0.16em] ${
-            status === "error" ? "text-accent-soft" : "text-ink-dim"
+            status === "error" || status === "unconfigured"
+              ? "text-accent-soft"
+              : "text-ink-dim"
           }`}
         >
           {message}
+          {status === "unconfigured" && (
+            <>
+              {" "}
+              <a
+                href={`mailto:${footer.email}`}
+                className="underline underline-offset-4 transition-colors duration-300 hover:text-ink"
+              >
+                {footer.email}
+              </a>
+            </>
+          )}
         </p>
       </form>
     </div>

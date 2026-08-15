@@ -312,15 +312,33 @@ export const vision = {
   loop: ["Perceive", "Understand", "Imagine", "Execute", "Improve"],
 } as const;
 
+/**
+ * The one thing the page asks anybody to do.
+ *
+ * `body` asks a question, so the form now has somewhere to answer it. It used to
+ * say "tell us about the cell" above a single email input, which is an
+ * invitation with no way to accept. The cell line is optional: requiring it
+ * would trade the lead for the detail, and at this volume a bare address is
+ * still worth having.
+ *
+ * `errorUnconfigured` exists because the transport can be absent. See
+ * lib/waitlist.ts: with no endpoint the form says so and points at the address
+ * in the footer, rather than thanking somebody for something that did not
+ * happen.
+ */
 export const waitlist = {
   label: "Contact",
   heading: "For integrators and manufacturers",
   body: "Tell us about the cell you would rather not build twice.",
   placeholder: "you@company.com",
+  /** Optional, and the placeholder has to make that obvious. */
+  cellPlaceholder: "The cell, in a line (optional)",
+  cellLabel: "About the cell",
   cta: "Start a conversation",
   success: "Received. We will be in touch.",
   errorInvalid: "Enter a valid email address.",
   errorGeneric: "Something went wrong. Try again.",
+  errorUnconfigured: "This form is not connected yet. Write to",
 } as const;
 
 export const footer = {
