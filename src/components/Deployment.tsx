@@ -131,7 +131,14 @@ export default function Deployment() {
       // box at 390, leaving the copy 227px.
       // `md:justify-start` for the same reason as Thesis.tsx: the main axis
       // flips at the breakpoint and `justify-center` would re-centre the copy.
-      className="relative z-10 flex min-h-screen flex-col justify-center px-6 py-32 md:flex-row md:items-center md:justify-start md:py-48 md:pl-24 md:pr-10"
+      // `md:py-40`, where every other section of this shape uses `py-48`.
+      // Deployment carries more than they do now: the argument, the ownership
+      // record and the model. Measured at 1440x900 with the old padding the
+      // diagram's bottom edge landed at 920 against a 900 fold, so jumping here
+      // from the rail, which puts the section top at the viewport top, clipped
+      // the one thing the section is built to end on. Thirty-two pixels off
+      // each side is the cheapest way to buy it back.
+      className="relative z-10 flex min-h-screen flex-col justify-center px-6 py-32 md:flex-row md:items-center md:justify-start md:py-40 md:pl-24 md:pr-10"
     >
       <SectionLabel>{deployment.label}</SectionLabel>
 
@@ -160,13 +167,36 @@ export default function Deployment() {
           diagram below, which is the only place it can say the thing that
           matters: that both facts are about the same cell.
         */}
-        <Wipe stagger className="w-full space-y-6 md:space-y-8">
+        <Wipe className="w-full">
           <h2 className="max-w-4xl text-[clamp(2.25rem,7vw,5rem)] font-medium leading-[1.0] tracking-[-0.03em]">
             {deployment.heading}
           </h2>
-          <p className="max-w-xl text-base leading-relaxed text-ink-soft md:text-lg">
-            {deployment.body}
-          </p>
+        </Wipe>
+
+        {/*
+          **`space-y` does not work on Wipe's children, and this block is why.**
+
+          Wipe wraps each child in a `.line-mask`, and globals.css gives that
+          class `margin-bottom: -0.14em` so the mask can pad out descenders
+          without changing the vertical rhythm. Tailwind v4 emits `space-y-*`
+          inside `:where(...)`, which has zero specificity, and it sets
+          `margin-bottom`. A class selector beats it every time, so the utility
+          is silently discarded.
+
+          Measured here before the fix: an 80px display heading with **0px** to
+          the paragraph under it, and 0px again between the two paragraphs. It
+          looked deliberate enough in a downscaled screenshot to survive a
+          review, which is the only reason it shipped.
+
+          So the margins live on the Wipe containers, which are plain divs, and
+          any spacing *within* a unit lives on a plain wrapper inside one mask.
+          Nothing here depends on a utility reaching through a mask.
+        */}
+        <Wipe className="mt-10 w-full md:mt-12">
+          <div className="max-w-xl space-y-5">
+            <p className="text-base leading-relaxed text-ink-soft md:text-lg">
+              {deployment.body}
+            </p>
           {/*
             `ink-soft`, not `ink-dim`. It clears AA either way, but this is the
             one sentence on the page that states the commercial argument, and it
@@ -176,12 +206,14 @@ export default function Deployment() {
             ratio computed against an average is not what an eye does with
             texture.
           */}
-          <p className="max-w-xl text-sm leading-relaxed text-ink-soft">
-            {deployment.rationale}
-          </p>
+            <p className="text-sm leading-relaxed text-ink-soft">
+              {deployment.rationale}
+            </p>
+          </div>
+        </Wipe>
 
-          {/*
-            Ownership, and the reason it sits in this section.
+        {/*
+          Ownership, and the reason it sits in this section.
 
             The objection forms one section earlier, where step 01 names what
             gets ingested, and it is the thing most likely to close the tab for
@@ -189,12 +221,19 @@ export default function Deployment() {
             because this is where the terms of the deal already live: who
             operates, who pays, and now who owns.
 
-            A flat record, not a diagram, and that is the opposite of the
-            decision taken for the commercial pair below. Those two facts are
-            about the same cell, so a list could not say the thing that
-            mattered. These three are independent facts about three different
-            parties, and a record is exactly what they are.
-          */}
+          A flat record, not a diagram, and that is the opposite of the
+          decision taken for the commercial pair below. Those two facts are
+          about the same cell, so a list could not say the thing that mattered.
+          These three are independent facts about three different parties, and a
+          record is exactly what they are.
+
+          Its own wipe, and a wider gap above it than anything inside it, so it
+          reads as a separate unit rather than as a fourth paragraph of the
+          argument. Measured before that change, the label sat 58px under the
+          rationale and 20px above its own record, which made it look like a
+          heading for the sentence above rather than for the block below.
+        */}
+        <Wipe className="mt-14 w-full md:mt-16">
           <div className="max-w-xl">
             <span className="mb-4 block font-mono text-[10px] uppercase tracking-[0.18em] text-ink-dim">
               {ownership.label}
@@ -255,7 +294,7 @@ export default function Deployment() {
           carry the direction, and an arrow would be a mark this page does not
           otherwise own.
         */}
-        <div className="mt-14 w-full md:mt-20">
+        <div className="mt-14 w-full md:mt-16">
           <p className="sr-only">{deployment.model.spoken}</p>
 
           <div
