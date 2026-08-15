@@ -364,6 +364,44 @@ export const vision = {
  * in the footer, rather than thanking somebody for something that did not
  * happen.
  */
+/**
+ * Who owns what, and the objection this page exists to remove.
+ *
+ * Method step 01 says out loud that MIKOSHI takes robot programs, PLC and CNC
+ * states, sensor signals, operator corrections and production results. That is
+ * the most sensitive data a plant has, and until now the site named the
+ * ingestion and said nothing about the terms, which leaves the reader to assume
+ * the worst in the gap. For a site whose job is winning design partners, that
+ * gap was the most expensive thing on it.
+ *
+ * **Every line here comes from the rights table MIKOSHI already wrote**, and
+ * nothing is extrapolated from it. Two questions that table does not answer are
+ * deliberately absent rather than guessed: where the work runs, and whether a
+ * cell keeps running after an engagement ends. "Customer-owned and exclusively
+ * controlled" implies the second and does not state it, and an implication is
+ * not a term. Both are worth adding the moment they are decided.
+ *
+ * The six-layer breakdown behind this is more than a landing page carries. What
+ * is here is the claim; the table belongs in a contract.
+ */
+export const ownership = {
+  label: "Ownership",
+  /** The whole answer in one line, and the section's closing reassurance. */
+  lead: "Your work remains yours. MIKOSHI gives it continuity.",
+  /**
+   * A record, and a flat one, because these are three independent facts about
+   * three different parties. The commercial pair below it is a diagram for the
+   * opposite reason: those two facts are about the same cell.
+   */
+  rights: [
+    { party: "The customer", holds: "Owns the work" },
+    { party: "MIKOSHI", holds: "Owns the intelligence infrastructure" },
+    { party: "The robot", holds: "Owns nothing" },
+  ],
+  licence:
+    "MIKOSHI takes only the licence it needs to host, adapt and run your Engram, and does not train anyone else's systems on it unless you opt in.",
+} as const;
+
 export const waitlist = {
   label: "Contact",
   heading: "For integrators and manufacturers",

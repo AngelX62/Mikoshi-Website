@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { deployment, photograph } from "@/content";
+import { deployment, ownership, photograph } from "@/content";
 import { channels, releaseChannel } from "@/lib/fieldState";
 import { SCROLL, norm, prefersReducedMotion } from "@/lib/motion";
 import SectionLabel from "./SectionLabel";
@@ -179,6 +179,51 @@ export default function Deployment() {
           <p className="max-w-xl text-sm leading-relaxed text-ink-soft">
             {deployment.rationale}
           </p>
+
+          {/*
+            Ownership, and the reason it sits in this section.
+
+            The objection forms one section earlier, where step 01 names what
+            gets ingested, and it is the thing most likely to close the tab for
+            the exact reader this page is written for. It is answered here
+            because this is where the terms of the deal already live: who
+            operates, who pays, and now who owns.
+
+            A flat record, not a diagram, and that is the opposite of the
+            decision taken for the commercial pair below. Those two facts are
+            about the same cell, so a list could not say the thing that
+            mattered. These three are independent facts about three different
+            parties, and a record is exactly what they are.
+          */}
+          <div className="max-w-xl">
+            <span className="mb-4 block font-mono text-[10px] uppercase tracking-[0.18em] text-ink-dim">
+              {ownership.label}
+            </span>
+
+            <p className="mb-5 text-base leading-snug text-ink">
+              {ownership.lead}
+            </p>
+
+            <dl className="border-t border-edge">
+              {ownership.rights.map((right) => (
+                <div
+                  key={right.party}
+                  className="flex items-baseline justify-between gap-6 border-b border-edge py-2.5"
+                >
+                  <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-dim">
+                    {right.party}
+                  </dt>
+                  <dd className="text-right text-sm text-ink-soft">
+                    {right.holds}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+
+            <p className="mt-5 text-sm leading-relaxed text-ink-soft">
+              {ownership.licence}
+            </p>
+          </div>
         </Wipe>
 
         {/*
