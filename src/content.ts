@@ -182,15 +182,38 @@ export const photograph = {
   alt: "A CNC machine-tending cell on a shop floor.",
 } as const;
 
-/** The first product. Concrete on purpose: it names who runs it and who pays. */
+/**
+ * The first product. Concrete on purpose: it names who runs it and who pays.
+ *
+ * **The commercial pair used to be a key/value list and is now a diagram.** It
+ * said "Operated by: The integrator" and "Paid for by: The manufacturer", which
+ * is two facts sitting next to each other; the thing that actually has to land
+ * is that they are facts about the *same cell*, one from each side. A list
+ * cannot say that and a drawing can, so `model` names the three parts and the
+ * two relations and Deployment.tsx lays them across the frame.
+ *
+ * The relations are worded so the row reads as a sentence in the order the eye
+ * takes it: integrator, operates, the cell, paid for by, manufacturer. That is
+ * why one is active and the other passive. Swapping either to match the other
+ * grammatically would make the row say something false.
+ *
+ * `spoken` is the same claim as one sentence, for anyone who gets the section
+ * read to them rather than drawn. The diagram itself is `aria-hidden`, because
+ * five labels and two rules read aloud in sequence is not a sentence.
+ */
 export const deployment = {
   label: "First deployment",
   heading: "CNC machine tending",
   body: "Take a tending cell that already earns its keep and build the next one on hardware the plant already owns.",
-  facts: [
-    { key: "Operated by", value: "The integrator" },
-    { key: "Paid for by", value: "The manufacturer" },
-  ],
+  model: {
+    operator: "The integrator",
+    operates: "Operates",
+    subject: "The cell",
+    paidBy: "Paid for by",
+    payer: "The manufacturer",
+    spoken:
+      "The integrator operates the cell. It is paid for by the manufacturer.",
+  },
   rationale: "The second cell stops costing what the first one did.",
 } as const;
 
