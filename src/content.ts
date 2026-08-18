@@ -334,13 +334,28 @@ const BOOKEND = ["Machines", "discover", "what", "comes", "next."] as const;
  * in consecutive paragraphs is the section stating its ambition twice and
  * landing neither. The conditional went back onto the claim it belongs on.
  *
- * **A sentence was cut, not softened.** "A future MIKOSHI humanoid could walk
- * into a place nobody scripted for it and still be useful." Everyone claims a
- * humanoid, it was double-guarded by "future" and "could", which is how
- * vapourware reads, and it sat four sentences after "We are beginning in
- * software, on machines that already exist" and spent the credibility that
- * line had just earned. If the humanoid is real roadmap it deserves a sentence
- * that says so plainly, not a conditional hidden in a list of three.
+ * **The humanoid is long-term roadmap, so it gets stated rather than hinted.**
+ *
+ * It read "A future MIKOSHI humanoid could walk into a place nobody scripted
+ * for it and still be useful", buried third in a list of three and guarded
+ * twice over by "future" and "could". That is how vapourware reads, and it sat
+ * four sentences after "We are beginning in software, on machines that already
+ * exist", spending the credibility that line had just earned. It was briefly
+ * cut altogether on the theory that an unearned humanoid costs more than it
+ * pays, which was the right call about that sentence and the wrong one about
+ * the plan.
+ *
+ * The rule it broke: **hedge the timing, never the intent.** "Could" hedges
+ * whether MIKOSHI means it. "Further out" hedges only when, which is honest
+ * and costs nothing, because a roadmap item nobody has built is allowed to be
+ * far away and is not allowed to be vague about whether it is wanted.
+ *
+ * It also has its own paragraph now instead of a slot in a list, and it argues
+ * rather than boasts: a humanoid is the body nobody can script for, which
+ * makes it the body that most needs the thing this whole section is about.
+ * That turns the most expensive claim on the page into evidence for the
+ * thesis. And it is no longer the site's coyest mention of a humanoid, which
+ * was odd while method step 03 listed "Humanoid" as a flat chip.
  *
  * Also fixed: "the next frontier of physical intelligence is discovery" was
  * deck language and is now "What is missing is not more data. It is
@@ -427,7 +442,8 @@ export const vision = {
       "We are beginning in software, on machines that already exist. The first proving ground is CNC machine tending.",
       "Moving proven work into a different cell forces engineers to rediscover which differences matter. MIKOSHI puts that work on the machine. It runs bounded tests inside limits that people set, and produces the evidence the cell needs to be qualified.",
       "That is a narrow proving ground for a much larger idea.",
-      "The same intelligence belongs in an industrial arm working out how an unfamiliar cell behaves, or in a mobile robot relearning a site after it changes.",
+      "The same intelligence belongs in an industrial arm working out how an unfamiliar cell behaves, and in a mobile robot relearning a site after it changes.",
+      "Further out, it belongs in a humanoid. Nobody can script for a body that general, which is exactly why it needs a machine that works things out for itself.",
       "Then each machine starts from what the ones before it proved and pushes past that through its own experience. Physical understanding would grow across bodies, sites and generations, without hiding what is known or where it may fail.",
       "The destination is physical intelligence that does more than execute the past. It finds the edge of what is known, and learns what comes next.",
       "Humanity learned to build by discovering how the physical world works. MIKOSHI is building machines that can join that process.",
