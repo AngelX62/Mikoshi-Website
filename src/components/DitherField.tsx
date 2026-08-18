@@ -24,8 +24,31 @@ import {
   instrument,
 } from "@/lib/fieldState";
 import { drawInstrument, setInstrumentInk } from "@/lib/instrument";
-import { fieldMeasure, fieldReadout } from "@/content";
+import { fieldMeasure, fieldReadout, fieldResidual } from "@/content";
 import { clamp, prefersReducedMotion } from "@/lib/motion";
+
+/**
+ * What the word on the rule says.
+ *
+ * Two sources, picked by what the instrument is currently doing rather than by
+ * where the page is. Holding the trailing rule open is the one behaviour that
+ * is not about a form on screen, so when there is a residual the word names the
+ * residual; otherwise it names the form the field is holding.
+ *
+ * The swap is safe at the boundary because the vision's closing waypoint takes
+ * `readout` and `followOffset` to zero from the same pair, through the same
+ * smoothstep. By the time the offset falls under half a pixel the readout gain
+ * is around 0.001, so the stale method label cannot flash.
+ */
+// Magnitude, not sign. The vision's offset is negative, because the trailing
+// rule sits above the leading one there, and a bare `> 0.5` sent this straight
+// past the residual and back to the method's last label: the vision drew its two
+// rules correctly and captioned them TARGET CELL.
+function readoutText(): string {
+  return Math.abs(instrument.followOffset) > 0.5
+    ? fieldResidual
+    : fieldReadout[fieldState.shot] ?? "";
+}
 
 const MAX_DPR = 2;
 /**
@@ -359,7 +382,7 @@ export default function DitherField({ text }: Props) {
         ctx,
         instrument,
         width,
-        fieldReadout[fieldState.shot] ?? "",
+        readoutText(),
         0,
         fieldMeasure,
       );
@@ -460,7 +483,7 @@ export default function DitherField({ text }: Props) {
         ctx,
         instrument,
         width,
-        fieldReadout[fieldState.shot] ?? "",
+        readoutText(),
         velocity,
         fieldMeasure,
       );

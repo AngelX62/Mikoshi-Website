@@ -159,6 +159,27 @@ export const instrument = {
   /** The rule, and the fainter one that trails it. */
   ruleY: 0,
   followY: 0,
+  /**
+   * How far the trailing rule is held *away* from the leading one, in px.
+   *
+   * Zero everywhere except the vision, and that exception is the point. The
+   * trailing rule is normally a velocity lag: it separates on a flick and eases
+   * shut the moment you stop, so standing still there is exactly one line on
+   * screen. Under the vision that would leave the instrument idle through the
+   * one section whose argument is a machine noticing that reality no longer
+   * matches what it expected.
+   *
+   * Held open, the pair stops being a lag and becomes a residual: an expected
+   * value and a measured one that disagree, which is the oldest thing an
+   * instrument draws and is the section's thesis without a word of copy. It
+   * closes at the bookend, so the gap resolves where the argument does.
+   *
+   * The ticker eases `followY` toward `ruleY + followOffset` rather than
+   * `ruleY`, so the existing `FOLLOW_EASE` opens and shuts it over roughly
+   * forty frames and no new animation code exists. Reader-driven throughout:
+   * this only moves when the scroll does.
+   */
+  followOffset: 0,
   /** Tick length. Zero is how a scale is put away. */
   tick: 0,
   /** 0..1 on the readout, the one thing here that fades. */

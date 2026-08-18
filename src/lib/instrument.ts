@@ -67,6 +67,19 @@ export function setInstrumentInk(
   font = fontSpec;
 }
 
+/**
+ * The trailing rule's alpha as a lag, and as a held residual.
+ *
+ * `FOLLOW_HELD` stays well under the leading rule's 0.7 on purpose. The pair
+ * has to read as a primary and a reference, an expectation against a
+ * measurement, and two rules of equal weight would read as two rules rather
+ * than as one instrument reporting a discrepancy.
+ */
+const FOLLOW_LAG = 0.28;
+const FOLLOW_HELD = 0.6;
+/** The offset at which the trailing rule counts as fully held rather than lagging. */
+const HELD_AT = 20;
+
 /** Radius of the circle a leader lands in. Small enough to read as a target. */
 const LANDING = 4;
 /** Half-length of the ticks that close a dimension line. */
@@ -100,8 +113,29 @@ export function drawInstrument(
   // The trailing rule, drawn first and fainter, so the pair reads as one
   // instrument tracking rather than as two lines. Scrolling separates them and
   // stillness closes them back together.
+  //
+  // **Except under the vision, where it is held open and has to be read.**
+  //
+  // 0.28 was tuned for a lag: a line that only ever exists while the page is
+  // moving, where the movement itself is most of what makes it legible. Asked
+  // to sit still and be looked at, it is far too faint. Measured at the
+  // vision's hold pose, the leading rule read 216.45 luma against a 229.9
+  // control and the trailing one read 225.89, a lift of 4 where the leading
+  // rule had 13.4. Ordinary dither texture two rows away was darker than it.
+  // Drawn, and invisible, which is exactly what the leader did before `8ef2225`.
+  //
+  // Effective coverage is the number that matters: 0.28 alpha at a 30% duty
+  // cycle is 0.084, against the leading rule's 0.21.
+  //
+  // So presence is scaled by how far the rule is being held rather than by a
+  // flat constant. It gets more visible exactly to the degree that it is
+  // saying something, and the lag everywhere else is byte-identical because
+  // `followOffset` is zero there. The dash is left alone: across a full frame
+  // this gets 144 dashes, which integrates as a line at any alpha. The leader
+  // needed a denser one because it is 290px long and diagonal.
   if (Math.abs(g.followY - g.ruleY) > 0.6) {
-    ctx.globalAlpha = 0.28;
+    const held = Math.min(Math.abs(g.followOffset) / HELD_AT, 1);
+    ctx.globalAlpha = FOLLOW_LAG + (FOLLOW_HELD - FOLLOW_LAG) * held;
     ctx.setLineDash(DASH);
     ctx.beginPath();
     ctx.moveTo(0, snap(g.followY));

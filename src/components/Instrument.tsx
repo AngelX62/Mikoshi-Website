@@ -66,8 +66,24 @@ type Waypoint = {
    * below before shot three had begun.
    */
   trackP?: number;
+  /**
+   * Which registered trigger `trackP` is a fraction of. Defaults to the method.
+   *
+   * This exists because tracking is the only way to give one section more than
+   * one pose. `measure` resolves an untracked waypoint to its section's centre,
+   * so two waypoints sharing an id would resolve to the *same* scroll offset
+   * and then be forced 1px apart by the monotonic clamp below, turning what
+   * should be a section-long interpolation into a snap.
+   */
+  track?: string;
   /** Height of the rule. Above 1 parks it below the frame. */
   ruleY: number;
+  /**
+   * How far to hold the trailing rule off this one, in px. See
+   * `instrument.followOffset`, which explains why the vision has one and
+   * nothing else does.
+   */
+  followOffset?: number;
   /** Tick length in px at rest. */
   tick: number;
   readout: number;
@@ -95,6 +111,40 @@ type Waypoint = {
  * The trigger the method's waypoints are anchored to. Created in Method.tsx.
  */
 const METHOD_TRIGGER = "method";
+
+/**
+ * The trigger the vision's waypoints are anchored to. Created in Vision.tsx.
+ *
+ * The vision needs three poses rather than one, so like the method it has to
+ * track a range instead of resolving to a section centre. Unlike the method it
+ * is not pinned, so the trigger is just the section's own passage through the
+ * viewport and exists for no other reason than this.
+ */
+const VISION_TRIGGER = "vision";
+
+/**
+ * How far apart the vision holds its two rules, in px, and which way.
+ *
+ * Large enough to read as two lines at a glance rather than as one line drawn
+ * badly, small enough to read as a discrepancy rather than as two unrelated
+ * rules. The trailing rule is drawn fainter than the leading one, which is what
+ * makes the pair an expectation and a measurement rather than a pair of equals.
+ *
+ * **Negative, so the trailing rule sits above.** Positive was tried first and
+ * costs 48px of clear field: 14 for the readout hanging above the leading rule,
+ * then 34 down to the trailing one. The only clear band at the hold pose is the
+ * 64px between the last beat and the disclosure control, which left 8px of
+ * slack at each end, and measurement put the trailing rule at 511 against the
+ * control's own dashed rule at 510. One pixel apart is the worst available
+ * answer: two near-parallel dashed lines a few pixels apart read as a mistake
+ * rather than as a drawing.
+ *
+ * Inverted, the whole assembly is 34px tall instead of 48 and the readout falls
+ * *inside* the gap rather than above it, which is where a residual's label
+ * belongs anyway. It is also the right way round: the expectation sits above
+ * the measurement that failed to meet it.
+ */
+const RESIDUAL = -34;
 
 const WAYPOINTS: Waypoint[] = [
   // Under the wordmark, on a scale.
@@ -130,7 +180,42 @@ const WAYPOINTS: Waypoint[] = [
   // the section rather than being switched off.
   { id: "method", trackP: 0.92, ruleY: 0.88, tick: 8, readout: 1, readoutX: 0.76, leader: "target", leaderGain: 1, spanGain: 1 },
   { id: "deployment", ruleY: 0.55, tick: 0, readout: 0, readoutX: 0.5 },
-  { id: "vision", ruleY: 0.93, tick: 0, readout: 0, readoutX: 0.5 },
+  // The vision, and the one place the pair of rules means something.
+  //
+  // This was a single bare hairline at 0.93 with no scale and no word: present,
+  // and measuring nothing. That was survivable while the section argued that
+  // proven work moves to a new body. It is not now that it argues discovery,
+  // because the new thesis *is* a gap. A machine that notices reality has
+  // stopped matching what it expected is an expectation and a measurement that
+  // disagree, which is the oldest thing an instrument draws, and this one has
+  // owned two rules all along.
+  //
+  // So the trailing rule is held off the leading one instead of easing shut,
+  // the scale comes back, and the word on the gap is `fieldResidual`. Three
+  // poses: open it, hold it while the argument is read, close it at the
+  // bookend, where the copy reaches "It finds the edge of what is known, and
+  // learns what comes next."
+  //
+  // Holding is the part that matters. Everywhere else the second rule is an
+  // artifact of scrolling and vanishes the moment you stop, so reading a
+  // section means looking at one line. Here, standing still and reading means
+  // looking at an unresolved measurement for as long as the argument takes.
+  // Heights measured against the hold pose rather than chosen, because the hold
+  // pose is the one a reader stops at. At 1440x900 the last beat ends at 446 and
+  // the disclosure's rule sits at 510, so the clear band is those 64px and the
+  // 34px assembly centres in it at 0.55: trailing rule 461, readout 481, leading
+  // rule 495, with 15px of air at each end.
+  //
+  // 0.34 was measured first and put the trailing rule straight through "A robot
+  // that meets something it was not taught fails without knowing why." A hairline
+  // across a line of body copy reads as a strikethrough on the one sentence a
+  // reader is most likely to be looking at.
+  { id: "vision", track: VISION_TRIGGER, trackP: 0.1, ruleY: 0.51, followOffset: RESIDUAL, tick: 5, readout: 1, readoutX: 0.76 },
+  { id: "vision", track: VISION_TRIGGER, trackP: 0.55, ruleY: 0.55, followOffset: RESIDUAL, tick: 5, readout: 1, readoutX: 0.78 },
+  // Resolved. `readout` and `followOffset` reach zero from this same pair
+  // through the same smoothstep, which is what lets DitherField pick the word
+  // off the offset without the method's stale label flashing on the way out.
+  { id: "vision", track: VISION_TRIGGER, trackP: 0.95, ruleY: 0.6, followOffset: 0, tick: 3, readout: 0, readoutX: 0.78 },
   // Released: the rule leaves through the bottom of the frame, so the
   // instrument exits with the page rather than resetting to the top. The footer
   // is the shortest section and the last, so its anchor is clamped to the end of
@@ -155,11 +240,6 @@ export default function Instrument() {
     let anchors: number[] = [];
 
     function resolve(a: Waypoint, b: Waypoint, t: number) {
-      instrument.ruleY = lerp(a.ruleY, b.ruleY, t) * h;
-      instrument.tick = lerp(a.tick, b.tick, t);
-      instrument.readout = lerp(a.readout, b.readout, t);
-      instrument.readoutX = lerp(a.readoutX, b.readoutX, t) * w;
-
       // **Annotation only where the copy is beside the form.**
       //
       // `frame` puts the form in the right-hand pane above the pin threshold and
@@ -168,6 +248,39 @@ export default function Instrument() {
       // would run under a paragraph. Both are off in that layout, so the
       // narrow arrangement loses an annotation rather than gaining a mess.
       const wide = w >= SCROLL.pinMinWidth;
+
+      instrument.ruleY = lerp(a.ruleY, b.ruleY, t) * h;
+
+      // The residual, and the same rule applies to it for the same reason.
+      //
+      // Its readout sits at 0.78 of the width, which is clear air at 1440 where
+      // the vision's copy takes a left column, and straight through the copy at
+      // 390 where the copy takes the frame. Measured on a phone: UNEXPLAINED
+      // landed on top of "MIKOSHI is building machines that".
+      //
+      // The two rules themselves are harmless at any width, since a full-width
+      // hairline behind type is what every other section already draws. It is
+      // the word that collides, and a labelled gap is the whole point, so the
+      // pair goes with it rather than standing there unexplained in the other
+      // sense. Narrow screens keep the single bare rule this section used to
+      // have everywhere.
+      //
+      // In pixels rather than a fraction of the height, because this is a gap
+      // between two lines and not a position in the frame. A residual that grew
+      // with the viewport would read as a different measurement on a taller
+      // screen, which is the opposite of what an instrument does.
+      const residualA = a.followOffset ?? 0;
+      const residualB = b.followOffset ?? 0;
+      instrument.followOffset = wide ? lerp(residualA, residualB, t) : 0;
+
+      instrument.tick = lerp(a.tick, b.tick, t);
+      // A pose carrying a residual owns its readout, so the readout goes when
+      // the residual does. Without this the word falls back to whatever the
+      // field last named, and the vision captions its own rule "Target cell".
+      const carriesResidual = residualA !== 0 || residualB !== 0;
+      instrument.readout =
+        carriesResidual && !wide ? 0 : lerp(a.readout, b.readout, t);
+      instrument.readoutX = lerp(a.readoutX, b.readoutX, t) * w;
 
       // Recomputed per resolve rather than cached against the viewport: this is
       // four multiplies inside a function that already interpolates five values,
@@ -236,7 +349,7 @@ export default function Instrument() {
         // centre is the right fallback there because that layout really does
         // hold one composition.
         if (wp.trackP !== undefined) {
-          const st = ScrollTrigger.getById(METHOD_TRIGGER);
+          const st = ScrollTrigger.getById(wp.track ?? METHOD_TRIGGER);
           if (st) {
             const at = st.start + (st.end - st.start) * wp.trackP;
             return Math.min(max, Math.max(0, at));
@@ -260,7 +373,11 @@ export default function Instrument() {
     const ctx = gsap.context(() => {
       measure();
       apply();
-      instrument.followY = instrument.ruleY;
+      // Seeded at the target rather than at `ruleY`, so a reload partway down
+      // the page opens with the pair already where it belongs instead of easing
+      // apart over the first forty frames of a composition the reader did not
+      // scroll to.
+      instrument.followY = instrument.ruleY + instrument.followOffset;
 
       // Held at the opening composition and never updated. The geometry is
       // still drawn and still legible; it simply does not track the scroll.
@@ -268,12 +385,39 @@ export default function Instrument() {
 
       // The trailing rule is a clock, not a scroll position, so it runs on the
       // ticker the whole page already shares rather than on its own loop.
+      //
+      // It chases `ruleY + followOffset`, which is `ruleY` everywhere except
+      // the vision. That one addition is the difference between a lag and a
+      // residual: with a target of `ruleY` the pair can only ever be apart
+      // while the page is moving, and the vision needs it apart while the page
+      // is still. It also means the gap opens and shuts on the easing that is
+      // already here, over roughly forty frames, rather than on a new tween.
       const follow = () => {
-        instrument.followY += (instrument.ruleY - instrument.followY) * FOLLOW_EASE;
+        const target = instrument.ruleY + instrument.followOffset;
+        instrument.followY += (target - instrument.followY) * FOLLOW_EASE;
       };
       gsap.ticker.add(follow);
 
       ScrollTrigger.create({
+        // **Refreshes last, and it has to.**
+        //
+        // `measure` reads `start` and `end` off the method's and the vision's
+        // triggers to place their tracked waypoints. ScrollTrigger refreshes in
+        // priority order, so at the default 0 this can run before those two have
+        // recalculated and read their previous layout's numbers.
+        //
+        // The failure is not subtle. Reproduced by loading at 1064 wide and
+        // resizing to 1440: the vision's anchors came back from the old, shorter
+        // document at roughly 3300 to 4200, landing *before* the freshly measured
+        // deployment anchor at 5286. The monotonic clamp below then squashed all
+        // three vision poses into 5287, 5288, 5289, so anywhere in the vision
+        // resolved to the pose after them and the instrument went dead: no
+        // readout, no scale, no rules. Measured at the hold pose, the two rules
+        // dropped from 15.81 and 15.05 to 0 and 2.29.
+        //
+        // A negative priority puts this after every default-priority trigger,
+        // which is all of them.
+        refreshPriority: -1,
         trigger: document.documentElement,
         start: "top top",
         end: "bottom bottom",
