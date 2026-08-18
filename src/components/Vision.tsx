@@ -35,10 +35,16 @@ const BEAT = [
  *
  * `flex flex-wrap` on a phone and a true five-column grid from `md`. The grid
  * is what makes the closing pair work: five verbs above five words, aligned
- * cell for cell, so Perceive sits over Humanity and Improve over Anywhere. It
- * used to be `justify-between`, which spreads items to the edges but gives no
- * columns, so the correspondence would have been approximate. Approximate is
- * worse than absent here, because a near-miss reads as a mistake.
+ * cell for cell, so Notice sits over Machines and Keep over next. It used to be
+ * `justify-between`, which spreads items to the edges but gives no columns, so
+ * the correspondence would have been approximate. Approximate is worse than
+ * absent here, because a near-miss reads as a mistake.
+ *
+ * The pairing is half found and half made. `vision.loop` came out of the copy
+ * intact, five steps of the discovery cycle in the order the prose runs them.
+ * `BOOKEND` was compressed to five words to meet it, because the sentence it
+ * comes from is fourteen. The old pair was wholly found, which was luck; see
+ * the note on `BOOKEND` in content.ts for what was traded and why.
  *
  * Below `md` the correspondence is dropped rather than faked. Five items do not
  * fit one line at 390, and a spread wrapped row leaves the last two marooned at
@@ -68,11 +74,20 @@ const CLOSING_ROW = `
  * and the Deployment section above is still the last thing they read at full
  * attention.
  *
- * **The section says one sentence twice.** It opens in display type and closes
- * in 11px mono, and the mono setting is the point rather than a shortage of
- * space: the same words, having been argued for, come back as a readout. The
- * loop and the bookend are the last two rows on the page, and below them the
- * field re-condenses the wordmark for the footer.
+ * **The section opens on the ambition and closes on the imperative.** It used
+ * to say one sentence twice, in display type at the top and in 11px mono at the
+ * bottom. It cannot now: the heading is the title of the argument and the
+ * closer is fourteen words across two sentences, so the echo moved into the
+ * panel, where the long form is the last paragraph and the mono row is its
+ * spine. The loop and the bookend are still the last two rows on the page, and
+ * below them the field re-condenses the wordmark for the footer.
+ *
+ * **The instrument works here now.** This section's waypoint was a bare rule
+ * with no scale and no readout, which was tolerable while the section argued
+ * transfer and is not while it argues discovery. The trailing rule is held
+ * open across the section and closes at the bookend, so the gap between what
+ * was expected and what was measured is on screen for as long as the argument
+ * is. See the vision waypoints in Instrument.tsx.
  *
  * **One ring, on arrival, and one on opening.** The metronome that used to live
  * here is gone and is not coming back: a `setInterval` fired a ring every 2.6
@@ -113,6 +128,16 @@ export default function Vision() {
 
     const ctx = gsap.context(() => {
       ScrollTrigger.create({
+        // Named so the instrument can anchor its three waypoints to this range
+        // rather than to the section's centre, the same way the method's are
+        // named. A section centre gives one pose, and this section needs three:
+        // open the gap between the rules, hold it, close it. See Instrument.tsx.
+        //
+        // Sharing the ripple's trigger rather than adding a second one, because
+        // the range is the one the instrument wants anyway. It starts as the
+        // section arrives and ends as it leaves, which is exactly the span over
+        // which the residual should open and resolve.
+        id: "vision",
         trigger: section,
         start: "top 70%",
         end: "bottom 30%",
@@ -191,22 +216,34 @@ export default function Vision() {
       <SectionLabel>{vision.label}</SectionLabel>
 
       {/*
-        One heading, two hand-set lines, and both wipe together rather than in
-        sequence. The break is authored in content.ts because the turn is the
-        sentence: the first line is the capability and the second is the scope.
+        One heading, hand-set lines, all wiping together rather than in
+        sequence. The breaks are authored in content.ts, which owns the reason
+        for them; mapped rather than indexed because the line count is now the
+        copy's decision and used to be two.
 
-        Both lines live inside the one `h2` and neither is hidden. An earlier
+        Every line lives inside the one `h2` and none is hidden. An earlier
         draft split them into two headings and marked the second `aria-hidden`
         to keep the outline clean, which handed anyone using a screen reader
         half a sentence.
+
+        `max-w-4xl` and the 4.75rem cap both stand, which was worth measuring
+        rather than assuming. The new heading is three lines where the old was
+        two, and the longest, "Machines that can discover", was estimated to
+        land a few pixels over the 896px measure. It sets at 873px at the cap,
+        so it clears by 23. The measure was briefly widened to `max-w-5xl` on
+        that estimate and the change did nothing at all; it is reverted here so
+        the page keeps one measure for its display type.
       */}
       <Wipe className="w-full">
         <h2
           ref={headingRef}
           className="max-w-4xl text-[clamp(2.25rem,6.4vw,4.75rem)] font-medium leading-[1.02] tracking-[-0.035em]"
         >
-          <span className="block">{vision.heading[0]}</span>
-          <span className="block">{vision.heading[1]}</span>
+          {vision.heading.map((line) => (
+            <span key={line} className="block">
+              {line}
+            </span>
+          ))}
         </h2>
       </Wipe>
 

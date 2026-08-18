@@ -156,6 +156,27 @@ export const fieldReadout = [
 export const fieldMeasure = "Good parts";
 
 /**
+ * What the instrument reads at the vision, where it draws two rules that
+ * disagree.
+ *
+ * The vision's waypoint used to be a bare hairline with no scale and no word,
+ * one of three stops where the instrument was present and idle. That was
+ * survivable while the section argued transfer. It is not now, because the new
+ * thesis *is* a gap: a machine that notices reality has stopped matching what
+ * it expected. An expectation and a measurement that disagree is the oldest
+ * thing an instrument draws, and this one already owns two rules.
+ *
+ * So the trailing rule, which everywhere else is a velocity lag that closes
+ * when you stop scrolling, is held open here. This is the word on the gap.
+ *
+ * "Unexplained" over "Residual" or "Discrepancy" because the copy earns it
+ * ("they fail without understanding why") and because it states a condition
+ * the instrument is in rather than a capability MIKOSHI has, which is what
+ * rule three of this file asks for. See lib/instrument.ts.
+ */
+export const fieldResidual = "Unexplained";
+
+/**
  * A real cell, run through the same grid as everything else.
  *
  * TO ADD THE PHOTOGRAPH: drop the file in `public/` and set `src` below to
@@ -220,106 +241,124 @@ export const deployment = {
 /**
  * The bookend, held as five words rather than as a sentence.
  *
- * It is said twice: at the top of the section in display type, and at the
- * bottom in 11px mono, where the five words become five grid cells sitting
- * under the five verbs of `vision.loop`. So the closing row needs the words
- * separately, and the heading needs them joined, and holding the array as the
- * single source is what stops the two occurrences drifting apart when somebody
- * edits one of them.
+ * Five cells sitting under the five verbs of `vision.loop`, which is why the
+ * closing row needs the words separately.
  *
- * Five words against five verbs is not a coincidence that was engineered; it is
- * one that was found in the copy and then used. Do not add a sixth word.
- */
-const BOOKEND = ["Humanity", "can", "build", "anything,", "anywhere."] as const;
-
-/**
- * Where the display setting breaks the bookend across two lines.
+ * **It no longer derives the heading, and that is a real loss.** It used to:
+ * the section said one sentence twice, in display type at the top and in 11px
+ * mono at the bottom, and holding one array was what stopped the two
+ * occurrences drifting apart. The new vision closes on "Machines should not
+ * only use what is known. They should discover what comes next.", which is
+ * fourteen words across two sentences and cannot be five cells. So the long
+ * form went to the last paragraph of `more` and this is its spine. The echo
+ * survives; it moved from (display, mono) to (prose, mono).
  *
- * Hand-set rather than left to the measure. The break has to fall after
- * "build", so the first line is the capability and the second is the scope; a
- * break anywhere else splits a noun from its own adjective. Three words also
- * happens to be what fits: at the 4.75rem cap the longer of the two lines
- * measures about 720px inside a 896px column.
+ * Five against five is therefore half found and half engineered, where the old
+ * pair was wholly found. `loop` came out of the copy intact. This was
+ * compressed to meet it. Do not add a sixth word.
  */
-const BOOKEND_BREAK = 3;
+const BOOKEND = ["Machines", "discover", "what", "comes", "next."] as const;
 
 /**
  * Where this goes, and the page's most ambitious claim.
  *
- * **The section is an escalation, not a claim.** It used to state one thing,
- * that capability should survive a change of body. `beats` now walks from the
- * problem to that claim and then past it, to inventing processes nobody
- * demonstrated. Vision.tsx sets each beat larger and brighter than the last, so
- * the argument is legible as a shape before a word of it is read. The order is
- * load-bearing and the fourth beat is the one the section exists for.
+ * **The thesis changed here, and only here.** This section used to argue
+ * transfer: proven work moves to a new body, and once enough of it accumulates
+ * the intelligence starts inventing. It now argues discovery. A machine that
+ * notices reality has stopped matching what it expected, proposes an
+ * explanation, runs a safe test, and revises. Transfer is demoted to a proving
+ * ground.
+ *
+ * Nothing above this section moved, and that is deliberate rather than
+ * unfinished. The hero, the thesis, the method and the deployment sell what
+ * ships, this says where it goes, and the copy below says so in its own words:
+ * "We are beginning in software, on machines that already exist." A hero
+ * rewritten to sell discovery would put a product on the page that does not
+ * exist, which is rule three.
+ *
+ * **The section is an escalation.** `beats` walks from the failure to the
+ * claim to what gets kept to the horizon. Vision.tsx sets each one larger and
+ * brighter than the last, so the argument is legible as a shape before a word
+ * of it is read. The order is load-bearing.
  *
  * **Most of the words here are not on screen by default**, and that is the
- * shape of the section rather than a compromise in it. The page is 7,622px with
- * a third of that inside one pin, and 400 words of manifesto appended to the
- * bottom would have been another 2,000. `more` holds the argument behind a
- * control. What is always visible is the escalation itself, because a reader
- * who never opens the panel still has to learn what changed.
+ * shape of the section rather than a compromise in it. `more` holds the
+ * argument behind a control; what is always visible is the escalation itself,
+ * because a reader who never opens the panel still has to learn what changed.
  *
- * **One passage is cut from the draft this came from**, and only one: an
- * enumeration of intent, constraints, material behaviour, prerequisites,
- * failure modes and recovery, which is method step 02's chip list said again in
- * prose. Rule one of this file exists for exactly that. The sentence keeps its
- * claim and loses the list.
+ * **The guardrails live in the panel and not in a beat.** Bounded tests inside
+ * limits people set, and handing back what the machine cannot resolve, are the
+ * sentences that stop a plant manager closing the tab on "the machine runs its
+ * own experiments". They were considered for beat 3 and lost to it, because
+ * there are only four beats and each one is carrying an argument. They read in
+ * full in paragraph 4 instead.
  *
- * **The rest of the lists were turned into sentences rather than deleted.** The
- * draft carried nine comma-separated enumerations across eleven paragraphs: the
- * places a process gets trapped, the five things the intelligence does to form
- * understanding, the bodies an Engram can move to, the inputs a goal is solved
- * against, the kinds of result that feed it back. Every claim in them is still
- * here. What changed is that a list of four abstractions became a thing a
- * reader can picture, usually by naming one instead of five: "a person, a
- * factory, a robot, or a carefully engineered environment" is now an operator
- * who knows the sound the cut should make, a fixture made for one part, and a
- * machine with habits nobody wrote down. A comma series is how a specification
- * sounds, and this is the one part of the site whose whole job is to sound like
- * a person meant it.
+ * **The draft's modal verbs are the thing this pass mostly fixed.** It carried
+ * its entire future tense on nine "should" and five "could", which is how a
+ * specification of intent sounds rather than an ambition. Five and four
+ * survive, only where they are load-bearing: design commitments in paragraphs
+ * 3, 5 and 14, honest speculation about machines nobody has built in 10 and 11.
+ * The rest went to the present tense, which is also the truthful tense for
+ * "MIKOSHI is building".
  *
- * Two series survive on purpose, both of them figures rather than inventories:
- * "by doing it, by watching what happens, and by being wrong often enough to
- * find out why", which is carried by the repeated "by", and "to an arm, to a
- * humanoid, or to a machine nobody has built yet", which escalates and has to
- * land on the last item.
+ * Also fixed: "the next frontier of physical intelligence is discovery" was
+ * deck language and is now "What is missing is not more data. It is
+ * discovery."; "demonstrations, instructions, and large amounts of data" was a
+ * three-item inventory and is now "from being shown and from data"; "an opaque
+ * behavior" is now "a policy nobody can read", which is already this site's
+ * vocabulary and sidesteps a spelling fork the file cannot currently settle,
+ * since visible copy mixes "judgment" with "licence".
  *
- * An earlier pass also cut "We begin in industrial production", on the grounds
- * that it restated the Deployment section. **That was wrong and it is back.**
- * Deployment says what ships first; this says why industrial production is
- * where an intelligence like this has to start, because outcomes there can be
- * measured and the work has to survive contact with reality. That is a reason,
- * and rule one asks for exactly the sentence the list beside it cannot give.
+ * Two comma series survive on purpose, both sequences carried by verbs rather
+ * than inventories: the discovery cycle in paragraph 3, which is the sentence
+ * `loop` is drawn from, and "bodies, sites and generations" in 11, which
+ * escalates and has to land on its last item.
+ *
+ * **"Physical synthesis intelligence" is dropped.** It appeared exactly once on
+ * the site, in this prose, so nothing depended on it. Losing a coined category
+ * name is a real cost and it is paid on purpose: discovery is the
+ * differentiator now, and taking a position inside physical intelligence is a
+ * stronger move than naming a category of one.
  *
  * "Work Engram" on first use, "Engram" after, so the site keeps one name for
  * the artifact and method step 02 stays the place it is defined.
  *
- * Retired here: "Bodies will change. The intelligence will continue.", which
- * was the kicker. The last paragraph of `more` says it better and at full
- * length, and the section now closes on the bookend instead.
+ * Paragraph 13 keeps "Humanity learned to build", which is the only surviving
+ * thread from the retired bookend and most of the reason this still reads as
+ * the same page.
  */
 export const vision = {
   label: "Vision",
   bookend: BOOKEND,
-  /** Derived, so the h2 and the closing row can never disagree. */
-  heading: [
-    BOOKEND.slice(0, BOOKEND_BREAK).join(" "),
-    BOOKEND.slice(BOOKEND_BREAK).join(" "),
-  ],
   /**
-   * Four beats: the problem, the transfer, the turn, the invention.
+   * Three hand-set lines, and no longer derived from `BOOKEND`. See the note
+   * there for why the two came apart.
+   *
+   * The break falls after "discover" and after "world". The obvious
+   * alternative, "Machines that can / discover how the / physical world
+   * works.", sets more comfortably at the 4.75rem cap but leaves "the" hanging
+   * at the end of a line, away from the "physical world" it belongs to. A
+   * single word landing on the last line is the stronger setting anyway, and
+   * "works." is the verb the whole sentence is about.
+   */
+  heading: ["Machines that can discover", "how the physical world", "works."],
+  /**
+   * Four beats: the failure, the claim, what gets kept, the horizon.
    *
    * Left as plain sentences with no hand-set breaks. These are beats, not
    * headings, and at the sizes Vision.tsx gives them each one sets on a single
    * line inside a 672px column, so a break would be a decision the measure has
    * already made.
+   *
+   * The fourth stops short of "and learns what comes next", which is where the
+   * sentence it comes from goes. The mono row says it four lines later, and
+   * saying it twice inside one viewport would spend the bookend early.
    */
   beats: [
-    "Today a process that works is trapped where it was built.",
-    "MIKOSHI learns why it works, in a form another machine can use.",
-    "The machine may change. What it learned should not.",
-    "Then it begins inventing processes nobody has demonstrated.",
+    "A robot that meets something it was not taught fails without knowing why.",
+    "MIKOSHI is building machines that investigate instead.",
+    "What one machine works out is kept with its evidence.",
+    "Then they find the edge of what is known.",
   ],
   more: {
     /** On the control; the open state swaps to `close`. */
@@ -328,26 +367,38 @@ export const vision = {
     /** Named for assistive tech, which gets no dashed rule to read. */
     label: "The full vision",
     paragraphs: [
-      "The limit on what humanity can build is not really materials, and not really machines. It is that physical knowledge stays where it was made.",
-      "A process that works is held in place by everything around it. The operator knows the sound the cut should make. The fixture was made for one part. The machine has habits nobody wrote down.",
-      "Robots can learn a motion and hold a policy. Change the body or the material and most of that learning goes with it. What you wanted made has not changed. The work of getting there starts over.",
-      "MIKOSHI is building physical synthesis intelligence: intelligence that learns how physical outcomes come into existence.",
-      "It learns the way anyone learns something physical. By doing it, by watching what happens, and by being wrong often enough to find out why.",
-      "What it keeps is not a record of what happened. It is the reason the work came out right, and we call that a Work Engram.",
-      "An Engram is not a recording of what one machine did. It holds what has to stay true for the work to come out right, which is a different kind of thing entirely. Because it describes the requirement rather than the gesture, it can be given to an arm, to a humanoid, or to a machine nobody has built yet.",
-      "But transferring known work is only the beginning.",
-      "As qualified Engrams accumulate, they stop being separate. MIKOSHI should be able to put them together and reach an outcome nobody demonstrated. Give it the result you need and the shop you have, and it should tell you whether that result is reachable, then work out a process that gets there and prove it on the floor.",
-      "We begin in industrial production, because that is where an outcome can be measured and where an intelligence has to survive contact with reality. Every cell we move teaches it something, and so does every one that fights back.",
-      "The destination is an intelligence that turns intent into physical reality wherever there is a machine capable of the work. In a factory now. In places that are hard to reach. Eventually beyond Earth.",
-      "Bodies will change. Tools will change. Environments will change. The intelligence that learned how the work comes out right will still be learning.",
+      "Robots today can do remarkable work. They learn from being shown and from data. But they only know the conditions they were taught, and when reality steps outside those conditions they fail without understanding why.",
+      "What is missing is not more data. It is discovery.",
+      "MIKOSHI is building intelligence that learns directly from reality. It should notice when the world stops matching what it expected, propose an explanation, choose a safe test, and revise what it believes from the result.",
+      "This is not blind trial and error. Every action answers a question, and the machine knows what its evidence will support. When uncertainty runs too high it stops and hands the work to a person.",
+      "What a machine discovers should not vanish inside a model or stay locked in one body. MIKOSHI keeps what it was trying to do and why the result came out right. It keeps the evidence too, and the conditions under which the discovery still holds.",
+      "We call that a Work Engram. It lets another capable machine begin with tested knowledge instead of a policy nobody can read.",
+      "We are beginning in software, on machines that already exist. The first proving ground is CNC machine tending.",
+      "Moving proven work into a different cell forces engineers to rediscover which differences matter. MIKOSHI aims to let the machine work that out for itself. It runs bounded tests inside limits that people set, and produces the evidence the cell needs to be qualified.",
+      "That is a narrow proving ground for a much larger idea.",
+      "An industrial arm could work out how an unfamiliar cell behaves. A mobile robot could relearn a site after it changes. A future MIKOSHI humanoid could walk into a place nobody scripted for it and still be useful.",
+      "Every machine could start from what the ones before it proved, then push past that through its own experience. Physical understanding would grow across bodies, sites and generations, without hiding what is known or where it may fail.",
+      "The destination is physical intelligence that does more than execute the past. It finds the edge of what is known, and learns what comes next.",
+      "Humanity learned to build by discovering how the physical world works. MIKOSHI is building machines that can join that process.",
+      "Machines should not only use what is known. They should discover what comes next.",
     ],
   },
   /**
-   * Five verbs, and the reason the closing pair works: `BOOKEND` is five words,
-   * so the two rows align cell for cell. Perceive sits over Humanity, Improve
-   * over Anywhere. Changing the length of either list breaks the other.
+   * The discovery cycle, and the reason the closing pair still works:
+   * `BOOKEND` is five words, so the two rows align cell for cell. Changing the
+   * length of either list breaks the other.
+   *
+   * These five were found in the copy rather than invented for the row. They
+   * are paragraph 3 read as steps, plus what paragraph 5 does with the result:
+   * notice the mismatch, propose an explanation, choose a safe test, revise
+   * from the result, keep it with its evidence.
+   *
+   * The five they replace were Perceive, Understand, Imagine, Execute,
+   * Improve, which is a generic autonomy loop. It was true of the old thesis
+   * and says nothing about testing or evidence, which is what this section is
+   * now about.
    */
-  loop: ["Perceive", "Understand", "Imagine", "Execute", "Improve"],
+  loop: ["Notice", "Explain", "Test", "Revise", "Keep"],
 } as const;
 
 /**
