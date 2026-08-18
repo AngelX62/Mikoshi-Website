@@ -357,6 +357,26 @@ const BOOKEND = ["Machines", "discover", "what", "comes", "next."] as const;
  * thesis. And it is no longer the site's coyest mention of a humanoid, which
  * was odd while method step 03 listed "Humanoid" as a flat chip.
  *
+ * **MIKOSHI builds that humanoid, rather than shipping software onto
+ * somebody else's.** This is the one place the site says the company will make
+ * hardware, and it is a genuinely larger claim than anything else on it:
+ * everything above sells software for machines that already exist, down to
+ * "On any compatible machine" in the hero and "hardware the plant already
+ * owns" in the deployment. Nothing there becomes false. The arc was always
+ * sequenced, and paragraph 7 says so out loud with the word "beginning".
+ *
+ * **The order is the argument, and it is the only reason this sentence is
+ * worth writing.** Every robotics company says it will build a humanoid, so
+ * saying it buys nothing. Saying it comes *last* buys a great deal, because
+ * the usual sequence is the opposite: build the body, then hope the
+ * intelligence arrives to run it. MIKOSHI's whole thesis is that intelligence
+ * is what transfers across bodies, so a body is the thing you earn once the
+ * intelligence exists rather than the thing you start with. Stated that way
+ * the claim stops being a me-too ambition and becomes a position.
+ *
+ * The paragraph after it carries that argument and should not be cut to save
+ * room. Without it this is just another humanoid announcement.
+ *
  * Also fixed: "the next frontier of physical intelligence is discovery" was
  * deck language and is now "What is missing is not more data. It is
  * discovery."; "demonstrations, instructions, and large amounts of data" was a
@@ -443,7 +463,8 @@ export const vision = {
       "Moving proven work into a different cell forces engineers to rediscover which differences matter. MIKOSHI puts that work on the machine. It runs bounded tests inside limits that people set, and produces the evidence the cell needs to be qualified.",
       "That is a narrow proving ground for a much larger idea.",
       "The same intelligence belongs in an industrial arm working out how an unfamiliar cell behaves, and in a mobile robot relearning a site after it changes.",
-      "Further out, it belongs in a humanoid. Nobody can script for a body that general, which is exactly why it needs a machine that works things out for itself.",
+      "Further out, MIKOSHI builds the body too. Nobody can script for something as general as a humanoid, which is exactly why it needs a machine that works things out for itself.",
+      "It comes last, and the order is deliberate. A humanoid built before the intelligence exists is a body waiting for a program nobody can write.",
       "Then each machine starts from what the ones before it proved and pushes past that through its own experience. Physical understanding would grow across bodies, sites and generations, without hiding what is known or where it may fail.",
       "The destination is physical intelligence that does more than execute the past. It finds the edge of what is known, and learns what comes next.",
       "Humanity learned to build by discovering how the physical world works. MIKOSHI is building machines that can join that process.",
