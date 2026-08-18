@@ -252,8 +252,8 @@ export const deployment = {
  * **It no longer derives the heading, and that is a real loss.** It used to:
  * the section said one sentence twice, in display type at the top and in 11px
  * mono at the bottom, and holding one array was what stopped the two
- * occurrences drifting apart. The new vision closes on "Machines should not
- * only use what is known. They should discover what comes next.", which is
+ * occurrences drifting apart. The new vision closes on "Machines will not
+ * only use what is known. They will discover what comes next.", which is
  * fourteen words across two sentences and cannot be five cells. So the long
  * form went to the last paragraph of `more` and this is its spine. The echo
  * survives; it moved from (display, mono) to (prose, mono).
@@ -261,6 +261,12 @@ export const deployment = {
  * Five against five is therefore half found and half engineered, where the old
  * pair was wholly found. `loop` came out of the copy intact. This was
  * compressed to meet it. Do not add a sixth word.
+ *
+ * **The grid used to be stronger than the sentence it compressed**, which is
+ * an odd thing for a compression to be. This row has always read in the plain
+ * present, and the paragraph behind it said "should" twice, so the five mono
+ * words made a claim the prose would not. The prose says "will" now and the
+ * two agree: a prediction and its spine.
  */
 const BOOKEND = ["Machines", "discover", "what", "comes", "next."] as const;
 
@@ -302,13 +308,39 @@ const BOOKEND = ["Machines", "discover", "what", "comes", "next."] as const;
  * there are only four beats and each one is carrying an argument. They read in
  * full in paragraph 4 instead.
  *
- * **The draft's modal verbs are the thing this pass mostly fixed.** It carried
- * its entire future tense on nine "should" and five "could", which is how a
- * specification of intent sounds rather than an ambition. Five and four
- * survive, only where they are load-bearing: design commitments in paragraphs
- * 3, 5 and 14, honest speculation about machines nobody has built in 10 and 11.
- * The rest went to the present tense, which is also the truthful tense for
- * "MIKOSHI is building".
+ * **The modal verbs took two passes and the second one mattered more.** The
+ * draft carried its entire future tense on nine "should" and five "could",
+ * which is how a specification of intent sounds rather than an ambition. The
+ * first pass got that to five and four and left them where they read as
+ * load-bearing. Counted afterwards, twelve hedges remained in 445 words, and
+ * the count was never the problem: they clustered on the three places the
+ * section could least afford them.
+ *
+ * The **definition** said "It should notice when the world stops matching what
+ * it expected", which is the thesis sentence of the whole section hedged into
+ * either an unmet spec or a moral opinion. The **product** said "MIKOSHI aims
+ * to let the machine work that out for itself", the weakest verb in the
+ * document sitting in the paragraph about the thing being built. The **closer**
+ * said "Machines should not only use what is known", moralising where it should
+ * predict.
+ *
+ * All three are present or future tense now. Two hedges survive, both inside
+ * paragraph 11 and both honest: "would grow" frames speculation about machines
+ * nobody has built, and "where it may fail" is about the limits of knowledge,
+ * which is the section's entire subject.
+ *
+ * That paragraph briefly opened "The aim is", which read better on its own and
+ * worse in place: paragraph 12 opens "The destination is", and two goal nouns
+ * in consecutive paragraphs is the section stating its ambition twice and
+ * landing neither. The conditional went back onto the claim it belongs on.
+ *
+ * **A sentence was cut, not softened.** "A future MIKOSHI humanoid could walk
+ * into a place nobody scripted for it and still be useful." Everyone claims a
+ * humanoid, it was double-guarded by "future" and "could", which is how
+ * vapourware reads, and it sat four sentences after "We are beginning in
+ * software, on machines that already exist" and spent the credibility that
+ * line had just earned. If the humanoid is real roadmap it deserves a sentence
+ * that says so plainly, not a conditional hidden in a list of three.
  *
  * Also fixed: "the next frontier of physical intelligence is discovery" was
  * deck language and is now "What is missing is not more data. It is
@@ -359,15 +391,22 @@ export const vision = {
    * line inside a 672px column, so a break would be a decision the measure has
    * already made.
    *
-   * The fourth stops short of "and learns what comes next", which is where the
-   * sentence it comes from goes. The mono row says it four lines later, and
-   * saying it twice inside one viewport would spend the bookend early.
+   * **The fourth used to read "Then they find the edge of what is known."**
+   * It was the weakest line in the section and Vision.tsx sets it largest, so
+   * the escalation peaked on its softest claim: three concrete beats resolving
+   * into an abstraction, hung off "Then they", which is dead connective tissue.
+   *
+   * It carries the compounding claim now, which is the actual horizon and the
+   * consequence of beat three rather than a restatement of it. Kept, then
+   * inherited. It also stops the beats echoing "the edge of what is known",
+   * which the statement's own closing paragraph says better and now owns
+   * alone.
    */
   beats: [
     "A robot that meets something it was not taught fails without knowing why.",
     "MIKOSHI is building machines that investigate instead.",
     "What one machine works out is kept with its evidence.",
-    "Then they find the edge of what is known.",
+    "Every machine after it starts from there.",
   ],
   statement: {
     /**
@@ -381,18 +420,18 @@ export const vision = {
     paragraphs: [
       "Robots today can do remarkable work. They learn from being shown and from data. But they only know the conditions they were taught, and when reality steps outside those conditions they fail without understanding why.",
       "What is missing is not more data. It is discovery.",
-      "MIKOSHI is building intelligence that learns directly from reality. It should notice when the world stops matching what it expected, propose an explanation, choose a safe test, and revise what it believes from the result.",
+      "MIKOSHI is building intelligence that learns directly from reality. It notices when the world stops matching what it expected, proposes an explanation, chooses a safe test, and revises what it believes from the result.",
       "This is not blind trial and error. Every action answers a question, and the machine knows what its evidence will support. When uncertainty runs too high it stops and hands the work to a person.",
-      "What a machine discovers should not vanish inside a model or stay locked in one body. MIKOSHI keeps what it was trying to do and why the result came out right. It keeps the evidence too, and the conditions under which the discovery still holds.",
+      "Today what a machine discovers vanishes inside a model or stays locked in the one body that learned it. MIKOSHI keeps what it was trying to do and why the result came out right. It keeps the evidence too, and the conditions under which the discovery still holds.",
       "We call that a Work Engram. It lets another capable machine begin with tested knowledge instead of a policy nobody can read.",
       "We are beginning in software, on machines that already exist. The first proving ground is CNC machine tending.",
-      "Moving proven work into a different cell forces engineers to rediscover which differences matter. MIKOSHI aims to let the machine work that out for itself. It runs bounded tests inside limits that people set, and produces the evidence the cell needs to be qualified.",
+      "Moving proven work into a different cell forces engineers to rediscover which differences matter. MIKOSHI puts that work on the machine. It runs bounded tests inside limits that people set, and produces the evidence the cell needs to be qualified.",
       "That is a narrow proving ground for a much larger idea.",
-      "An industrial arm could work out how an unfamiliar cell behaves. A mobile robot could relearn a site after it changes. A future MIKOSHI humanoid could walk into a place nobody scripted for it and still be useful.",
-      "Every machine could start from what the ones before it proved, then push past that through its own experience. Physical understanding would grow across bodies, sites and generations, without hiding what is known or where it may fail.",
+      "The same intelligence belongs in an industrial arm working out how an unfamiliar cell behaves, or in a mobile robot relearning a site after it changes.",
+      "Then each machine starts from what the ones before it proved and pushes past that through its own experience. Physical understanding would grow across bodies, sites and generations, without hiding what is known or where it may fail.",
       "The destination is physical intelligence that does more than execute the past. It finds the edge of what is known, and learns what comes next.",
       "Humanity learned to build by discovering how the physical world works. MIKOSHI is building machines that can join that process.",
-      "Machines should not only use what is known. They should discover what comes next.",
+      "Machines will not only use what is known. They will discover what comes next.",
     ],
   },
   /**
