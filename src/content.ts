@@ -16,6 +16,21 @@
  * **Nothing invented.** Every claim below traces to the positioning brief. An
  * earlier version of this site carried capability copy written to fill a
  * section rather than to state a fact, and it read as exactly that.
+ *
+ * ── THE SITE UNDER THIS FILE CHANGED SHAPE ───────────────────────────────────
+ * It was one page of about 8.7 screens with a canvas dither field behind it, a
+ * scroll-driven instrument overlay annotating that field, and 2520px of pinned
+ * scroll inside the method alone. It is now five static routes with no canvas
+ * and no scroll choreography.
+ *
+ * The words survived intact. What went are the strings that existed only to
+ * label the canvas: `fieldReadout`, `fieldMeasure`, `fieldResidual` and
+ * `photograph`, all four of which named something the reader can no longer see.
+ * `hero.scrollCue` went with them, because home no longer scrolls.
+ *
+ * Two things are new, and both are chrome rather than prose: `nav`, and the
+ * `sheet` line on each method step. Chrome is still words, so it lives here.
+ * ─────────────────────────────────────────────────────────────────────────────
  */
 
 export const site = {
@@ -28,22 +43,67 @@ export const site = {
   url: "https://mikoshi.com",
 } as const;
 
+/**
+ * The four destinations, in the order a stranger should meet them.
+ *
+ * Home is deliberately absent: the wordmark in the header goes there, which is
+ * the convention every visitor already knows, and a nav that lists the page you
+ * are looking at is a nav with one wasted item.
+ *
+ * Ownership has no entry of its own. It sits under Deployment because it exists
+ * to retire the objection that page raises, and read on its own it is a
+ * footnote looking for the argument it belongs to.
+ */
+export const nav = [
+  { label: "Technology", href: "/technology" },
+  { label: "Deployment", href: "/deployment" },
+  { label: "Vision", href: "/vision" },
+  { label: "Contact", href: "/contact" },
+] as const;
+
 export const hero = {
-  /** Drawn into the dither field, and mirrored as the page's real h1. */
+  /**
+   * The page's h1, and set in type rather than drawn.
+   *
+   * It used to be rasterised into the dither field at weight 600 and mirrored
+   * into a visually hidden heading for anything that could not see a canvas.
+   * There is no canvas now, so the heading is simply the heading.
+   */
   wordmark: "MIKOSHI",
-  /** Three beats, not a sentence with a clause hung off the end. */
-  descriptor: "Proven work in. Qualified capability out. On any compatible machine.",
-  /** Small mono label in the top-left corner. */
+  /**
+   * Three beats, not a sentence with a clause hung off the end.
+   *
+   * Held as three strings rather than as one, which is what the docblock here
+   * always claimed it was. It used to be a single line that a measure broke
+   * wherever the measure happened to land, so the beats were an intention in a
+   * comment rather than a fact on the page. Home sets them centred, one per
+   * line, which is the only setting that makes the descriptor read the way it
+   * is written.
+   */
+  descriptor: [
+    "Proven work in.",
+    "Qualified capability out.",
+    "On any compatible machine.",
+  ],
+  /** Small mono label above the wordmark. */
   eyebrow: "Physical Intelligence",
-  scrollCue: "Scroll",
 } as const;
+// Home's one action reuses `waitlist.cta` rather than declaring its own. It is
+// the same words for the same reason, and the link it sits on leads to the
+// button it is quoting. Two copies would eventually stop agreeing.
 
 /**
- * The thesis.
+ * The thesis, which opens Technology.
  *
- * Two sentences that flow, then the claim they earn. Keep the lines short: each
- * one sits inside a mask that clips overflow, so a line long enough to wrap
- * breaks the wipe. Roughly thirty characters is the ceiling.
+ * Two sentences that flow, then the claim they earn.
+ *
+ * **The lines are hand-set and stay hand-set**, though the reason changed. They
+ * were short because each one sat inside a mask that clipped overflow, so a
+ * line long enough to wrap broke the wipe. The mask is gone. They are kept
+ * because seven short lines set at display size is a shape, and letting a
+ * measure rewrap them would flatten the one piece of copy on the site that is
+ * doing its work typographically. Roughly thirty characters is still the
+ * ceiling.
  */
 export const thesis = {
   label: "Thesis",
@@ -65,8 +125,17 @@ export const thesis = {
  * the mono chips, which is where the enumeration belongs. Each `body` is left
  * to make the point the chips cannot.
  *
- * `readout` is the mono label the field's instrumentation shows during that
- * shot, and doubles as the shot name in Method.tsx.
+ * `readout` used to be the label the canvas instrumentation showed during that
+ * shot. There is no canvas, and the name survives because it turned out to be
+ * the better name: one word for what the step does, which is exactly what the
+ * annotation strip above each band needs on its left.
+ *
+ * `sheet` is the same position said again in words, on the strip's right. It is
+ * borrowed wholesale from the reference frame that reads `A/ ●● 1` at one end
+ * and `LETTER "A" FORWARD SLASH ZERO ZERO ONE` at the other: a technical
+ * caption that states its own identifier twice, once as a symbol and once
+ * spelled out. Redundant on purpose. It is also the only thing on the page that
+ * tells a reader deep in step three how many steps are left.
  */
 export const method = {
   label: "Method",
@@ -74,6 +143,7 @@ export const method = {
     {
       index: "01",
       readout: "Observe",
+      sheet: "Sheet one of four",
       title: "Take in a working operation",
       body: "We start from a job that already runs, not from a description of one.",
       inputs: [
@@ -88,6 +158,7 @@ export const method = {
     {
       index: "02",
       readout: "Reconstruct",
+      sheet: "Sheet two of four",
       title: "Recover why it succeeds",
       // The field holds the source cell through this step now, so the sentence
       // carries the abstraction on its own. It has to name the distinction the
@@ -106,6 +177,7 @@ export const method = {
     {
       index: "03",
       readout: "Re-embody",
+      sheet: "Sheet three of four",
       title: "Rebuild the work in another body",
       body: "Nothing is emulated. The new machine runs programs written for the body it actually has.",
       inputs: ["Different robot", "Different machine", "Humanoid"],
@@ -113,6 +185,7 @@ export const method = {
     {
       index: "04",
       readout: "Qualify",
+      sheet: "Sheet four of four",
       title: "Prove it physically",
       body: "Working in simulation is not working. The cell is done when it makes good parts.",
       inputs: ["Production outcome", "Acceptance criteria"],
@@ -120,88 +193,18 @@ export const method = {
   ],
 } as const;
 
-/**
- * What the field is holding, one per method shot.
+/*
+ * `fieldReadout`, `fieldMeasure`, `fieldResidual` and `photograph` were here.
  *
- * Read by the instrument overlay, which annotates the canvas rather than the
- * copy. These name the *form on screen*, which is the one thing the step's own
- * title and index do not: the reader can already see it is step three, so a
- * third label saying so is noise. Naming the body being drawn is information.
+ * All four named something drawn on a canvas: which body the field was holding
+ * during each method shot, what the caliper read at the qualifying shot, the
+ * word on the gap the two rules held open under the vision, and a photograph
+ * sampled through the dither grid. There is no canvas, so all four named
+ * something the reader cannot see, which is worse than saying nothing.
  *
- * Two names across four shots, because there are two bodies. The middle entry
- * used to read "Work engram" and the form it named no longer exists. A readout
- * that names something not on screen is worse than no readout, and this one
- * sits directly under the thing it claims to be describing.
+ * The site now has no imagery at all. If a real photograph of a cell ever
+ * arrives, it goes in as a photograph rather than as a channel behind copy.
  */
-export const fieldReadout = [
-  "Source cell",
-  "Source cell",
-  "Target cell",
-  "Target cell",
-] as const;
-
-/**
- * What the dimension line reads at the qualifying shot.
- *
- * A word, not a figure, and that is the whole point. A number here would be
- * invented, which rule three of this file forbids outright, and it would also be
- * measuring the wrong thing: nobody buys a cell because the gantry is 640mm
- * across. Step 04's own body already says what is actually being measured, that
- * the cell is done when it makes good parts, so the caliper reads that.
- *
- * It is the one moment on the page where the instrument stops annotating and
- * takes a reading, which is the argument the method spends 280% of a viewport
- * making. See lib/instrument.ts.
- */
-export const fieldMeasure = "Good parts";
-
-/**
- * What the instrument reads at the vision, where it draws two rules that
- * disagree.
- *
- * The vision's waypoint used to be a bare hairline with no scale and no word,
- * one of three stops where the instrument was present and idle. That was
- * survivable while the section argued transfer. It is not now, because the new
- * thesis *is* a gap: a machine that notices reality has stopped matching what
- * it expected. An expectation and a measurement that disagree is the oldest
- * thing an instrument draws, and this one already owns two rules.
- *
- * So the trailing rule, which everywhere else is a velocity lag that closes
- * when you stop scrolling, is held open here. This is the word on the gap.
- *
- * "Unexplained" over "Residual" or "Discrepancy" because the copy earns it
- * ("they fail without understanding why") and because it states a condition
- * the instrument is in rather than a capability MIKOSHI has, which is what
- * rule three of this file asks for. See lib/instrument.ts.
- */
-export const fieldResidual = "Unexplained";
-
-/**
- * A real cell, run through the same grid as everything else.
- *
- * TO ADD THE PHOTOGRAPH: drop the file in `public/` and set `src` below to
- * "/cell.jpg". Nothing else needs changing; the deployment already holds this
- * channel behind its copy and will start showing it.
- *
- * Supply a landscape shot of an actual machine-tending cell, high contrast with
- * a clear silhouette, 2000px or wider. The grid samples one pixel per cell and
- * the ramp has eight levels, so composition and tone carry the image and
- * sharpness is thrown away. A picture that already reads as near black and
- * white will survive; a flat, evenly lit one will turn to grey noise.
- *
- * **Empty draws nothing at all, and there is deliberately no fallback.** There
- * used to be one: the schematic target cell stood in wherever a photograph was
- * missing, so the page always had something in the frame. That is the right
- * instinct for a decorative image and the wrong one here. The beat it filled
- * was the proof beat, and a drawing cannot be evidence, so the safety net was
- * holding up a claim rather than a picture. The beat is gone (see page.tsx) and
- * so is the stand-in. A missing file now means a quiet field, which is honest.
- */
-export const photograph = {
-  src: "",
-  /** Describes the photograph for anyone who cannot see the canvas. */
-  alt: "A CNC machine-tending cell on a shop floor.",
-} as const;
 
 /**
  * The first product. Concrete on purpose: it names who runs it and who pays.
@@ -227,6 +230,8 @@ export const deployment = {
   heading: "CNC machine tending",
   body: "Take a tending cell that already earns its keep and build the next one on hardware the plant already owns.",
   model: {
+    /** Names the band the diagram sits in, on its annotation strip. */
+    label: "The commercial shape",
     operator: "The integrator",
     operates: "Operates",
     subject: "The cell",
@@ -281,12 +286,16 @@ const BOOKEND = ["Machines", "discover", "what", "comes", "next."] as const;
  * brighter than the last, so the argument is legible as a shape before a word
  * of it is read. The order is load-bearing.
  *
- * **Most of the words here are not on screen by default**, and that is the
- * shape of the section rather than a compromise in it. `more` holds the
- * argument behind a control; what is always visible is the escalation itself,
- * because a reader who never opens the panel still has to learn what changed.
+ * **The words are all on screen now.** They used to hide: `statement` was
+ * called `more` and sat behind a disclosure control, because the section was
+ * one stop on a single long scroll and fourteen paragraphs dropped into that
+ * scroll would have buried the two sections after it. Vision is its own route,
+ * so the argument is simply the page, and a control that opens a panel on a
+ * page whose entire job is that panel would be furniture. The escalation above
+ * it still does its work: `beats` is the argument legible as a shape before a
+ * word of it is read.
  *
- * **The guardrails live in the panel and not in a beat.** Bounded tests inside
+ * **The guardrails live in the statement and not in a beat.** Bounded tests inside
  * limits people set, and handing back what the machine cannot resolve, are the
  * sentences that stop a plant manager closing the tab on "the machine runs its
  * own experiments". They were considered for beat 3 and lost to it, because
@@ -360,11 +369,14 @@ export const vision = {
     "What one machine works out is kept with its evidence.",
     "Then they find the edge of what is known.",
   ],
-  more: {
-    /** On the control; the open state swaps to `close`. */
-    cta: "Read the full vision",
-    close: "Close the full vision",
-    /** Named for assistive tech, which gets no dashed rule to read. */
+  statement: {
+    /**
+     * The heading over the prose.
+     *
+     * It was the accessible name of a disclosure panel, read only by assistive
+     * tech because sighted readers got a dashed rule instead. On its own route
+     * it is simply a heading, and every reader gets it.
+     */
     label: "The full vision",
     paragraphs: [
       "Robots today can do remarkable work. They learn from being shown and from data. But they only know the conditions they were taught, and when reality steps outside those conditions they fail without understanding why.",
@@ -399,24 +411,23 @@ export const vision = {
    * now about.
    */
   loop: ["Notice", "Explain", "Test", "Revise", "Keep"],
+  /**
+   * Names the band the loop sits in, on its annotation strip.
+   *
+   * The strip briefly carried the five verbs themselves, joined by middots,
+   * which was wrong twice over. It broke rule one of this file, since the grid
+   * four lines below it lists exactly those five words and a strip that lists
+   * them too makes the band say everything twice. And at 390 it was 359px of
+   * unwrappable tracked mono inside a 327px box, so it pushed the whole
+   * document sideways.
+   *
+   * This is what the copy calls the five steps in its own docblock above.
+   */
+  loopLabel: "The discovery cycle",
 } as const;
 
 /**
- * The one thing the page asks anybody to do.
- *
- * `body` asks a question, so the form now has somewhere to answer it. It used to
- * say "tell us about the cell" above a single email input, which is an
- * invitation with no way to accept. The cell line is optional: requiring it
- * would trade the lead for the detail, and at this volume a bare address is
- * still worth having.
- *
- * `errorUnconfigured` exists because the transport can be absent. See
- * lib/waitlist.ts: with no endpoint the form says so and points at the address
- * in the footer, rather than thanking somebody for something that did not
- * happen.
- */
-/**
- * Who owns what, and the objection this page exists to remove.
+ * Who owns what, and the objection it exists to remove.
  *
  * Method step 01 says out loud that MIKOSHI takes robot programs, PLC and CNC
  * states, sensor signals, operator corrections and production results. That is
@@ -424,6 +435,13 @@ export const vision = {
  * ingestion and said nothing about the terms, which leaves the reader to assume
  * the worst in the gap. For a site whose job is winning design partners, that
  * gap was the most expensive thing on it.
+ *
+ * **It sits under Deployment rather than on a route of its own.** It answers
+ * the question that page raises, in the order a reader raises it: here is the
+ * first product, here is who runs it and who pays, and here is what happens to
+ * your data. Given its own URL it reads as a footnote hunting for the argument
+ * it belongs to. The cost is that nobody can be sent straight to it, which is
+ * a real cost and is worth revisiting the first time somebody asks.
  *
  * **Every line here comes from what MIKOSHI already decided**, and nothing is
  * extrapolated from it. An earlier pass left out where the work runs and what
@@ -473,6 +491,20 @@ export const ownership = {
     "When the engagement ends, improvement may stop. Proven work does not.",
 } as const;
 
+/**
+ * The one thing the site asks anybody to do, and now a route of its own.
+ *
+ * `body` asks a question, so the form has somewhere to answer it. It used to
+ * say "tell us about the cell" above a single email input, which is an
+ * invitation with no way to accept. The cell line is optional: requiring it
+ * would trade the lead for the detail, and at this volume a bare address is
+ * still worth having.
+ *
+ * `errorUnconfigured` exists because the transport can be absent. See
+ * lib/waitlist.ts: with no endpoint the form says so and points at the address
+ * in the footer, rather than thanking somebody for something that did not
+ * happen. That behaviour is load-bearing and survived the rebuild untouched.
+ */
 export const waitlist = {
   label: "Contact",
   heading: "For integrators and manufacturers",
@@ -488,9 +520,26 @@ export const waitlist = {
   errorUnconfigured: "This form is not connected yet. Write to",
 } as const;
 
+/**
+ * The colophon.
+ *
+ * Laid out as tiny centred label-over-value pairs, which is lifted from the
+ * credit block on the JUNDOR sheet: a short caps label in the faintest ink with
+ * its value directly under it, the whole group centred and given far more air
+ * than its size suggests it deserves.
+ *
+ * It carries no link row of its own. The header's nav is repeated here instead,
+ * from `nav` above, because Vision runs to about three screens and a reader at
+ * the bottom of it should not have to travel back up to leave. One list, two
+ * places, no chance of the two drifting apart.
+ */
 export const footer = {
-  /** Add real destinations as they exist. An empty array renders no link row. */
-  links: [] as ReadonlyArray<{ label: string; href: string }>,
   email: "hello@mikoshi.com",
   copyright: `© ${new Date().getFullYear()} MIKOSHI`,
+  /** The colophon's own labels. Values come from `site` and from `nav`. */
+  labels: {
+    company: "Company",
+    discipline: "Discipline",
+    contact: "Contact",
+  },
 } as const;

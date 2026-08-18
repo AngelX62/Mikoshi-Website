@@ -8,23 +8,28 @@ import {
   isValidEmail,
   submitWaitlist,
 } from "@/lib/waitlist";
-import { pulseField } from "./DitherField";
 
 type Status = "idle" | "submitting" | "success" | "error" | "unconfigured";
 
 /**
- * Two fields on two hairlines, and a form that cannot claim success it did not
- * have.
+ * Two fields on two hairlines, and a form that cannot claim a success it did
+ * not have.
  *
- * **The cell line comes first**, because it is what the copy above actually
+ * **The cell line comes first**, because it is what the copy beside it actually
  * asks for and because an address alone is a lead nobody can prioritise. It is
  * optional, so the fast path is still one field and a button.
  *
  * **`unconfigured` is a status, not an error.** With no endpoint configured the
  * submission cannot go anywhere, and the honest response is to say so and give
- * the reader the address in the footer rather than to show them the generic
- * failure, which would imply the form is fine and the network was not. See the
- * note at the top of lib/waitlist.ts.
+ * the reader the address rather than to show them the generic failure, which
+ * would imply the form is fine and the network was not. See the note at the top
+ * of lib/waitlist.ts.
+ *
+ * The submission logic is untouched by the rebuild. What changed is that the
+ * success path no longer fires a shockwave through a canvas dither field,
+ * because there is no canvas: sending an address was itself a sample, and the
+ * field flared to acknowledge it. Nothing replaces that. A form that has just
+ * been sent says so in words, which is all it ever needed to do.
  */
 export default function Waitlist() {
   const [email, setEmail] = useState("");
@@ -51,9 +56,6 @@ export default function Waitlist() {
       setMessage(waitlist.success);
       setEmail("");
       setCell("");
-      // Sending an address is itself a sample — the field flares to acknowledge
-      // it. Cheaper and more on-concept than a checkmark.
-      pulseField();
     } catch (err) {
       if (err instanceof WaitlistUnconfigured) {
         setStatus("unconfigured");
@@ -77,112 +79,96 @@ export default function Waitlist() {
   };
 
   const row =
-    "group relative flex items-center border-b border-edge transition-colors duration-500 focus-within:border-accent";
+    "flex items-center border-b border-rule transition-colors duration-500 focus-within:border-accent";
+
+  const field =
+    "w-full bg-transparent py-4 pr-4 text-base text-ink outline-none placeholder:text-ink-dim disabled:opacity-50";
 
   return (
-    <div className="w-full max-w-md">
-      <h2 className="mb-3 text-xl font-medium tracking-[-0.01em] md:text-2xl">
-        {waitlist.heading}
-      </h2>
-      {/* See the note in Deployment.tsx. This one sits over the footer's
-          re-condensing wordmark, which is the busiest ground on the page. */}
-      <p className="mb-7 text-sm leading-relaxed text-ink-soft">{waitlist.body}</p>
+    <form onSubmit={onSubmit} noValidate className="w-full">
+      {/* The answer to the question the copy beside this just asked. */}
+      <div className={row}>
+        <label htmlFor="waitlist-cell" className="sr-only">
+          {waitlist.cellLabel}
+        </label>
+        <input
+          id="waitlist-cell"
+          type="text"
+          name="cell"
+          maxLength={CELL_MAX}
+          placeholder={waitlist.cellPlaceholder}
+          value={cell}
+          disabled={locked}
+          onChange={(e) => {
+            setCell(e.target.value);
+            touched();
+          }}
+          className={field}
+        />
+      </div>
 
-      <form onSubmit={onSubmit} noValidate>
-        {/* The answer to the question the copy just asked. */}
-        <div className={row}>
-          <label htmlFor="waitlist-cell" className="sr-only">
-            {waitlist.cellLabel}
-          </label>
-          <input
-            id="waitlist-cell"
-            type="text"
-            name="cell"
-            maxLength={CELL_MAX}
-            placeholder={waitlist.cellPlaceholder}
-            value={cell}
-            disabled={locked}
-            onChange={(e) => {
-              setCell(e.target.value);
-              touched();
-            }}
-            className="w-full bg-transparent py-4 pr-4 text-base text-ink outline-none placeholder:text-ink-dim disabled:opacity-50"
-          />
-        </div>
+      <div className={`${row} mt-3`}>
+        <label htmlFor="waitlist-email" className="sr-only">
+          Email address
+        </label>
+        <input
+          id="waitlist-email"
+          type="email"
+          name="email"
+          autoComplete="email"
+          inputMode="email"
+          placeholder={waitlist.placeholder}
+          value={email}
+          disabled={locked}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            touched();
+          }}
+          aria-invalid={status === "error"}
+          aria-describedby="waitlist-status"
+          className={field}
+        />
 
-        <div className={`${row} mt-2`}>
-          <label htmlFor="waitlist-email" className="sr-only">
-            Email address
-          </label>
-
-          <input
-            id="waitlist-email"
-            type="email"
-            name="email"
-            autoComplete="email"
-            inputMode="email"
-            placeholder={waitlist.placeholder}
-            value={email}
-            disabled={locked}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              touched();
-            }}
-            aria-invalid={status === "error"}
-            aria-describedby="waitlist-status"
-            className="w-full bg-transparent py-4 pr-4 text-base text-ink outline-none placeholder:text-ink-dim disabled:opacity-50"
-          />
-
-          <button
-            type="submit"
-            disabled={locked}
-            className="shrink-0 whitespace-nowrap py-4 font-mono text-[11px] uppercase tracking-[0.22em] text-ink-dim transition-colors duration-300 hover:text-accent focus-visible:text-accent disabled:opacity-40"
-          >
-            {status === "submitting" || isDone ? (
-              status === "submitting" ? (
-                "Sending"
-              ) : (
-                "Sent"
-              )
-            ) : (
-              // Idle only: the swap needs a stable label on both faces, and the
-              // transient states replace the text outright.
-              <span className="swap">
-                <span>{waitlist.cta}</span>
-                <span aria-hidden="true">{waitlist.cta}</span>
-              </span>
-            )}
-          </button>
-        </div>
-
-        {/*
-          Reserved height, so the layout doesn't shift when a message appears.
-          `role="status"` announces the result without stealing focus.
-        */}
-        <p
-          id="waitlist-status"
-          role="status"
-          aria-live="polite"
-          className={`mt-3 min-h-5 font-mono text-[11px] uppercase tracking-[0.16em] ${
-            status === "error" || status === "unconfigured"
-              ? "text-accent-soft"
-              : "text-ink-dim"
-          }`}
+        <button
+          type="submit"
+          disabled={locked}
+          className="shrink-0 whitespace-nowrap py-4 font-mono text-[10px] uppercase leading-none tracking-[0.22em] text-ink transition-colors duration-300 hover:text-accent focus-visible:text-accent disabled:opacity-40"
         >
-          {message}
-          {status === "unconfigured" && (
-            <>
-              {" "}
-              <a
-                href={`mailto:${footer.email}`}
-                className="underline underline-offset-4 transition-colors duration-300 hover:text-ink"
-              >
-                {footer.email}
-              </a>
-            </>
-          )}
-        </p>
-      </form>
-    </div>
+          {status === "submitting"
+            ? "Sending"
+            : isDone
+              ? "Sent"
+              : waitlist.cta}
+        </button>
+      </div>
+
+      {/*
+        Reserved height, so the layout does not shift when a message appears.
+        `role="status"` announces the result without stealing focus.
+      */}
+      <p
+        id="waitlist-status"
+        role="status"
+        aria-live="polite"
+        className={`mt-4 min-h-5 font-mono text-[10px] uppercase leading-relaxed tracking-[0.16em] ${
+          status === "error" || status === "unconfigured"
+            ? "text-accent"
+            : "text-ink-dim"
+        }`}
+      >
+        {message}
+        {status === "unconfigured" && (
+          <>
+            {" "}
+            <a
+              href={`mailto:${footer.email}`}
+              className="underline underline-offset-4 transition-colors duration-300 hover:text-ink"
+            >
+              {footer.email}
+            </a>
+          </>
+        )}
+      </p>
+    </form>
   );
 }

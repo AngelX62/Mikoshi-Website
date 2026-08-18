@@ -2,151 +2,171 @@
 
 /* ---------------------------------------------------------------------------
    Design tokens. Tailwind 4 is configured here in CSS rather than in a
-   tailwind.config.js — every value below is available as a utility class
-   (e.g. `text-ink-dim`, `bg-void`, `duration-slow`).
+   tailwind.config.js, so every value below is available as a utility class
+   (`text-ink-dim`, `bg-plate`, `font-mono`).
+
+   ── ONE GROUND, NOT TWO ─────────────────────────────────────────────────────
+   There used to be a dark theme and a light one, a switch to move between them,
+   and an inline script in the document head that stamped `data-theme` before
+   first paint so a static export would not flash the wrong ground. All of that
+   is gone. There is one theme.
+
+   The near-black in this file is NOT the old dark theme wearing a new name. It
+   is `--plate`: a full-bleed band inside a light page, the way the reference
+   sheet this site is drawn from is composed. A plate is a place on the page,
+   not a mode the whole page can be in. Nothing toggles, nothing is stored, and
+   `prefers-color-scheme` is deliberately not consulted, because a site with one
+   ground should not pretend to have two.
    --------------------------------------------------------------------------- */
 @theme {
-  /* Ground. Pure black, as in every reference image.
+  /* ── The light ground ────────────────────────────────────────────────────
+     Bone rather than white. A true white leaves the grain with nothing to sit
+     against and turns the hairlines into the only texture on the page.
 
-     Named for the role rather than the colour, because there are two of them
-     now: the light theme redefines every token in this block and `void` would
-     have been a lie down there. The canvas is cleared rather than filled, so
-     whatever this is, it is what every dot on the page composites over — and
-     `RAMP_ON_PAPER[0]` in lib/dither.ts has to agree with the light value or
-     the whole declared ramp lands somewhere else. */
-  --color-ground: #000000;
-  /* Navy-cast, to agree with levels 1 and 2 of the dither ramp. These are the
-     panel and hairline colours that sit directly on the ground, so they are
-     read against the coldest, most populated part of the field. */
-  --color-surface: #08070f;
-  --color-edge: #1e1b30;
+     **This value is pre-compensated for the grain and is not what you see.**
+     The grain layer multiplies over the entire page, and multiplying only ever
+     darkens: measured, it pulls this ground down about four levels. So the
+     token is set four levels above the bone that is actually wanted and the
+     composite lands on it. Declared this way round rather than the other
+     because the composite is what a reader looks at, and a token that matched
+     the screenshot would be a token that never appears on screen.
 
-  /* Ink ramp. Neutral, with a slight warm cast, and *not* the hue of the field.
-     That separation is the whole composition: the dither ramp runs navy through
-     magenta to an orange core and never reaches white, and white belongs to the
-     labels and the hairlines. Ink that carried the field's hue would put a
-     third colour on the page and blur the one distinction it is built on.
+     Change this and the grain opacity together, or the ground drifts. */
+  --color-ground: #f1eee8;
+  /* One step down, for anything inset into the ground: table rows, the form's
+     fields, the strip behind an annotation. */
+  --color-ground-sunk: #e3dfd7;
+  --color-rule: #c8c2b6;
 
-     `ink-dim` is the dimmest of these that still clears 4.5:1 on black, so body
-     copy never drops below AA — anything dimmer is decorative only.
-     `ink-faint` measures 2.91:1 and is therefore never used for text: it is a
-     `bg-`, and the stroke colour for the instrument layer's hairlines, which
-     are decoration and carry no information of their own. */
-  --color-ink: #f7f4f0;
-  --color-ink-soft: #d8d0c6;
-  --color-ink-dim: #a89e92;
-  --color-ink-faint: #5e564c;
+  /* ── Ink on the light ground ─────────────────────────────────────────────
+     Darker than the old light theme's #1a1610, on purpose. Both references
+     live on extreme contrast with nothing in the middle, and the old value was
+     tuned to sit against a dither ramp that no longer exists.
 
-  /* The single accent: rose, the hot end of the field's own ramp. Used in
-     exactly three places — hover, focus ring, and the waitlist glow. Restraint
-     is the point; this is meant to read as the same heat the field carries at
-     its core rather than as decoration laid on top. Measured at 8.50:1 on the
-     ground, so it clears AA as text and 3:1 as a focus ring with room over.
+     Measured against `--color-ground`: ink 15.7:1, ink-soft 10.4:1,
+     ink-dim 6.0:1. `ink-faint` is 2.6:1 and is therefore never text. It is for
+     hairline-adjacent marks that carry no information of their own.
 
-     Declared as the hot end of the ramp, so it is derived rather than picked,
-     and that is load-bearing rather than tidy. It was an amber while L7 was, and
-     when the ramp collapsed to one hue family it had to come too: an amber
-     accent on a rose field would have put back into the chrome precisely the
-     second hue the field just spent a rewrite removing. It moves with L7 and
-     should keep doing so. */
-  --color-accent: #de8ea2;
-  --color-accent-soft: #eeb0c0;
+     That rule is stricter than it sounds and it was broken once already. The
+     footer's colophon labels, the copyright line, the home credit strip and
+     the `SHEET TWO OF FOUR` half of every annotation strip were all set in it,
+     measuring 2.82:1 on the plate. Every one of them is a word a reader is
+     meant to read. They are `ink-dim` now, and the only thing still wearing
+     `ink-faint` is the glyph cluster in the middle of a strip, which is
+     deliberately meaningless. See Strip.tsx. */
+  --color-ink: #14120e;
+  --color-ink-soft: #3a3429;
+  --color-ink-dim: #5e5648;
+  --color-ink-faint: #9a9184;
 
-  /* Corner falloff, so every screen reads as a shot rather than a web page.
-     A colour rather than a hard-coded black in Vignette.tsx, because on a
-     near-white ground a black falloff is a grey picture frame. */
-  --vignette-mid: rgb(0 0 0 / 0.42);
-  --vignette-edge: rgb(0 0 0 / 0.72);
+  /* ── The plate ───────────────────────────────────────────────────────────
+     Slightly cool, which is the one place this palette leaves neutral. Every
+     frame in the reference sheet has a blue cast in its blacks, and a plate
+     mixed warm to match the bone reads as brown rather than as an image.
 
-  /* IBM Plex. Drawn for an engineering company, which is the register this site
-     wants: precise and slightly severe, rather than the softer grotesques that
-     have become the default for dark technical pages. */
-  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+     **Pre-compensated like the ground above, in the opposite direction.** A
+     plate screens its own grain rather than multiplying it, because
+     multiplying into near black is near black, and screening only ever
+     lightens. At the first pass this was #0b0b0c and measured 24 on screen:
+     the grain had more than doubled the black level, and both references live
+     on deep blacks with nothing in the middle. Dropping the base to near zero
+     buys that lift back.
 
-  /* Motion tokens. Mirrored in src/lib/motion.ts so CSS and GSAP animations
-     share one vocabulary instead of drifting apart. */
+     Measured against the composite: plate-ink 17.6:1, plate-ink-dim 7.8:1.
+     `plate-ink-faint` is decorative only, as `ink-faint` is above. */
+  --color-plate: #030305;
+  --color-plate-rule: #2a2a2e;
+  --color-plate-ink: #f4f2ee;
+  --color-plate-ink-dim: #a8a398;
+  --color-plate-ink-faint: #5a564e;
+
+  /* ── The accent ──────────────────────────────────────────────────────────
+     One hue, read against two grounds. This is the old site's rose, both
+     halves of it: the deep value was its light theme and the pale one its
+     dark. They were two themes and are now one colour in two places, which is
+     what they always looked like.
+
+     Spent in four places, and the fourth was earned rather than allowed:
+     links, focus rings, the single call to action, and `The cell` at the
+     centre of the commercial diagram. That last one is the only place on the
+     site where the accent carries an argument instead of marking an
+     affordance. The diagram exists to say that two parties on opposite sides
+     are talking about the same object, and colouring that object is how a
+     drawing says so. Nothing else gets it, and generic emphasis in particular
+     does not.
+
+     6.4:1 on bone and 8.0:1 on the plate, so both clear AA as text and 3:1 as
+     a focus ring with room over. */
+  --color-accent: #962a45;
+  --color-accent-plate: #de8ea2;
+
+  /* ── Type ────────────────────────────────────────────────────────────────
+     Archivo carries a real width axis, which is why it sets both the wide
+     geometric wordmark and the body copy. Martian Mono is unusually wide for a
+     monospace and reads as a technical annotation at 10px, which is the only
+     size it is ever used at. Both are self-hosted at build by next/font. */
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-martian-mono), ui-monospace, monospace;
+
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out-soft: cubic-bezier(0.65, 0, 0.35, 1);
 }
 
 :root {
-  color-scheme: dark;
-}
-
-/* ---------------------------------------------------------------------------
-   The light theme.
-
-   Not a tint of the dark one and not a texture. The ground becomes a flat
-   near-white and the field's marks become ink instead of light: same grid,
-   same pitch, same dot growth with tone, and the same journey from a cool
-   speckle through magenta to a warm hot end, mirrored. A halftone is a print
-   technique, and two of the reference images are halftones on white, which is
-   why the inversion holds up rather than merely being possible.
-
-   Applied by attribute rather than by `@media (prefers-color-scheme)`, because
-   the visitor gets a switch. The inline script in layout.tsx stamps this
-   before first paint from localStorage, falling back to the system preference,
-   so there is no flash of the wrong ground on a static export with no server
-   to decide.
-
-   `RAMP_ON_PAPER` in lib/dither.ts carries the field's half of this. The two
-   have to agree on `--color-ground`.
-   --------------------------------------------------------------------------- */
-:root[data-theme="light"] {
   color-scheme: light;
 
-  /* Not pure white, and lower than the first pass at #f3f1ec. A ground that
-     bright leaves the ramp's populated low end within a few percent of it, so
-     the field's texture disappears and the page reads as type on blank paper.
-     Must match `RAMP_ON_PAPER[0]` in lib/dither.ts exactly. */
-  --color-ground: #ece8e0;
-  --color-surface: #e2ddd3;
-  --color-edge: #cfc8bc;
+  /* ── The grain ───────────────────────────────────────────────────────────
+     One tile of fractal noise, inline as a data URI so it costs no request and
+     cannot fail to load. Declared here rather than in either component that
+     draws it, because the site-wide overlay and the plates' own copy have to
+     be the same image: two different noise fields would read as two textures
+     the moment a plate met the ground.
 
-  /* Same ramp shape as the dark ink, read the other way up. `ink-dim` is again
-     the dimmest that still clears 4.5:1 on the ground, so body copy never
-     drops below AA, and `ink-faint` is again decorative only, at 2.21:1. */
-  --color-ink: #1a1610;
-  --color-ink-soft: #423b30;
-  --color-ink-dim: #64594a;
-  --color-ink-faint: #a89c8a;
+     `baseFrequency` at 0.82 puts the grain just above a single pixel at 1x,
+     which is where it stays a texture instead of becoming a pattern. Three
+     octaves is enough to stop it looking regular; more only costs raster time.
+     `stitchTiles` is what lets a 200px tile repeat without a visible seam.
 
-  /* The rose accent is invisible on a near-white ground, so it goes down the
-     ramp rather than sideways. Same hue, enough depth to hold a focus ring:
-     6.33:1 here, against the dark theme's 8.50:1. */
-  --color-accent: #962a45;
-  --color-accent-soft: #7c1b33;
-
-  /* Warm, and far weaker. Ink laid over a near-white ground reads at a fraction
-     of the alpha that light needs over black; at the dark theme's 0.72 this is
-     a grey border around the page. */
-  --vignette-mid: rgb(120 96 64 / 0.06);
-  --vignette-edge: rgb(96 76 56 / 0.13);
+     Note the `%23` in `url(%23n)`: a literal `#` inside a data URI terminates
+     it and the filter silently never applies, which looks exactly like grain
+     that is too subtle rather than like a broken reference. */
+  --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 html {
   background-color: var(--color-ground);
-  /* Lenis drives scrolling; native smooth behaviour would fight it. */
-  scroll-behavior: auto;
 }
 
 body {
   background-color: var(--color-ground);
   color: var(--color-ink);
   font-family: var(--font-sans);
+  font-variation-settings: "wdth" 100;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
 }
 
-/* Hide the native cursor only where the custom one actually renders: a fine
-   pointer. Touch and coarse-pointer devices keep their default behaviour. */
-@media (pointer: fine) {
-  html.has-custom-cursor,
-  html.has-custom-cursor * {
-    cursor: none;
-  }
+/* ---------------------------------------------------------------------------
+   The plate.
+
+   Applied by the Band primitive. It redefines the ink tokens inside its own
+   subtree rather than asking every child to know which ground it is standing
+   on, which is the same reasoning the old two-theme system used and the one
+   part of it worth keeping.
+   --------------------------------------------------------------------------- */
+.plate {
+  background-color: var(--color-plate);
+  color: var(--color-plate-ink);
+
+  --color-ground: var(--color-plate);
+  --color-ground-sunk: #131316;
+  --color-rule: var(--color-plate-rule);
+  --color-ink: var(--color-plate-ink);
+  --color-ink-soft: #d6d2c9;
+  --color-ink-dim: var(--color-plate-ink-dim);
+  --color-ink-faint: var(--color-plate-ink-faint);
+  --color-accent: var(--color-accent-plate);
 }
 
 ::selection {
@@ -159,8 +179,7 @@ body {
   outline-offset: 3px;
 }
 
-/* Screen-reader-only. The hero wordmark is drawn on canvas, so the real
-   heading text is exposed here for search engines and assistive tech. */
+/* Screen-reader-only. */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -173,76 +192,65 @@ body {
   border-width: 0;
 }
 
-/* Hover label swap: two stacked copies, one following the other up. */
-.swap {
-  position: relative;
-  display: inline-block;
-  overflow: hidden;
-  vertical-align: bottom;
+/* ---------------------------------------------------------------------------
+   The wordmark.
+
+   Archivo's width axis pushed to its ceiling, plus tracking. Both are needed:
+   width alone gives wide letterforms crowded together, tracking alone gives
+   normal letterforms floating apart, and the reference wordmark is
+   unmistakably both. A utility rather than a component style, because the
+   header, the home page and the footer all set it at different sizes and only
+   the treatment is shared.
+   --------------------------------------------------------------------------- */
+.wordmark {
+  font-variation-settings: "wdth" 125;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  /* Tracking adds space after the last letter too, which optically shifts a
+     centred wordmark left by half a space. */
+  text-indent: 0.18em;
 }
 
-.swap > span {
-  display: block;
-  transition: transform 0.5s var(--ease-out-expo);
-}
+/* ---------------------------------------------------------------------------
+   The entrance.
 
-.swap > span:last-child {
-  position: absolute;
-  inset: 0;
-  transform: translateY(100%);
-}
+   One reveal per route, on load, and nothing scroll-driven anywhere on the
+   site. A clip rather than a fade: the references are frames from a film, and
+   a frame arrives by being uncovered. The 6px shift is small enough that it
+   reads as the mark settling rather than as an element flying in.
 
-.swap:hover > span:first-child,
-.swap:focus-visible > span:first-child {
-  transform: translateY(-100%);
-}
+   **The sign of that shift is load-bearing. It must stay negative.**
 
-.swap:hover > span:last-child,
-.swap:focus-visible > span:last-child {
-  transform: translateY(0);
-}
+   It was `translateY(6px)`, the content rising into place, which is the more
+   usual direction and was measured as a real defect. A transform on a normally
+   positioned element contributes to the document's scrollable overflow at the
+   bottom edge, so every `.reveal` on a page added 6px to that page for as long
+   as it was animating. Harmless on the four routes that scroll anyway. On home
+   it meant the document was 906px tall inside a 900px window for the first 1.8
+   seconds of its life: a scrollbar appeared and then vanished, on the one page
+   whose entire purpose is that it does not scroll.
 
-@media (prefers-reduced-motion: reduce) {
-  .swap > span {
-    transition: none;
+   Negative, the content settles down instead of rising, and overflow past the
+   start edge is not scrollable, so the document never grows. Measured at 900
+   throughout. It also happens to travel with the mask, which opens downward
+   from the top.
+
+   Stagger is an inline `animation-delay` at the call site, so a page decides
+   its own order rather than every element carrying a magic number.
+   --------------------------------------------------------------------------- */
+@keyframes reveal {
+  from {
+    clip-path: inset(0 0 100% 0);
+    transform: translateY(-6px);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+    transform: translateY(0);
   }
 }
 
-/* Lines that wipe up into place on scroll. The mask is what makes the reveal
-   read as a wipe rather than a fade. */
-.line-mask {
-  display: block;
-  overflow: hidden;
-  /* The mask clips at the line box, which cuts descenders at this line-height.
-     Pad the box out and pull the same amount back off the flow, so descenders
-     survive without changing the vertical rhythm. */
-  padding-bottom: 0.14em;
-  margin-bottom: -0.14em;
-}
-
-.line-mask > span {
-  display: block;
-  will-change: transform;
-}
-
-/*
-   The method's steps are stacked on top of each other and cross-faded by
-   scroll. Without scrubbing there is nothing to reveal the other three, so a
-   reduced-motion reader would get one step out of four and no way to reach the
-   rest. This unstacks them into a plain vertical list.
-
-   Applied by Method.tsx rather than by a media query, so the component keeps
-   one source of truth for whether it is animating. Unlayered, so it outranks
-   the Tailwind utilities in @layer utilities that set the stacked state.
-*/
-.method-static > [data-step] {
-  position: static;
-  opacity: 1;
-  transform: none;
-}
-
-.method-static > [data-step] + [data-step] {
-  margin-top: 3.5rem;
+.reveal {
+  animation: reveal 0.9s var(--ease-out-expo) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -253,5 +261,14 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  /* `animation-fill-mode: both` plus a near-zero duration lands on the `to`
+     frame immediately, so every reveal resolves to its finished state rather
+     than being stranded clipped. Stated explicitly because the delay survives
+     the block above, and a 1.2s delay on a 0.01ms animation is 1.2s of an
+     invisible element. */
+  .reveal {
+    animation-delay: 0ms !important;
   }
 }

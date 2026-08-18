@@ -1,7 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" fill="#000"/>
-  <rect x="8" y="8" width="9" height="9" fill="#fafafa"/>
-  <!-- The offset square carries the accent, so the mark holds the page's own
-       division at 16px: the field's heat against the instrument's white. -->
-  <rect x="17" y="17" width="7" height="7" fill="#de8ea2"/>
+  <!-- Bone ground, near-black mark, rose on the offset square. Same idea as
+       the mark this replaces, in the palette that replaced its own: that one
+       was a black ground carrying the dark theme's pale rose, and both halves
+       of it died with the dark theme. -->
+  <rect width="32" height="32" fill="#edeae4"/>
+  <rect x="8" y="8" width="9" height="9" fill="#14120e"/>
+  <rect x="17" y="17" width="7" height="7" fill="#962a45"/>
 </svg>

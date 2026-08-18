@@ -1,34 +1,40 @@
 import type { Metadata, Viewport } from "next";
-import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
+import { Archivo, Martian_Mono } from "next/font/google";
 import { site } from "@/content";
-import SmoothScroll from "@/components/SmoothScroll";
-import Cursor from "@/components/Cursor";
+import Header from "@/components/Header";
 import Grain from "@/components/Grain";
-import Instrument from "@/components/Instrument";
-import ScrollRail from "@/components/ScrollRail";
-import Vignette from "@/components/Vignette";
-import { THEME_BOOT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
 /**
- * IBM Plex, self-hosted at build time by next/font so the static export carries
- * no third-party font requests.
+ * Archivo, variable on both weight and width.
  *
- * Weight 600 is not optional: sampleTextMask draws the hero wordmark at
- * `600 ${size}px`, and without the real cut the browser synthesises a bold that
- * turns to mush once it is reduced to dots.
+ * `axes: ["wdth"]` is not optional. next/font ships only the default axes
+ * unless the others are asked for by name, and the width axis is the whole
+ * reason this family was chosen: the wordmark is set at `wdth` 125 and the body
+ * copy at 100, so one family does the job a display face and a text face would
+ * otherwise split between them. Without the axis the wordmark silently sets at
+ * normal width and the site loses its one typographic signature.
  */
-const plexSans = IBM_Plex_Sans({
+const archivo = Archivo({
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-plex-sans",
+  axes: ["wdth"],
+  variable: "--font-archivo",
   display: "swap",
 });
 
-const plexMono = IBM_Plex_Mono({
+/**
+ * Martian Mono, used at exactly one size and one weight: 10px, regular,
+ * uppercase, tracked +0.22em. It is an unusually wide monospace, which is what
+ * makes it read as an instrument annotation rather than as code.
+ *
+ * 600 was declared here and never used by a single rule on the site, which put
+ * a second `@font-face` in the stylesheet for a face nothing could ever ask
+ * for. One weight, because one weight is what the design uses.
+ */
+const martianMono = Martian_Mono({
   subsets: ["latin"],
-  weight: ["400", "500"],
-  variable: "--font-plex-mono",
+  weight: ["400"],
+  variable: "--font-martian-mono",
   display: "swap",
 });
 
@@ -56,53 +62,48 @@ export const metadata: Metadata = {
   },
 };
 
+/**
+ * One ground, so one theme colour.
+ *
+ * This used to carry two entries keyed off `prefers-color-scheme`, and the
+ * document head used to carry an inline script that stamped `data-theme` before
+ * first paint so the static export would not flash the wrong ground on load.
+ * Both are gone with the dark theme. The near-black on this site is a band
+ * inside the page, not a mode the page can be in, so the browser chrome should
+ * match the ground and nothing else.
+ */
 export const viewport: Viewport = {
-  // Both grounds, so the browser chrome matches whichever one is on rather
-  // than framing a near-white page in black.
-  themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#000000" },
-    { media: "(prefers-color-scheme: light)", color: "#ece8e0" },
-  ],
-  colorScheme: "dark light",
+  themeColor: "#edeae4",
+  colorScheme: "light",
 };
 
+/**
+ * The header lives here. The footer deliberately does not.
+ *
+ * The header is shared because five routes rebuilding their own nav is five
+ * chances for it to drift. It is static rather than sticky: a sticky header
+ * would have to invert every time a plate band passed under it, and no route is
+ * long enough to need it.
+ *
+ * **The footer is composed by each route instead**, because home must not
+ * scroll and a full colophon under a full-screen lockup would put it below the
+ * fold, which is the one thing this rebuild exists to stop. Home ends on a
+ * single-line strip of its own; the other four end on `Footer`. Four repeated
+ * imports is a smaller price than a layout that reads the current route to
+ * decide what to render, and it keeps every page a server component.
+ *
+ * `min-h-screen` with `flex-1` on the content is what lets home centre itself
+ * in exactly the height the header leaves behind.
+ */
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html
-      lang="en"
-      className={`${plexSans.variable} ${plexMono.variable}`}
-      suppressHydrationWarning
-    >
-      <head>
-        {/*
-          Stamps `data-theme` before the first paint. This is a static export,
-          so nothing on a server can decide the ground: without this the page
-          paints black and then swaps to near-white once React hydrates, which
-          is a full-viewport flash on every load for anyone who chose light.
-          Render-blocking on purpose, and tiny. See lib/theme.ts.
-
-          `THEME_BOOT_SCRIPT` is a module constant assembled entirely from
-          string literals at build time. Nothing from a request, a URL, a store
-          or a user reaches it, so there is no interpolation point to inject
-          into. The value it *reads* at runtime, `localStorage`, never leaves
-          the script: it is compared against two literals and discarded unless
-          it matches one of them.
-        */}
-        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
-      </head>
-      <body className="bg-ground antialiased">
-        <SmoothScroll />
+    <html lang="en" className={`${archivo.variable} ${martianMono.variable}`}>
+      <body className="flex min-h-screen flex-col bg-ground antialiased">
+        <Header />
         {children}
-        {/* Sits above the field and below the copy. Mounted here rather than
-            per section because it is one fixed coordinate space shared with the
-            canvas, not a decoration each section owns. */}
-        <Instrument />
-        <Vignette />
-        <ScrollRail />
         <Grain />
-        <Cursor />
       </body>
     </html>
   );

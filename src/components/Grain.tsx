@@ -1,26 +1,31 @@
 /**
- * Film grain overlay.
+ * Film grain over the whole viewport.
  *
- * A single inline SVG turbulence baked into a data URI — it costs nothing per
- * frame, unlike redrawing noise on a canvas. Kept at low opacity so it reads as
- * film stock rather than as visible noise.
+ * This is the only texture on a site with no photography, and it is the single
+ * most transferable thing in either reference: the frame that gave this site
+ * its annotation strip is defined more by its grain than by anything drawn in
+ * it. So it is meant to be seen. Grain tuned down until it is technically
+ * present and visually absent is a cost with no benefit.
+ *
+ * **Multiply, not overlay.** The noise the filter produces averages to mid
+ * grey. Multiplying it into bone darkens in proportion to the noise and leaves
+ * the ground's hue alone, which is what grain in a print does. Overlay would
+ * push both ways from mid grey and, on a ground this light, would mostly push
+ * up into blown white and read as haze.
+ *
+ * It follows that this layer does nothing at all over a plate, since
+ * multiplying into near black is near black. Plates carry their own screened
+ * copy of the same noise. See Band.tsx.
+ *
+ * Fixed rather than absolute, so the grain stays welded to the screen while the
+ * page moves under it. Grain that scrolls with the content reads as a texture
+ * printed on the page; grain that does not reads as the image being one shot.
  */
-const NOISE = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="200" height="200" filter="url(%23n)" opacity="0.55"/></svg>`;
-
 export default function Grain() {
   return (
     <div
       aria-hidden="true"
-      // No blend mode. The element itself never repaints, but `mix-blend-overlay`
-      // across the full viewport forces the compositor to read back and re-blend
-      // the backdrop on every frame the canvas changes, which is every frame. At
-      // this opacity plain compositing is indistinguishable and costs nothing.
-      className="pointer-events-none fixed inset-0 z-50 opacity-[0.055]"
-      style={{
-        backgroundImage: `url("data:image/svg+xml,${NOISE}")`,
-        backgroundRepeat: "repeat",
-        backgroundSize: "200px 200px",
-      }}
+      className="pointer-events-none fixed inset-0 z-50 opacity-[0.14] mix-blend-multiply [background-image:var(--noise)] [background-size:180px_180px]"
     />
   );
 }
