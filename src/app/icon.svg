@@ -1,9 +1,27 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <!-- Bone ground, near-black mark, rose on the offset square. Same idea as
-       the mark this replaces, in the palette that replaced its own: that one
-       was a black ground carrying the dark theme's pale rose, and both halves
-       of it died with the dark theme. -->
-  <rect width="32" height="32" fill="#edeae4"/>
-  <rect x="8" y="8" width="9" height="9" fill="#14120e"/>
-  <rect x="17" y="17" width="7" height="7" fill="#962a45"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 104 104">
+  <!-- The mark, and it survived the rename to Afterscale without moving a
+       coordinate. Two equal, rotationally related L forms, and a square
+       displaced from the corner they leave open.
+
+       **These three paths are duplicated from MARK_PATHS in src/lib/logo.ts and
+       nothing enforces the match.** There used to be a PowerShell script
+       asserting the SVG masters against the component; the masters are gone with
+       the drawn wordmark, so this file is the last copy of the geometry outside
+       the TypeScript. If you edit the mark, edit both. The paths are short
+       enough to diff by eye and the failure is silent: a favicon that disagrees
+       with the header logo looks like a caching bug.
+
+       **The ground is drawn here and is deliberately not in the component.** A
+       favicon sits on a browser tab that can be dark, and near-black ink on
+       transparency disappears into it. The rect is the bone the site actually
+       composites to, #edeae4 rather than the #f1eee8 token, because that token
+       is pre-compensated for a grain multiply that a favicon has no grain to
+       receive.
+
+       The mark sits at 16 to 88 inside a 104 canvas, so it carries its own clear
+       space and nothing needs insetting. -->
+  <rect width="104" height="104" fill="#edeae4"/>
+  <path fill="#14120e" d="M16 24h48v16H32v32H16V24Z"/>
+  <path fill="#14120e" d="M32 72h32V40h16v48H32V72Z"/>
+  <path fill="#962a45" d="M72 16h16v16H72z"/>
 </svg>

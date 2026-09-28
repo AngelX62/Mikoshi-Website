@@ -3,6 +3,7 @@ node_modules/
 out/
 build/
 dist/
+tmp/
 
 *.tsbuildinfo
 next-env.d.ts
@@ -15,3 +16,7 @@ next-env.d.ts
 npm-debug.log*
 yarn-error.log*
 .vercel
+
+# Local restore points (see backups/) and Windows folder metadata
+backups/
+desktop.ini

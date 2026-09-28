@@ -3,20 +3,24 @@
 /* ---------------------------------------------------------------------------
    Design tokens. Tailwind 4 is configured here in CSS rather than in a
    tailwind.config.js, so every value below is available as a utility class
-   (`text-ink-dim`, `bg-plate`, `font-mono`).
+   (`text-ink-dim`, `bg-ground`, `font-mono`).
 
-   ── ONE GROUND, NOT TWO ─────────────────────────────────────────────────────
+   ── ONE GROUND, AND ONCE THERE WERE THREE ───────────────────────────────────
    There used to be a dark theme and a light one, a switch to move between them,
    and an inline script in the document head that stamped `data-theme` before
-   first paint so a static export would not flash the wrong ground. All of that
-   is gone. There is one theme.
+   first paint so a static export would not flash the wrong ground. Then there
+   was one theme with a near-black `--plate` cut into it. All of that is gone.
 
-   The near-black in this file is NOT the old dark theme wearing a new name. It
-   is `--plate`: a full-bleed band inside a light page, the way the reference
-   sheet this site is drawn from is composed. A plate is a place on the page,
-   not a mode the whole page can be in. Nothing toggles, nothing is stored, and
-   `prefers-color-scheme` is deliberately not consulted, because a site with one
-   ground should not pretend to have two.
+   **The page is one sheet of paper** and the only variation inside it is how
+   heavily it is inked: `--color-ground` is the sheet, `--color-ground-sunk` is
+   an inset field, `--color-ground-deep` is a tint block. Nothing toggles,
+   nothing is stored, and `prefers-color-scheme` is deliberately not consulted,
+   because a site with one ground should not pretend to have two.
+
+   **The footer is the one exception, and it is a place, not a theme.** Since
+   22 September 2026 every route ends on a dark gradient, with its own token set
+   in `.dusk`. It is the only dark value in this file, it never alternates with
+   the paper, and it is what the page ends on rather than a mode it can be in.
    --------------------------------------------------------------------------- */
 @theme {
   /* ── The light ground ────────────────────────────────────────────────────
@@ -36,6 +40,25 @@
   /* One step down, for anything inset into the ground: table rows, the form's
      fields, the strip behind an annotation. */
   --color-ground-sunk: #e3dfd7;
+
+  /* ── Two steps down: the tint block ──────────────────────────────────────
+     The band treatment that replaces the plate.
+
+     **A sheet of paper emphasises by tinting, not by inverting.** The site used
+     to mark its most important band by flipping to near black, which meant
+     every route ran bone, bone, black, bone, black, and read as a page that
+     could not decide what colour it was printed on. A tint block is what a
+     press actually does, it keeps one ground for the whole site, and it leaves
+     the ink scale in place instead of swapping it.
+
+     **Text on this needs the darker dim ink, and that is measured, not felt.**
+     `ink-dim` is 4.71:1 here on the token and **4.04:1 on the composite** once
+     the grain has multiplied the ground down, which is a fail. `.tint` steps
+     the token down inside its own subtree rather than this value being made
+     lighter, because a tint that cannot be told from the ground is not a tint.
+     See `.tint` below for the whole set. */
+  --color-ground-deep: #d6d0c1;
+
   --color-rule: #c8c2b6;
 
   /* ── Ink on the light ground ─────────────────────────────────────────────
@@ -59,26 +82,22 @@
   --color-ink-dim: #5e5648;
   --color-ink-faint: #9a9184;
 
-  /* ── The plate ───────────────────────────────────────────────────────────
-     Slightly cool, which is the one place this palette leaves neutral. Every
-     frame in the reference sheet has a blue cast in its blacks, and a plate
-     mixed warm to match the bone reads as brown rather than as an image.
+  /* ── THE PLATE WAS HERE, AND IT IS GONE ──────────────────────────────────
+     `--color-plate` and its four ink tokens described a near-black ground used
+     by home's title card, one band per route and the footer. They are deleted
+     along with `.plate` and `--color-accent-plate`.
 
-     **Pre-compensated like the ground above, in the opposite direction.** A
-     plate screens its own grain rather than multiplying it, because
-     multiplying into near black is near black, and screening only ever
-     lightens. At the first pass this was #0b0b0c and measured 24 on screen:
-     the grain had more than doubled the black level, and both references live
-     on deep blacks with nothing in the middle. Dropping the base to near zero
-     buys that lift back.
+     The site was bone with black bands cut into it, which is two grounds, and
+     on home a bone header sat directly on the black card. One paper now, with
+     `--color-ground-deep` carrying the emphasis those bands were carrying.
 
-     Measured against the composite: plate-ink 17.6:1, plate-ink-dim 7.8:1.
-     `plate-ink-faint` is decorative only, as `ink-faint` is above. */
-  --color-plate: #030305;
-  --color-plate-rule: #2a2a2e;
-  --color-plate-ink: #f4f2ee;
-  --color-plate-ink-dim: #a8a398;
-  --color-plate-ink-faint: #5a564e;
+     Note for anyone reversing this: the plate was not merely a colour. It also
+     owned a screened grain overlay in Band.tsx and page.tsx, because the
+     site-wide multiply does nothing over near black. Those went with it.
+
+     **The footer's dusk met the same problem and solved it the same way.** It
+     is dark, so it carries its own copy of the grain, in `soft-light` rather
+     than screened. See `.footer-art`. */
 
   /* ── The accent ──────────────────────────────────────────────────────────
      One hue, read against two grounds. This is the old site's rose, both
@@ -86,27 +105,91 @@
      dark. They were two themes and are now one colour in two places, which is
      what they always looked like.
 
-     Spent in four places, and the fourth was earned rather than allowed:
-     links, focus rings, the single call to action, and `The cell` at the
-     centre of the commercial diagram. That last one is the only place on the
-     site where the accent carries an argument instead of marking an
-     affordance. The diagram exists to say that two parties on opposite sides
-     are talking about the same object, and colouring that object is how a
-     drawing says so. Nothing else gets it, and generic emphasis in particular
-     does not.
+     ── IT NOW HAS ONE MEANING, AND THAT IS WHAT LETS THERE BE MORE OF IT ────
+     The rule used to be a budget: four places, a fifth had to be earned. A
+     budget is the right instrument when a colour means nothing in particular,
+     and the wrong one once it means something.
 
-     6.4:1 on bone and 8.0:1 on the plate, so both clear AA as text and 3:1 as
-     a focus ring with room over. */
+     **Black printing is what Afterscale claims. Rose is what is under test.** It
+     is always an annotation laid on top of or beside the printing, never a
+     fill, exactly as a draftsman's pencil sits on a plotted drawing. At rest it
+     marks what is not yet demonstrated; under the pointer it marks the thing
+     being touched. Those are the same idea, which is why links and focus keep
+     it without diluting the meaning.
+
+     That rule is what carries the count from about five appearances to roughly
+     fifteen without the page turning decorative: every one of them is saying
+     the same thing, and it is the most important thing this site has to say.
+
+     **It stays cool and it must not drift warm.** #962a45 is a blue-shifted
+     wine. Warm it toward terracotta and cream-plus-terracotta is one of the
+     most worn looks on the web. The hue is the single most load-bearing
+     decision in this palette.
+
+     ── THE RULE IS ABOUT INK, AND HOME NOW CARRIES A SECOND ROSE ────────────
+     The illustration under home's title card contains a magenta of its own,
+     `#fa0165` at its hottest and 16% of the image's ink. Two roses on one page
+     is exactly how a colour with one meaning loses it.
+
+     **The boundary is ink against picture.** Everything in this file is ink:
+     printing, rules, brackets, rings, all of it laid down by the site, and all
+     of it under the rule above. The illustration is a picture the site is
+     showing, and it is not making the claim that rose makes.
+
+     Compositing does most of the work unasked. Over bone the image's magenta
+     averages `#82374d` against this `#962a45`, hue 344 against 345, so what a
+     reader mostly sees is a duller sibling. The exception is the crimson
+     square, which is opaque and stays hot, and in the composition it happens to
+     be the one square selected out of a field of neutral ones.
+
+     **Keep the roles separate.** The research band uses `.under-test` for its
+     status. The following illustration carries no caption and no status text
+     over the picture. Review their spacing together at desktop and mobile sizes.
+
+     **The footer is the second picture in this hue, and the same boundary
+     holds.** Its gradient runs plum through wine to peach, and it is a picture
+     the site shows, not a claim the site prints. The ink on it is `.dusk`'s pale
+     rose, which appears only under the pointer and around focus, so rose as ink
+     still means one thing there.
+
+     6.7:1 on bone and 5.0:1 on the tint, so it clears AA as text on both and
+     3:1 as a focus ring with room over. */
   --color-accent: #962a45;
-  --color-accent-plate: #de8ea2;
+
+  /* The same hue at hairline value, for furniture that should read as rose
+     without reading as a stripe: the registration ticks. Measured at 1.77:1 on
+     bone against the neutral rule's 1.53, so it sits a touch above a plain
+     hairline, which is what an annotation should do. `.tint` steps it down.
+
+     **Not for the margin bracket.** That takes the full accent: a red pencil
+     line on paper is saturated, and at 1px a pale one just looks like a
+     mistake in the printing. */
+  --color-accent-rule: #d8a9b4;
 
   /* ── Type ────────────────────────────────────────────────────────────────
-     Archivo carries a real width axis, which is why it sets both the wide
-     geometric wordmark and the body copy. Martian Mono is unusually wide for a
-     monospace and reads as a technical annotation at 10px, which is the only
-     size it is ever used at. Both are self-hosted at build by next/font. */
-  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+     Bricolage Grotesque carries an optical size axis, which is what sets the
+     wordmark, the display registers and the body copy from one family. Martian
+     Mono is unusually wide for a monospace and reads as a technical annotation
+     at 10px, which is the only size it is ever used at. Both are self-hosted at
+     build by next/font.
+
+     **Archivo was here and it read stiff.** The swap and the measurements that
+     forced it are in layout.tsx. The short version: its width axis was the only
+     one on any candidate that goes above 100, so the 108/100/88 ladder could not
+     survive the change and `opsz` replaces it. Changing family is this line plus
+     the import in layout.tsx. */
+  --font-sans: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-martian-mono), ui-monospace, monospace;
+  /* `--font-matrix` was here, pointing at Doto, and before that `--font-serif`
+     pointed at Bodoni Moda. Both are gone. Two faces carry the site: Bricolage
+     for display and body, Martian Mono for chrome and for the figure's character
+     grid. See the note where `.resolve` used to be. */
+
+  /* ── The body size, and it is one line on purpose ────────────────────────
+     Every route sets its prose with `text-lg`, so redefining the token moves all
+     of them and touches nothing else. It was Tailwind's 18px default and the
+     site read oversized at that size against the reduced display scale. */
+  --text-lg: 1.0625rem;
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out-soft: cubic-bezier(0.65, 0, 0.35, 1);
@@ -115,12 +198,66 @@
 :root {
   color-scheme: light;
 
+  /* ── The header's height ─────────────────────────────────────────────────
+     Home's title card has to own exactly one frame, and to do that it needs
+     to know what the header took.
+
+     It used to get this for free: home was the only content on the page, so
+     `flex-1` under `min-h-screen` absorbed whatever was left. Home has a
+     second band under it now, which makes `main` taller than the viewport,
+     and at that point `flex-1` contributes nothing and the title card
+     collapses to its natural height. Measured, that is 678px against the
+     795px it should hold at 1440x900.
+
+     **These two values are a first-paint fallback, not the answer.** Header.tsx
+     measures itself and overwrites this on `:root`, because the header has
+     three heights and only one of the boundaries is a breakpoint: at 640 the
+     nav moves up beside the wordmark, but near 412 it simply runs out of room
+     and wraps to a second line, and where that happens depends on the text of
+     the nav labels. Those live in content.ts and are meant to be edited. The
+     note on the effect in Header.tsx has the measurements.
+
+     So this covers the moment before hydration and the two ranges it is exact
+     for, 136.8 below and 76.8 above `sm`. In between it is 110.8 and this
+     overshoots by 26, which shows a sliver of the next band and is the harmless
+     direction.
+
+     **All three grew when the nav links got real hit areas**, from 107.3 / 89.3
+     / 63.3. The type did not change and neither did the spacing; 10px links were
+     13px tall against a 24px minimum, so the boxes around them did. See the note
+     in Header.tsx.
+
+     **Then two of them shrank by 2 when the wordmark stopped being type**, from
+     132 / 72 to 131 / 71. A drawn mark is exactly as tall as it is asked to be,
+     where 15px of set type carried a line box taller than its own ink. The
+     numbers in this block were measured against Archivo and the face has
+     changed; Header.tsx publishes the real height at runtime, so they are a
+     first-paint fallback and a record, not a live constant.
+
+     **Then all three grew by 7 when the mark joined the wordmark**, from
+     129.8 / 103.3 / 69.8 to 136.8 / 110.8 / 76.8. The lockup is set at 28 where
+     the wordmark alone was set at 21, because both carry a 48-unit cap height but
+     the lockup's box is 104 units tall against the wordmark's 80: matching a cap
+     across the two is a multiply by 1.3. Unlike the last change this one moves the
+     middle range as well, because 7px is enough to take the logo past the wrapped
+     nav as the taller of the two. See Logo.tsx.
+
+     **Rounded up, and that direction matters.** At 138 against a real 136.8 the
+     first frame comes out a fraction short of the space available, so it can
+     never be the thing that puts a scrollbar on the page. Rounding down would
+     let it overflow by a fraction, which is a scrollbar on a page whose whole
+     claim is that it does not have one. Header.tsx rounds the same way and adds a
+     pixel on top, for a sub-pixel `svh` overshoot the note there explains, so
+     these constants carry that pixel too and match what it publishes. */
+  --header-h: 138px;
+
   /* ── The grain ───────────────────────────────────────────────────────────
      One tile of fractal noise, inline as a data URI so it costs no request and
-     cannot fail to load. Declared here rather than in either component that
-     draws it, because the site-wide overlay and the plates' own copy have to
-     be the same image: two different noise fields would read as two textures
-     the moment a plate met the ground.
+     cannot fail to load. Declared here rather than in the component that draws
+     it, because there are two readers: Grain.tsx multiplies it over the whole
+     page, and `.footer-art` lays a `soft-light` copy over the footer's dusk,
+     since multiplying into a dark ground is still dark. The plate did the same
+     with a screened copy, for the same reason, while it existed.
 
      `baseFrequency` at 0.82 puts the grain just above a single pixel at 1x,
      which is where it stays a texture instead of becoming a pattern. Three
@@ -133,6 +270,13 @@
   --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
+/* `sm`, where the header stops wrapping to two rows. See --header-h above. */
+@media (min-width: 40rem) {
+  :root {
+    --header-h: 78px;
+  }
+}
+
 html {
   background-color: var(--color-ground);
 }
@@ -141,32 +285,181 @@ body {
   background-color: var(--color-ground);
   color: var(--color-ink);
   font-family: var(--font-sans);
-  font-variation-settings: "wdth" 100;
+  /* The middle rung: normal width, and the optical size the face is drawn for
+     at reading sizes. `.display` steps `opsz` up, `.qualifier` steps `wdth`
+     down. See both below. */
+  font-variation-settings: "opsz" 16, "wdth" 100;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
 }
 
 /* ---------------------------------------------------------------------------
-   The plate.
+   The tint block.
 
-   Applied by the Band primitive. It redefines the ink tokens inside its own
-   subtree rather than asking every child to know which ground it is standing
-   on, which is the same reasoning the old two-theme system used and the one
-   part of it worth keeping.
+   Applied by the Band primitive, and the direct replacement for `.plate`. It
+   redefines tokens inside its own subtree rather than asking every child to
+   know which ground it is standing on, which is the one part of the old
+   two-theme system worth keeping and the reason this swap touched so little.
+
+   **The ink does not invert here, it only adjusts.** That is the whole
+   difference between a tint and a plate: on a plate every token had to be
+   replaced, because the ground had moved to the other end of the scale. Here
+   the ground moves two steps and only the values that were already close to
+   their floor need to move with it.
+
+   Every number below is measured against the **grain composite**, not against
+   the token. The site-wide overlay multiplies at 0.14, which pulls this ground
+   from #d6d0c1 to roughly #c7c1b3, and that is enough to matter:
+
+     ink        12.2:1 on the token, comfortable either way
+     ink-soft    8.0:1, comfortable
+     ink-dim     4.7:1 on the token and **4.0:1 on the composite**, a fail,
+                 which is why it is stepped to #524a3c and lands at 4.9
+     accent      5.0:1, clears AA as text and 3:1 as a ring
+     rule        1.15:1 if left alone, invisible; stepped to match the 1.53
+                 the neutral rule has against bone
    --------------------------------------------------------------------------- */
-.plate {
-  background-color: var(--color-plate);
-  color: var(--color-plate-ink);
+.tint {
+  background-color: var(--color-ground-deep);
 
-  --color-ground: var(--color-plate);
-  --color-ground-sunk: #131316;
-  --color-rule: var(--color-plate-rule);
-  --color-ink: var(--color-plate-ink);
-  --color-ink-soft: #d6d2c9;
-  --color-ink-dim: var(--color-plate-ink-dim);
-  --color-ink-faint: var(--color-plate-ink-faint);
-  --color-accent: var(--color-accent-plate);
+  --color-ground: var(--color-ground-deep);
+  --color-ground-sunk: #cdc7b7;
+  --color-rule: #b3ab9a;
+  --color-ink-dim: #524a3c;
+  --color-ink-faint: #8b8274;
+  --color-accent-rule: #cf9aa8;
+}
+
+/* ---------------------------------------------------------------------------
+   The dusk: the footer's ground, and the only dark one on the site.
+
+   The footer carries a noise gradient in the accent's own hue, plum through
+   wine and rose to peach, and the ink has to invert on it rather than adjust.
+   That makes this the plate's kind of token set, not the tint's: every value
+   the footer prints is replaced, not stepped. It is written out here rather
+   than folded into `.tint` so that the one dark ground on the site is one class
+   anyone can find.
+
+   **The background is the gradient's own plum**, and it is not decoration. The
+   picture is lazy, so this is what the colophon stands on until it arrives, and
+   on a connection where it never does. Against it every value below clears 9:1.
+
+   Measured against the rendered footer, grain included, with the text hidden
+   and the pixels behind each line sampled, at 320, 360, 390, 768, 1440 and
+   2560. The worst line at any of those widths:
+
+     ink        #f1eee8   7.6:1
+     ink-soft   #e9e1d9   6.3:1
+     ink-dim    #ddd3ca   5.2:1, the DISCIPLINE label at 390 and 768, which
+                          sits where the crest crosses the column
+     accent     #ecc1c6   6.0:1 behind the nav, where it is the hover colour,
+                          and twice the 3:1 a focus ring needs
+
+   Re-measured on 23 September 2026 after the labels went from 10px to 11px and
+   the nav from uppercase 10px to the header's sentence-case sizes: the worst
+   label moved from 5.3 to 5.2, and the nav, now 14px at 1440, reads 6.6:1 at
+   worst, at 2560. Both are inside the scrim's core.
+
+   **320 and 360 were checked separately, because the footer is taller there.**
+   The nav wraps, the footer grows to 502px, and the wordmark and copyright sit
+   outside the scrim's full-strength core. They still measure 7.9:1 and 9.4:1:
+   the picture is dark at the top and bottom of its centre.
+
+   `ink-dim` is paler here than a dim ink usually is, and on purpose: the three
+   inks sit close together, and the colophon keeps its hierarchy through type,
+   mono labels over sans values, rather than through a contrast step this
+   ground cannot afford.
+
+   **The accent is the same hue, lifted.** #ecc1c6 is #962a45's hue, 10.1 in
+   OKLCH, at the lightness this ground needs. It keeps rose's one meaning: here
+   it only ever appears under the pointer and around focus. `--color-ground` is
+   redefined for `::selection`, which prints the ground's colour on the accent.
+
+   **Anything else added to the footer needs a value here first.** `rule`,
+   `ink-faint` and the rest are not redefined because nothing in the footer uses
+   them, and on this ground their light-paper values are invisible.
+   --------------------------------------------------------------------------- */
+.dusk {
+  background-color: #2a1521;
+
+  --color-ground: #2a1521;
+  --color-ink: #f1eee8;
+  --color-ink-soft: #e9e1d9;
+  --color-ink-dim: #ddd3ca;
+  --color-accent: #ecc1c6;
+}
+
+/* ---------------------------------------------------------------------------
+   The footer's gradient, dimmed where the colophon sits.
+
+   **Set as it was drawn, it cannot carry text.** Its bright crest runs
+   diagonally through the middle of the frame, which is exactly where the
+   colophon is centred, so no single ink survives it: dark ink measured 1.0:1 on
+   the plum under DIRECTION and white measured 1.8:1 on the crest under
+   DISCIPLINE, at every width from 390 to 2560. So the picture is shown whole and
+   darkened only behind the text.
+
+   **Multiply, not an overlay.** A translucent plum laid over the crest averages
+   pink and plum into grey-brown, and it read as a panel pasted onto the
+   picture. Multiplying by a wine keeps the hue, so the crest passes into wine
+   shadow instead, which is a thing light does. Multiply by white is no change,
+   which is why the ellipse fades to #fff and not to transparent.
+
+   **Centred on the text and sized in rem, not in percent**, so it tracks the
+   colophon rather than the picture, which is scaled differently at every width
+   by `object-fit: cover`. Full strength to a third of the way out, which covers
+   every line of the colophon, then two straight ramps to nothing, the first
+   steeper, so the crest comes back quickly once it has cleared the text.
+
+   **A smoothstep falloff was tried and rejected.** It has no kink to find, but
+   it holds its dark longer before lifting, and at 1440 that visibly dimmed the
+   crest on the left, which is the best of the picture. The stops here are the
+   ones chosen on 22 September 2026, and every number in `.dusk` was measured
+   with them.
+
+   On a phone the text fills the footer, so the ellipse covers nearly all of it
+   and the footer reads as deep wine; that is the text needing the room, not the
+   ellipse being too big.
+
+   **Then the grain goes back.** Multiplying darkens the picture's own grain
+   along with it: behind the text it fell to 40% of what the artist drew, and
+   the middle of a noise gradient went smooth. The site's multiply grain cannot
+   restore it, because multiplying into a dark ground is still dark, which is
+   the problem the plate had. So `::after` lays a copy of `--noise` back over the
+   same ellipse in `soft-light`, which pushes both ways from mid grey and so adds
+   grain without lifting the ground the way `screen` does. Behind the text at
+   1440 it measures 97% of the grain in the picture as drawn, and the numbers
+   in `.dusk` above were taken with it on.
+
+   Both layers sit over the picture and under the colophon: the picture is
+   `z-index: auto` and the colophon is `z-10`.
+   --------------------------------------------------------------------------- */
+.footer-art {
+  --shape: ellipse 42rem 27rem at 50% 50%;
+}
+
+.footer-art::before,
+.footer-art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.footer-art::before {
+  mix-blend-mode: multiply;
+  background-image: radial-gradient(var(--shape), #6e4250 34%, #b89aa2 62%, #fff 100%);
+}
+
+.footer-art::after {
+  --fade: radial-gradient(var(--shape), #000 34%, rgb(0 0 0 / 0.45) 62%, transparent 100%);
+  mix-blend-mode: soft-light;
+  background-image: var(--noise);
+  background-size: 180px 180px;
+  filter: grayscale(1);
+  -webkit-mask-image: var(--fade);
+  mask-image: var(--fade);
 }
 
 ::selection {
@@ -174,9 +467,35 @@ body {
   color: var(--color-ground);
 }
 
+/* 2px rather than 1. A hairline ring is in keeping with everything else on the
+   page and is also the one mark that has to survive being looked for rather than
+   looked at, which is what WCAG 2.2's focus appearance minimum is about. The
+   accent clears 3:1 on both grounds with room, so thickness was the only thing
+   missing. */
 :focus-visible {
-  outline: 1px solid var(--color-accent);
+  outline: 2px solid var(--color-accent);
   outline-offset: 3px;
+}
+
+/* ── A link cell marks focus on its own rule, not with the ring ──────────────
+   `.cells` clips to its own box, so the ring above lost its top and bottom on
+   every cell, and a cell has no side padding, so what survived sat against the
+   first letter of each line. Measured 2026-09-28 on home's "Read further" row.
+
+   The cell's row rule goes to the accent at 2px instead, across the cell's full
+   width, and Cells.tsx turns the title the accent too. That is a 2px indicator
+   the width of the control in a colour that clears 3:1 on both grounds, which
+   is what WCAG 2.2's focus appearance asks of the ring.
+
+   **Unlayered, next to the ring, on purpose.** The ring is unlayered, so it
+   beats anything in `@layer components` whatever the specificity; the first
+   attempt at this, an `outline-offset` in the layer, lost silently. */
+.cells a:focus-visible {
+  outline: none;
+}
+.cells > li:has(> a:focus-visible)::after {
+  height: 2px;
+  background-color: var(--color-accent);
 }
 
 /* Screen-reader-only. */
@@ -193,23 +512,286 @@ body {
 }
 
 /* ---------------------------------------------------------------------------
-   The wordmark.
+   Display type, and there is one of it again.
 
-   Archivo's width axis pushed to its ceiling, plus tracking. Both are needed:
-   width alone gives wide letterforms crowded together, tracking alone gives
-   normal letterforms floating apart, and the reference wordmark is
-   unmistakably both. A utility rather than a component style, because the
-   header, the home page and the footer all set it at different sizes and only
-   the treatment is shared.
+   `.matrix` sat beside this and set Doto, a 6x10 dot-matrix face, for hero
+   headings. It is gone with Doto itself: see the note where `.resolve` used to
+   be. Two faces carry the site now, Bricolage Grotesque and Martian Mono, which
+   is what the
+   type docblock in layout.tsx describes.
+
+   **It lives in `@layer components`, so call-site utilities still win.**
+   Tailwind 4 puts its utilities in a cascade layer, and unlayered CSS beats
+   every layer no matter what it says. Declared bare, this would silently swallow
+   a `tracking-tight` added later at a call site, which is the kind of rule that
+   makes a stylesheet feel haunted. Layered, it is a default and behaves like one.
+
+   **The leading is not here, and that is deliberate.** The comfortable value is
+   a function of both the face and the rendered size, so each heading carries its
+   own with the measurement that produced it. Note that every such number on the
+   site was originally derived for Bodoni, whose worst-case ink span across a
+   break is 1.036em; none of those ratios transferred and all of them were
+   re-measured for Archivo, and then again when Bricolage Grotesque replaced
+   it. Any figure in this block is face-specific: re-measure, never carry over.
    --------------------------------------------------------------------------- */
-.wordmark {
-  font-variation-settings: "wdth" 125;
-  font-weight: 500;
-  letter-spacing: 0.18em;
-  /* Tracking adds space after the last letter too, which optically shifts a
-     centred wordmark left by half a space. */
-  text-indent: 0.18em;
+@layer components {
+  /* ── The track: one content edge for the whole site ──────────────────────
+     The header, every band, the home hero and the footer sit on this, so a
+     reader scrolling any route sees one left edge and one right edge.
+
+     **There were three, and they were visible.** On 23 September 2026 at 1440
+     the header ran 64–1361, home's hero and the two bands under it 58–1367, and
+     every other band and the footer 88–1336. Each had been written by hand as
+     a max width plus padding, and they had drifted: Band capped at 86rem, the
+     header at 100rem, and home padded by `clamp(2.5rem, 4vw, 4rem)`.
+
+     **100rem, not 86rem**, so the header and the hero, the two things every
+     visitor sees, keep their shape and the bands move out to meet them. Prose
+     inside a band carries its own `max-w-[30–34rem]`, so a wider track only
+     widens the gap between columns, not the lines of text.
+
+     The padding steps are the ones the header and Band already used. Change the
+     track here and nowhere else. */
+  .track {
+    width: 100%;
+    max-width: 100rem;
+    margin-inline: auto;
+    padding-inline: 1.5rem;
+  }
+  @media (min-width: 48rem) {
+    .track { padding-inline: 2.5rem; }
+  }
+  @media (min-width: 64rem) {
+    .track { padding-inline: 4rem; }
+  }
+
+  /* ── Cells: parallel items as one ruled figure ────────────────────────────
+     Added 2026-09-28, when every one of the site's ten content bands turned out
+     to use the same composition: claim in the left five to seven columns, prose
+     in the right five or six. Where the claim was short, that left a dead
+     column: about 350px of empty height under /vision's mission, and the same
+     under "We have shown nothing yet" and home's first question. Meanwhile the
+     content was hiding its own structure: six decisions, four papers, four stop
+     conditions and three steps, all set as rows or prose.
+
+     The pattern is borrowed from the two sites it was measured against:
+     together.ai sets its four papers as a row of equal units, and fireworks.ai
+     sets its models and logos in a grid of hairline cells. **The drawing is
+     this site's own:** hairlines and no radius, no shadow, no hover lift, since
+     Band.tsx rules out all three.
+
+     **The text keeps the track's edge.** A padded box would push the first
+     column's text 24px inside the heading above it, which breaks the one-edge
+     rule in `.track`. So cells have no side padding: the gap does the spacing,
+     and the rules are drawn *in* the gap by pseudo-elements. The row rule
+     overhangs each cell by half a gap on both sides, which is what joins it
+     into one line. `overflow: hidden` then clips the first column's vertical
+     rule and the row rules' outer ends, so the figure's outer edges fall
+     exactly on the track.
+
+     **No row gap, on purpose.** The vertical rules run the full height of their
+     cell, so with no gap between rows they meet the rows above and below as one
+     continuous line. Items stretch to their row's height, which is the grid
+     default.
+
+     The component is Cells.tsx; this is only the drawing. */
+  .cells {
+    --cells-gap: 2.5rem;
+    display: grid;
+    column-gap: var(--cells-gap);
+    overflow: hidden;
+    border-bottom: 1px solid var(--color-rule);
+  }
+
+  /* Tighter on a phone, where cells stack one per row and the padding is paid
+     once per item rather than once per row: at 1.5 / 2rem home's six decisions
+     alone measured 690px tall at 390. */
+  .cells > * {
+    position: relative;
+    padding-block: 1.25rem 1.5rem;
+  }
+  @media (min-width: 48rem) {
+    .cells > * { padding-block: 1.5rem 2rem; }
+  }
+
+  /* The vertical rule, centred in the gap to this cell's left. */
+  .cells > *::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(var(--cells-gap) / -2);
+    width: 1px;
+    background-color: var(--color-rule);
+  }
+
+  /* The row rule, across this cell and half the gap on either side. */
+  .cells > *::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    height: 1px;
+    left: calc(var(--cells-gap) / -2);
+    right: calc(var(--cells-gap) / -2);
+    background-color: var(--color-rule);
+  }
+
+  /* ── Labels inside a drawn figure ─────────────────────────────────────────
+     Sized from a custom property the figure sets per breakpoint, because SVG
+     text scales with its drawing and a fixed size is the wrong size at every
+     width but one. See the note on `label` in Drawings.tsx. */
+  .drawing text {
+    font-size: var(--fig-label, 12px);
+  }
+
+  /* ── The display register, on the optical size axis ──────────────────────
+     No second face for this job. One family carries the site, and the
+     separation from body copy comes from three things at once: `opsz` 64
+     against 16, weight 500 against 400, and slight negative tracking against
+     none. Weight alone reads as bold body text rather than as display.
+
+     ── THIS WAS `wdth` 108 AT WEIGHT 600 AND IT WAS THE STIFFNESS ───────────
+     Three of the four settings that made the old face read rigid lived in this
+     rule. Weight 600 was the worst of them: **large type reads heavier at the
+     same weight, so display wants less weight, not more**, and 600 at 86px was
+     a slab. Tracking at -0.03em closed the counters on top of that.
+
+     `opsz` is the honest fix and the reason a family with the axis was chosen.
+     At 64 the face hands over letterforms actually drawn for display, with the
+     contrast and spacing built in, instead of body shapes scaled up and then
+     corrected with tracking. Set it near the size the type is really rendered
+     at; it is not a style knob to taste. */
+  .display {
+    font-family: var(--font-sans);
+    font-variation-settings: "opsz" 64, "wdth" 100;
+    font-weight: 500;
+    letter-spacing: -0.015em;
+  }
+
+  /* ── The mono, promoted out of the chrome ─────────────────────────────────
+     Martian Mono at 13px, for anything that is a reference or a value rather
+     than prose: a citation, a model size, a budget, a row in a record.
+
+     **It exists because the subject changed.** Martian Mono is the most
+     characterful face in the build and it was confined to 10px tracked labels,
+     which is a waste of it. Everything in an AI training company's world is
+     monospaced, so there is now a register for the difference between a
+     sentence and a figure, and the page can be read as a document with data in
+     it rather than as prose with numbers hidden in the sentences.
+
+     It is also the cheapest thing holding this design off a very worn look. An
+     all-cream page of hairline rules and grotesque prose is one screenshot away
+     from every other research-company site; dense mono records are not, and
+     they are true to the subject rather than applied to it.
+
+     13 rather than 10, because this is read rather than glanced at, and Martian
+     Mono is unusually wide so it holds its colour against the sans at a size
+     where most monospaces would look spindly. No tracking: the 0.22em the
+     chrome carries is what makes a label read as an instrument annotation, and
+     a tracked citation just reads as slow. */
+  .data {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  /* ── The ladder of certainty, and it now runs on two axes ─────────────────
+     How firmly a sentence is being asserted should be legible in the *shape* of
+     it before a word is read. A condensed footnote is also simply what a
+     technical document does.
+
+     It used to be one axis: `wdth` 108 where Afterscale claims, 100 where it
+     explains, 88 here where it qualifies. **The top rung is gone and could not
+     be kept**, because no candidate family except Archivo has a width axis
+     above 100. So the claim rung moved to `opsz` in `.display`, and this rung
+     did not move at all: Bricolage runs 75 to 100, so 88 is inside it with room,
+     and the narrowing a caveat gets is exactly what it always was.
+
+     Free, which is the other reason to do it here rather than reach for a
+     condensed face. `axes: ["opsz", "wdth"]` is requested in layout.tsx, so both
+     are loaded on every route whether anything uses them or not.
+
+     For notes and caveats only. Never for a claim, and never under about 13px,
+     where narrowing starts to cost legibility rather than buying tone. */
+  .qualifier {
+    /* `opsz` is restated rather than inherited. `font-variation-settings`
+       replaces the whole list, so naming only `wdth` here would silently drop
+       the optical size back to the face's default and set a caveat with
+       display letterforms. */
+    font-variation-settings: "opsz" 14, "wdth" 88;
+  }
+
+  /* ── The margin bracket, which is the draftsman's pencil ──────────────────
+     A hairline of accent in the left margin of a sentence that states something
+     not yet demonstrated. Named for what it means rather than for what it looks
+     like, deliberately: the value of the rose depends entirely on it never
+     being spent on emphasis in general, and a class called `.accent-border`
+     would be spent that way within a week.
+
+     At most once per band. The full accent rather than `--color-accent-rule`,
+     because a red pencil line on paper is saturated and a pale one at 1px reads
+     as a fault in the printing.
+
+     ── THE SQUARE IS THE MARK DOING A JOB, NOT AN ORNAMENT ──────────────────
+     A 1px rose rule is correct and nobody decodes it. The square at the head of
+     it is the lockup's own gesture at annotation scale: `MARK_PATHS.register`
+     in lib/logo.ts is a square displaced through the corner the two L forms
+     leave open, straddling it half in and half out, and this sits on the rule
+     the same way. A reader who has seen the header once has already been told
+     what it means.
+
+     It reads as "not settled" and it appears nowhere else. Spending it on
+     emphasis would cost the rose its meaning exactly as a `.accent-border`
+     class would, which is the argument three paragraphs up.
+
+     7px, because at 6 it reads as a bullet and at 8 it starts competing with
+     the type it annotates. Whole pixels, so it stays crisp at 1x. */
+  .under-test {
+    position: relative;
+    border-left: 1px solid var(--color-accent);
+    padding-left: 1.25rem;
+  }
+
+  .under-test::before {
+    content: "";
+    position: absolute;
+    /* Half in, half out on both axes, which is what the mark does. The 1px
+       rule sits at left: 0, so -3px against a 7px square leaves 3 out and 4 in. */
+    left: -3px;
+    top: -3px;
+    width: 7px;
+    height: 7px;
+    background-color: var(--color-accent);
+  }
+
+  /* ── `.title-card` WAS HERE, AND THE FRAME SYSTEM WENT WITH IT ─────────────
+     It pinned home to `calc(100svh - var(--header-h))` and derived every gap
+     inside the card from that one `--frame`, after two earlier attempts using
+     `min-height` media queries had failed a proper sweep at 8 of 14 viewports.
+
+     Home is a hero with a live field and two bands under it now, and it follows
+     its content height, so the rule had been reduced to `min-height: auto`,
+     which is the initial value and therefore nothing at all. Deleted along with
+     the class in page.tsx.
+
+     Note for anyone restoring it: `--header-h` is still published by
+     Header.tsx, so the derivation still has its input. What is gone is the
+     requirement that home occupy exactly one screen. */
 }
+
+/* ---------------------------------------------------------------------------
+   `.wordmark` was here.
+
+   It set Archivo's width axis to its ceiling with 0.18em of tracking, plus a
+   matching `text-indent` to cancel the trailing space that tracking adds after
+   the last letter, which otherwise shifts a centred mark left by half a space.
+
+   The lockup owns those values itself now. `Logo.tsx` is a flex row of the
+   drawn symbol beside real type, and it sets the width and the tracking inline
+   because it also has to cancel the trailing letter space and scale the symbol
+   against the face's measured cap height. A class here could not reach any of
+   that. See Logo.tsx, and lib/logo.ts for the constants.
+   --------------------------------------------------------------------------- */
 
 /* ---------------------------------------------------------------------------
    The entrance.
@@ -253,6 +835,26 @@ body {
   animation: reveal 0.9s var(--ease-out-expo) both;
 }
 
+/* ---------------------------------------------------------------------------
+   `.resolve` was here, and Doto with it.
+
+   It animated `font-variation-settings` from `"wght" 200` to `600` on Doto,
+   whose weight axis controls **dot size** rather than stroke thickness, so a
+   heading arrived by illuminating rather than by being uncovered. The argument
+   for it was that the halftone field drew `ctx.ellipse`, and a face made of the
+   same primitive as the picture meant the type and the image shared one idea.
+
+   The halftone is gone from every route, and by the end `.matrix` had one call
+   site and `.resolve` had none: a whole variable family with a custom `ROND`
+   axis, downloaded on every page, for one line of type.
+
+   **The figure's own entrance replaces it**, and it is the same idea aimed at
+   something real. See Figure.tsx: the character grid arrives scrambled and
+   settles, which is a sensor resolving rather than a font doing an impression of
+   one. If a dot-matrix face is ever wanted again, note that its advance widths
+   must be re-measured across `wght` before it is used on anything that wraps.
+   --------------------------------------------------------------------------- */
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -264,10 +866,12 @@ body {
   }
 
   /* `animation-fill-mode: both` plus a near-zero duration lands on the `to`
-     frame immediately, so every reveal resolves to its finished state rather
-     than being stranded clipped. Stated explicitly because the delay survives
-     the block above, and a 1.2s delay on a 0.01ms animation is 1.2s of an
-     invisible element. */
+     frame immediately, so every entrance resolves to its finished state rather
+     than being stranded. Stated explicitly because the delay survives the block
+     above, and a 1.2s delay on a 0.01ms animation is 1.2s of an invisible
+     element.
+
+     Test it with the OS setting actually on. */
   .reveal {
     animation-delay: 0ms !important;
   }
