@@ -1,0 +1,281 @@
+/* Only the dev-only review owns this shell. The public layout stays untouched. */
+/* IBM Plex Sans, distributed by IBM under the SIL OFL in _fonts/LICENSE.txt.
+   Only Paper uses these faces; Ink and the public routes never request them. */
+@font-face {
+  font-family:"IBM Plex Sans"; font-style:normal; font-weight:400; font-display:swap;
+  src:url("./_fonts/IBMPlexSans-Regular.woff2") format("woff2");
+}
+@font-face {
+  font-family:"IBM Plex Sans"; font-style:normal; font-weight:500; font-display:swap;
+  src:url("./_fonts/IBMPlexSans-Medium.woff2") format("woff2");
+}
+body:has(.ar-scope) > :is(.launch-header,.launch-footer) { display:none }
+.ar-scope {
+  --ar-paper:#f1eee8; --ar-ink:#14120e; --ar-muted:#59534e; --ar-rule:#c3bcb3;
+  --ar-red:#962a45; --ar-nib:#322829; --ar-light:#efebe5;
+  --ar-serif:Georgia,"Iowan Old Style","Times New Roman",serif;
+  --ar-sans:var(--font-bricolage),"Segoe UI",sans-serif;
+  --ar-mono:var(--font-martian-mono),Consolas,monospace;
+  --ar-edge:clamp(1.25rem,5.5vw,6.75rem);
+  width:100%; min-width:0; background:var(--ar-paper); color:var(--ar-ink); font-family:var(--ar-sans);
+}
+.ar-scope * { box-sizing:border-box }
+.ar-scope :is(h1,h2,h3,p,figure) { margin:0 }
+.ar-scope a { color:inherit; text-underline-offset:.28em }
+.ar-scope a:hover { color:var(--ar-red) }
+.ar-scope :is(a,button,input):focus-visible { outline:2px solid var(--ar-red); outline-offset:4px }
+.ar-scope main:focus:not(:focus-visible),.ar-scope section:focus:not(:focus-visible) { outline:none }
+.ar-page { --ar-text:var(--ar-ink); --ar-soft:var(--ar-muted); --ar-link:var(--ar-red); }
+.ar-mast,.ar-foot,.ar-hub-mast {
+  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap;
+  gap:.1rem 1.6rem; padding:clamp(.6rem,1.55vw,1.45rem) var(--ar-edge);
+}
+.ar-brand,.ar-foot nav,.ar-mast nav,.ar-hub-intro nav { display:flex; align-items:center; flex-wrap:wrap }
+.ar-brand { gap:.6rem clamp(.9rem,1.6vw,1.6rem) }
+.ar-brand a,.ar-foot>a,.ar-hub-mast>a:first-child { display:inline-flex; align-items:center; min-height:44px; text-decoration:none }
+.ar-status { color:var(--ar-link); font:400 .8rem/1.4 var(--ar-mono); white-space:nowrap }
+.ar-mast nav,.ar-foot nav,.ar-hub-intro nav { gap:.2rem clamp(1.15rem,2.1vw,2.15rem) }
+.ar-mast nav a,.ar-foot nav a,.ar-hub-mast>a:last-child,.ar-hub-intro nav a,.ar-edition a {
+  display:inline-flex; min-height:44px; align-items:center; font-size:.94rem; text-decoration:none;
+}
+.ar-mast nav a:hover,.ar-foot nav a:hover,.ar-mast nav a[aria-current="page"],.ar-hub-mast>a:last-child:hover { text-decoration:underline }
+.ar-mast { position:relative; z-index:1; color:var(--ar-text) }
+.ar-ink .ar-mast,.ar-ink .ar-cover {
+  --ar-text:var(--ar-light); --ar-soft:#d0c6c1; --ar-link:#e5a8b4; --color-accent:#cf8193;
+  background:var(--ar-ink); color:var(--ar-text);
+}
+.ar-ink .ar-mast a:hover,.ar-ink .ar-cover a:hover { color:#ecc2cb }
+.ar-ink :is(.ar-mast,.ar-cover) :focus-visible { outline-color:#e5a8b4 }
+.ar-cover { position:relative; isolation:isolate; overflow:hidden; overflow:clip; color:var(--ar-text) }
+.ar-cover-copy { position:relative; z-index:1 }
+.ar-cover h1 { font-kerning:normal; text-wrap:initial }
+.ar-cover h1 span { display:block }
+.ar-cover-note p { font-size:clamp(1.04rem,1.18vw,1.25rem); line-height:1.53; color:var(--ar-soft); text-wrap:pretty }
+.ar-scope .ar-link { display:inline-flex; align-items:center; min-height:44px; width:fit-content; color:var(--ar-link); text-decoration:underline; text-decoration-thickness:1px; font-size:1rem; font-weight:520 }
+.ar-scope .ar-link:hover { text-decoration-thickness:2px }
+.ar-cover-note .ar-link { margin-top:.72rem }
+.ar-paper {
+  --ar-sans:"IBM Plex Sans","Segoe UI",sans-serif;
+  --ar-serif:var(--ar-sans);
+  font-family:var(--ar-sans); font-style:normal; font-synthesis:none;
+}
+.ar-paper :is(.ar-brand,.ar-foot)>a { font-family:var(--font-bricolage),"Segoe UI",sans-serif }
+.ar-paper .ar-cover {
+  display:grid; grid-template-columns:minmax(0,1.03fr) minmax(0,.97fr);
+  align-items:center; gap:clamp(2.25rem,6.4vw,7rem);
+  width:min(100%,97rem); margin-inline:auto;
+  padding:clamp(3.75rem,6.6vw,7rem) var(--ar-edge) clamp(4.4rem,7.6vw,8rem);
+}
+.ar-paper .ar-cover-copy { min-width:0 }
+.ar-paper .ar-cover h1 {
+  font:500 clamp(3.1rem,6.2vw,6.25rem)/1.015 var(--ar-sans); letter-spacing:-.042em;
+}
+.ar-paper .ar-cover-note { max-width:45ch; margin-top:clamp(1.35rem,2.2vw,2.2rem) }
+.ar-paper .ar-cover-note p { color:#4a443e }
+.ar-paper .ar-cover-note .ar-link { margin-top:.8rem }
+.ar-paper .ar-question-title {
+  font:500 clamp(2.65rem,4.35vw,4.75rem)/1.045 var(--ar-sans); letter-spacing:-.035em;
+}
+.ar-paper .ar-question-title .ar-turn { font-weight:inherit }
+.ar-paper :is(.ar-method,.ar-updates) h2 {
+  font:500 clamp(1.95rem,3vw,3rem)/1.12 var(--ar-sans); letter-spacing:-.03em;
+}
+
+/* As on a registration proof, the guide marks stay put. Even while the last
+   word is absent the sheet has its final size. No filters or animation loop. */
+.ar-print { justify-self:end; width:min(100%,32rem); min-width:0; }
+.ar-print-heading,.ar-print figcaption { display:flex; align-items:center; flex-wrap:wrap }
+.ar-print-heading {
+  gap:.72rem; color:var(--ar-ink); font:500 .88rem/1.4 var(--ar-sans);
+}
+.ar-print-number {
+  display:inline-flex; align-items:center; gap:.72rem; color:var(--ar-muted);
+  font:400 .69rem/1.4 var(--ar-mono); letter-spacing:.01em;
+}
+.ar-print-number::after { content:""; width:1.45rem; height:1px; background:#a79b90 }
+.ar-print-transcript { position:absolute; width:1px; height:1px; padding:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap }
+.ar-print-sheet {
+  display:block; width:100%; height:auto; overflow:visible;
+  margin:clamp(1.1rem,2.9vw,3.2rem) 0 clamp(.75rem,1.8vw,1.8rem);
+  font-family:var(--ar-sans); font-size:84px; letter-spacing:-.045em;
+}
+.ar-print-guides { stroke:#9d9186 }
+.ar-print-prompt { fill:#524d47; font-weight:400 }
+.ar-print-word { font-weight:500 }
+.ar-print-solid { fill:var(--ar-red) }
+.ar-print-plate { opacity:0 }
+.ar-print figcaption {
+  justify-content:space-between; column-gap:1rem; min-height:44px;
+  border-top:1px solid var(--ar-rule); padding-top:.28rem;
+  color:var(--ar-muted); font-size:.88rem; line-height:1.4;
+}
+.ar-print-replay {
+  display:none; align-items:center; gap:.4rem; min-height:44px;
+  border:0; padding:0 .12rem; background:none; color:var(--ar-red); font-weight:500;
+}
+.ar-print-replay:hover { text-decoration:underline; text-underline-offset:.25em }
+@media (scripting:enabled) and (prefers-reduced-motion:no-preference) {
+  .ar-print-replay { display:inline-flex }
+  /* Reserve the control's place before hydration, without a dead focus stop. */
+  .ar-print-replay:disabled { visibility:hidden }
+  .ar-print-plate { animation:ar-register 2.25s cubic-bezier(.23,.68,.31,1) 1 backwards }
+  .ar-plate-a { --dx:-6px; --dy:2px; --density:.58 }
+  .ar-plate-b { --dx:5px; --dy:-3px; --density:.68 }
+  .ar-plate-c { --dx:1px; --dy:3px; --density:.92 }
+  .ar-print-solid { animation:ar-ink-set 2.25s linear 1 backwards }
+}
+@keyframes ar-register {
+  0%,32% {opacity:0;transform:translate(var(--dx),var(--dy))}
+  45% {opacity:var(--density);transform:translate(var(--dx),var(--dy))}
+  76% {opacity:1;transform:translate(0,0)}
+  89%,100% {opacity:0;transform:translate(0,0)}
+}
+@keyframes ar-ink-set { 0%,72% {opacity:0} 84%,100% {opacity:1} }
+.ar-ink .ar-cover {
+  display:flex; align-items:flex-end; min-height:clamp(35rem,76svh,56rem);
+  padding:clamp(13rem,23vw,25rem) var(--ar-edge) clamp(4.25rem,6.5vw,7rem);
+}
+.ar-ink .ar-cover-copy {
+  width:100%; display:grid; grid-template-columns:minmax(0,1.56fr) minmax(0,.85fr);
+  align-items:end; gap:clamp(2.5rem,7.5vw,8rem); margin:0 auto; max-width:98rem;
+}
+.ar-ink .ar-cover h1 { font:440 clamp(4.3rem,7.25vw,9rem)/.94 var(--ar-sans); font-variation-settings:"opsz" 64; letter-spacing:-.045em }
+.ar-ink .ar-cover h1 .ar-turn { color:#e0d8d1 }
+.ar-ink .ar-cover-note { padding:0 0 .12rem; max-width:27rem }
+.ar-ink-field,.ar-ink-crown,.ar-ink-foot { position:absolute; pointer-events:none }
+.ar-ink-field { inset:0; overflow:hidden }
+.ar-ink-crown { width:79%; height:63%; right:-1.7%; top:-10%; mask-image:linear-gradient(180deg,transparent 14%,#000 38%) }
+.ar-ink-foot { width:45%; height:20%; bottom:-6%; left:-3% }
+@media (scripting:enabled) and (prefers-reduced-motion:no-preference) {
+  .ar-exposure { animation:ar-expose 3.2s cubic-bezier(.22,.66,.32,1) 1 both }
+}
+@keyframes ar-expose { 0% {opacity:.38} 48% {opacity:1} 100% {opacity:.78} }
+.ar-exposure { opacity:.78 }
+
+/* The question is a reading surface. The notes and figure are never cards. */
+.ar-article { position:relative; padding-block:clamp(4.4rem,7.4vw,8.5rem) clamp(3.15rem,5vw,5.7rem) }
+.ar-paper .ar-continuation::before { content:""; position:absolute; inset:0 var(--ar-edge) auto; border-top:1px solid var(--ar-rule) }
+.ar-reading { width:min(43rem,calc(100% - 2 * var(--ar-edge))); margin-inline:auto }
+.ar-feature { padding-top:clamp(3.25rem,6.6vw,7.75rem) }
+.ar-section-name { position:relative; color:var(--ar-red); font:400 .82rem/1.7 var(--ar-mono) }
+.ar-question-title {
+  margin-top:.85rem !important; font:400 clamp(3.05rem,5.5vw,6.65rem)/1.03 var(--ar-serif);
+  letter-spacing:-.062em; text-wrap:balance;
+}
+.ar-question-title .ar-turn { font-weight:400 }
+.ar-paper .ar-question-title .ar-turn,.ar-ink .ar-feature .ar-question-title .ar-turn { display:block }
+.ar-prose { max-width:37rem; font-size:clamp(1.08rem,1.29vw,1.25rem); line-height:1.58; text-wrap:pretty; color:#3d3934 }
+.ar-prose p+p { margin-top:.95em }
+.ar-scenario { margin-top:clamp(1.4rem,2.2vw,2.45rem) }
+.ar-ink .ar-section-name { color:var(--ar-muted) }
+.ar-ink .ar-question-title { font-family:var(--ar-sans); font-weight:440; font-variation-settings:"opsz" 60; letter-spacing:-.049em }
+.ar-ink .ar-question-title .ar-turn { font-family:var(--ar-serif); font-weight:400; letter-spacing:-.046em; color:var(--ar-nib) }
+.ar-ink .ar-feature .ar-question-title { font-size:clamp(3.35rem,6.35vw,7.1rem) }
+@media(min-width:75rem){
+  .ar-paper .ar-question .ar-section-name { position:absolute; top:.5rem; right:calc(100% + clamp(1.7rem,4vw,5rem)); border-top:1px solid var(--ar-rule); padding-top:.8rem }
+  .ar-paper .ar-question { position:relative }
+  .ar-ink .ar-reading { margin-inline-start:clamp(10rem,19.5vw,24rem) }
+}
+.ar-scope .ar-timing { margin:clamp(2.7rem,4.4vw,4.6rem) 0; padding:1.35rem 0 1.15rem; border-block:1px solid var(--ar-rule) }
+.ar-timing h3 { font:500 1.08rem/1.4 var(--ar-sans); letter-spacing:-.013em }
+.ar-timing-track { display:grid; grid-template-columns:minmax(0,1.95fr) minmax(0,.94fr) minmax(6.2rem,.55fr); grid-template-rows:auto .9rem auto; row-gap:.35rem; margin:1.9rem 0 1.5rem }
+.ar-interval,.ar-end { min-width:0; display:grid; grid-row:1 / span 3; grid-template-rows:subgrid; row-gap:inherit; align-content:start }
+.ar-interval .ar-duration { grid-row:1 }
+.ar-interval .ar-tickline { grid-row:2 }
+.ar-interval .ar-event { grid-row:3 }
+.ar-duration { font:440 .82rem/1.45 var(--ar-mono); color:var(--ar-muted) }
+.ar-wait .ar-duration { color:var(--ar-red) }
+.ar-tickline { position:relative; width:100%; height:.9rem; }
+.ar-tickline::before { content:""; position:absolute; left:0; top:0; width:1px; height:.9rem; background:#65605a }
+.ar-quiet .ar-tickline::after,.ar-wait .ar-tickline::after { content:""; position:absolute; left:0; right:0; top:.42rem; height:2px }
+.ar-quiet .ar-tickline::after { background:repeating-linear-gradient(90deg,#89827a 0 2px,transparent 2px 6px) }
+.ar-wait .ar-tickline::after { background:var(--ar-red) }
+.ar-wait .ar-tickline::before,.ar-end .ar-tickline::before { background:var(--ar-red) }
+.ar-end .ar-tickline { grid-row:2 }
+.ar-event { max-width:9rem; font-size:.86rem; line-height:1.35; color:#46413c; padding-right:.4rem }
+.ar-end .ar-event { grid-row:3; padding-right:0 }
+.ar-timing figcaption { display:grid; gap:.35rem; max-width:39rem; color:var(--ar-muted); line-height:1.48; font-size:.93rem }
+.ar-timing figcaption span:first-child { font:400 .8rem/1.5 var(--ar-mono) }
+.ar-method h2,.ar-updates h2 { font:400 clamp(2.4rem,3.5vw,4rem)/1.1 var(--ar-serif); letter-spacing:-.05em }
+.ar-method .ar-prose { margin-top:1.3rem }
+.ar-verdict { margin-top:1.35rem !important; font-weight:540; font-size:1.05rem; line-height:1.55 }
+.ar-method .ar-link { margin-top:.3rem }
+.ar-updates { padding:clamp(2rem,4vw,4rem) 0 clamp(3.5rem,7vw,7rem); border-top:1px solid var(--ar-rule) }
+.ar-updates form { margin-top:1.2rem; max-width:34rem }
+.ar-updates label { display:block; color:var(--ar-muted); font-size:.92rem }
+.ar-email-line { display:flex; align-items:stretch; border-bottom:1px solid #776c66; gap:.7rem }
+.ar-email-line input { min-width:0; flex:1; min-height:46px; padding:.4rem .15rem; background:transparent; color:var(--ar-ink); font-size:1.05rem }
+.ar-email-line button { flex-shrink:0; background:transparent; border:0; min-height:46px; padding:.45rem .1rem; color:var(--ar-red); font-size:.93rem; text-decoration:underline; text-underline-offset:.28em }
+.ar-email-line :disabled { opacity:.7 }
+.ar-updates [role=status] { margin-top:.7rem; min-height:1.5rem; font-size:.84rem; line-height:1.5; color:var(--ar-muted) }
+.ar-foot { border-top:1px solid var(--ar-rule); min-height:5rem }
+.ar-foot nav a { color:var(--ar-muted) }
+
+/* Review table: two actual pages, not pictures of the pages. The title links
+   and the entire cover open the full version; there are no nested scroll traps. */
+.ar-hub { padding:0 var(--ar-edge) clamp(2rem,5vw,5rem); min-height:100svh }
+.ar-hub-mast { padding:1rem 0; border-bottom:1px solid var(--ar-rule) }
+.ar-hub-intro { display:flex; align-items:end; justify-content:space-between; flex-wrap:wrap; gap:1rem 2rem; padding:clamp(2.2rem,4.8vw,5rem) 0 clamp(1.5rem,2.6vw,2.5rem) }
+.ar-hub-intro h1 { font:400 clamp(3.3rem,5.5vw,6.5rem)/1 var(--ar-serif); letter-spacing:-.064em }
+.ar-hub-intro p { font:400 1rem/1.5 var(--ar-sans); margin-top:1rem; max-width:32rem; color:var(--ar-muted) }
+.ar-hub-intro nav a { color:var(--ar-muted) }
+.ar-hub-intro nav a[aria-current=page] { color:var(--ar-red); text-decoration:underline; text-decoration-thickness:2px }
+.ar-pair { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:clamp(.95rem,2vw,2.4rem) }
+.ar-edition { border-top:1px solid var(--ar-rule); padding:.42rem 0; display:flex; gap:.75rem; align-items:center; justify-content:space-between }
+.ar-edition h2 { font:400 1.65rem/1.2 var(--ar-serif); letter-spacing:-.04em }
+.ar-edition a { color:var(--ar-red); text-decoration:underline }
+.ar-window { position:relative; width:100%; aspect-ratio:1.42; overflow:hidden; }
+.ar-window iframe { position:absolute; inset:0; border:0; width:200%; height:200%; transform:scale(.5); transform-origin:0 0; pointer-events:none; }
+.ar-window-link { position:absolute; inset:0; }
+@media(max-width:55rem){
+  .ar-paper .ar-cover { grid-template-columns:minmax(0,1fr); gap:2rem; padding-block:3.5rem 3.65rem }
+  .ar-paper .ar-cover-copy { width:100%; max-width:38rem }
+  .ar-paper .ar-cover h1 { font-size:clamp(3.1rem,8.1vw,4.35rem) }
+  .ar-print { justify-self:start; max-width:30rem }
+  .ar-print-sheet { margin:1rem 0 .7rem }
+  .ar-ink .ar-cover { min-height:35rem; padding-top:13rem }
+  .ar-ink .ar-cover-copy { grid-template-columns:1.05fr 1fr; gap:1.7rem }
+  .ar-ink .ar-cover h1 { font-size:clamp(3.35rem,7.85vw,5.75rem) }
+  .ar-hub-intro { align-items:start }
+}
+@media(max-width:43rem){
+  .ar-mast { padding-block:.65rem .35rem }
+  .ar-paper .ar-cover { padding-block:clamp(2.3rem,7.8vw,3.5rem) 2.8rem; gap:1.65rem }
+  .ar-paper .ar-cover h1 { font-size:clamp(2.72rem,9.7vw,3.85rem) }
+  .ar-paper .ar-cover-note { margin-top:1.2rem }
+  .ar-ink .ar-cover { min-height:0; padding:clamp(9.3rem,29vw,12.1rem) var(--ar-edge) 4.45rem }
+  .ar-ink .ar-cover-copy { display:block }
+  .ar-ink .ar-cover h1 { font-size:clamp(2.9rem,12.45vw,5.7rem) }
+  .ar-ink .ar-cover-note { margin-top:1.6rem; max-width:32rem }
+  .ar-ink-crown { inset:-.7rem -2.6% auto auto; height:clamp(10rem,34vw,15.5rem); width:90% }
+  .ar-ink-foot { width:54%; height:12%; bottom:-4% }
+  .ar-question-title,.ar-ink .ar-feature .ar-question-title { font-size:clamp(2.7rem,9vw,4.2rem) }
+  .ar-hub { --ar-edge:1.2rem }
+  .ar-pair { grid-template-columns:minmax(0,1fr); gap:1.7rem }
+  .ar-window { aspect-ratio:1.6 }
+}
+@media(max-width:30rem){
+  .ar-brand { gap:.8rem }
+  .ar-mast { row-gap:0; align-content:start }
+  .ar-mast nav { flex-basis:100%; gap:1.2rem }
+  .ar-mast nav a { min-height:40px }
+  .ar-print figcaption { column-gap:.5rem; font-size:.83rem }
+  .ar-timing-track { display:block; margin:1.6rem 0 }
+  .ar-interval,.ar-end { position:relative; min-height:6.1rem; display:grid; grid-template-columns:1.8rem 1fr; grid-template-rows:auto 1fr; row-gap:.36rem; align-content:start }
+  .ar-wait { min-height:4.95rem }
+  .ar-end { min-height:1.6rem }
+  .ar-interval .ar-duration { grid-column:2; grid-row:2; align-self:start }
+  .ar-interval .ar-event,.ar-end .ar-event { grid-column:2; grid-row:1; max-width:none; font-size:.96rem }
+  .ar-interval .ar-tickline,.ar-end .ar-tickline { grid-area:auto; position:absolute; top:.63rem; bottom:-.63rem; height:auto; left:0; width:1rem }
+  .ar-tickline::before { width:.9rem; height:1px; top:0 }
+  .ar-quiet .ar-tickline::after,.ar-wait .ar-tickline::after { left:.42rem; top:0; right:auto; height:100%; width:2px }
+  .ar-quiet .ar-tickline::after { background:repeating-linear-gradient(180deg,#89827a 0 2px,transparent 2px 6px) }
+  .ar-end .ar-tickline { bottom:auto }
+}
+@media(forced-colors:active){
+  .ar-ink-field { display:none }
+  .ar-print-guides { stroke:GrayText }
+  .ar-print-prompt,.ar-print-solid,.ar-print-plate { fill:CanvasText }
+  .ar-tickline::after { forced-color-adjust:none; background:CanvasText !important }
+  .ar-tickline::before { background:CanvasText }
+}

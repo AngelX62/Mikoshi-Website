@@ -1,0 +1,83 @@
+.lens-page {
+  --lens-margin: clamp(1.25rem, 5.15vw, 6.5rem);
+  --lens-ink: #231f1e;
+  --lens-muted: #534c46;
+  --lens-bone: #f3f0e9;
+  --lens-rule: #cfc8bd;
+  --lens-red: #762c3f;
+  --color-accent: var(--lens-red);
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+  background: var(--lens-bone);
+  color: var(--lens-ink);
+  font: 400 1rem/1.5 "IBM Plex Sans", "Segoe UI", sans-serif;
+  font-style: normal;
+}
+.lens-mast, .lens-foot {
+  display: flex;
+  gap: 1.4rem;
+  align-items: center;
+  margin-inline: var(--lens-margin);
+}
+.lens-mast {
+  min-height: clamp(4.75rem, 7.2vw, 7.5rem);
+  border-bottom: 1px solid var(--lens-rule);
+}
+.lens-brand, .lens-foot a, .lens-primary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  width: fit-content;
+}
+.lens-brand { font-family: var(--font-bricolage), "Segoe UI", sans-serif; text-decoration: none; }
+.lens-status { font-size: .79rem; color: var(--lens-muted); }
+.lens-status::before {
+  content: ""; display: inline-block; width: .34rem; height: .34rem;
+  border-radius: 50%; margin: 0 .52rem .13rem 0; background: var(--lens-red);
+}
+.lens-main {
+  display: grid;
+  grid-template-columns: minmax(0,.97fr) minmax(0,1.03fr);
+  align-items: center;
+  flex: 1;
+  padding-block: clamp(3rem, 5.2vw, 6rem);
+}
+.lens-copy { min-width: 0; padding-inline: var(--lens-margin) clamp(.9rem, 1.4vw, 1.8rem); }
+.lens-category { color: var(--lens-red); font-size: .9rem; letter-spacing: .025em; }
+.lens-copy h1 {
+  margin: clamp(1.05rem, 1.8vw, 2rem) 0 0;
+  font: 500 clamp(3.35rem, 6.6vw, 7.65rem)/.98 "IBM Plex Sans", "Segoe UI", sans-serif;
+  letter-spacing: -.062em;
+}
+.lens-copy h1 span { display: block; }
+.lens-copy .lens-question {
+  max-width: 36ch; margin-top: clamp(1.5rem, 2.5vw, 2.7rem);
+  color: var(--lens-muted); font-size: clamp(1.04rem, 1.27vw, 1.28rem); line-height: 1.53;
+  text-wrap: pretty;
+}
+.ar-scope .lens-primary {
+  gap: .72rem; margin-top: 1.15rem;
+  color: var(--lens-red); font-size: 1rem; font-weight: 500; text-decoration: none;
+}
+.lens-primary span, .lens-foot a:hover { text-decoration: underline; text-underline-offset: .33em; }
+.lens-primary:hover span { text-decoration-thickness: 2px; }
+.lens-art { overflow: hidden; min-width: 0; pointer-events: none; }
+.lens-art .lens-sculpture { display: block; width: 118%; height: auto; max-width: none; }
+.lens-foot { justify-content: space-between; padding-block: .7rem 1rem; border-top: 1px solid var(--lens-rule); }
+.ar-scope .lens-foot a { gap: .35rem; color: var(--lens-muted); font-size: .86rem; text-decoration: none; }
+.ar-scope .lens-foot a:hover { color: var(--lens-red); text-decoration: underline; }
+.lens-foot svg { width: .8rem; height: .8rem; }
+@media (max-width: 52rem) {
+  .lens-main { grid-template-columns: minmax(0, 1fr); padding-block: 3.15rem 1.5rem; gap: .25rem; }
+  .lens-copy { padding-inline: var(--lens-margin); }
+  .lens-copy h1 { font-size: clamp(3.3rem, 9.9vw, 5.75rem); }
+  .lens-copy .lens-question { margin-top: 1.4rem; }
+  .lens-art { width: min(100%, 45rem); justify-self: end; }
+  .lens-art .lens-sculpture { width: 100%; }
+}
+@media (max-width: 25rem) {
+  .lens-main { padding-block: 2.6rem .4rem; }
+  .lens-mast { gap: 1rem; }
+  .lens-copy h1 { font-size: clamp(2.8rem, 13.4vw, 3.3rem); }
+}
