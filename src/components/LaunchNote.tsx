@@ -21,6 +21,16 @@ export default function LaunchNote({
 }: LaunchNoteProps) {
   return (
     <main id="main-content" className={`launch-shell launch-note ${className}`.trim()}>
+      {/* Home's light gone cold: field and echoes, no warm core. See .trace. */}
+      <div className="trace" aria-hidden="true">
+        <div className="trace__cloud trace__cloud--1" />
+        <div className="trace__cloud trace__cloud--2" />
+        <div className="trace__cloud trace__cloud--3" />
+        <div className="trace__cloud trace__ember" />
+        <div className="exposure__blob trace__echo trace__echo--1" />
+        <div className="exposure__blob trace__echo trace__echo--2" />
+        <div className="trace__grain" />
+      </div>
       <article aria-labelledby="page-heading">
         <header className="launch-note__header">
           <p className="launch-note__label">{label}</p>

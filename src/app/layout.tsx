@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Martian_Mono } from "next/font/google";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import Grain from "@/components/Grain";
 import { launch, site } from "@/content";
 import "./launch.css";
 
@@ -22,7 +23,7 @@ export const metadata: Metadata = {
   openGraph: { title, description: site.description, url: site.url, siteName: site.name, type: "website" },
   twitter: { card: "summary", title, description: site.description },
 };
-export const viewport: Viewport = { colorScheme: "light", themeColor: "#f1eee8" };
+export const viewport: Viewport = { colorScheme: "light", themeColor: "#eff1f3" };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <Header />
         {children}
         <Footer />
+        <Grain />
       </body>
     </html>
   );

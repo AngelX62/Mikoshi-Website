@@ -1,11 +1,13 @@
 @import "tailwindcss";
 
+/* Cool paper, blue-black ink. Chosen 2026-11-20 over bone after both were
+   rendered: references 1 and 4, a cold field with a warm core. */
 @theme {
-  --color-ground: #f1eee8;
-  --color-ink: #14120e;
-  --color-ink-soft: #3a3429;
-  --color-ink-dim: #5e5648;
-  --color-rule: #c8c2b6;
+  --color-ground: #eff1f3;
+  --color-ink: #10131c;
+  --color-ink-soft: #252b39;
+  --color-ink-dim: #4a5162;
+  --color-rule: #c6cbd4;
   --color-accent: #962a45;
   --font-sans: var(--font-bricolage), "Segoe UI", sans-serif;
   --font-mono: var(--font-martian-mono), "Consolas", monospace;
@@ -17,6 +19,25 @@
   --ink: var(--color-ink);
   --edge: clamp(1.2rem, 5vw, 5rem);
   --measure: 88rem;
+  /* The header's height: 1.1rem padding twice, the 2.75rem logo row, its rule. */
+  --header-h: calc(4.95rem + 1px);
+  --tint: #e4e8ee;
+
+  /* The exposure. The warm core is a model kept loaded; the blue field and the
+     fading echoes are capacity let go. The fringe lifts the accent's hue.
+     Colours as channels, so alpha can vary per layer. */
+  --field: #93b1e6;
+  --field-deep: #6189d4;
+  --blue: 147 177 230;
+  --blue-deep: 97 137 212;
+  --core: 255 252 241;
+  --fringe-warm: 244 190 214;
+  --fringe-gold: 250 238 186;
+  --echo: 222 232 250;
+  --echo-a1: .7; --echo-a2: .5; --echo-a3: .34;
+  --gold-a: .7;
+  --grain: .34;
+  --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 html { background-color: var(--paper); }
 body {
@@ -46,7 +67,7 @@ button:not(:disabled) { cursor: pointer; }
 .launch-header__brand { display: flex; align-items: center; flex-wrap: wrap; gap: .15rem clamp(.8rem, 2vw, 1.75rem); }
 .launch-status {
   padding-left: clamp(.7rem, 1.65vw, 1.4rem); border-left: 1px solid var(--color-rule);
-  color: var(--color-accent); font: 400 .68rem/1.5 var(--font-mono); white-space: nowrap;
+  color: var(--color-ink-dim); font: 400 .6875rem/1.5 var(--font-mono); white-space: nowrap;
 }
 .launch-nav { list-style: none; display: flex; flex-wrap: wrap; align-items: center; gap: clamp(1rem, 2.6vw, 2.8rem); margin: 0; padding: 0; }
 .launch-nav a {
@@ -54,33 +75,42 @@ button:not(:disabled) { cursor: pointer; }
   color: var(--color-ink-soft); text-decoration: none; text-underline-offset: .38em;
 }
 .launch-nav a:hover, .launch-nav a[aria-current="page"] { color: var(--color-accent); text-decoration: underline; }
+/* ── Home: one exposure, the type set small beneath it ─────────────────────
+   A minimum height, never a pinned one: a short screen grows the hero rather
+   than pushing the copy out of it. */
 .launch-hero {
-  padding-top: clamp(2.65rem, 4.6vw, 5.5rem);
+  position: relative; isolation: isolate; overflow: hidden;
+  display: flex; flex-direction: column;
+  min-height: calc(100svh - var(--header-h));
 }
-.launch-hero__copy { padding-inline-start: clamp(0rem, 11vw - 4rem, 12rem); }
+.launch-hero__sheet {
+  position: relative; flex: 1 0 auto;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  padding-block: clamp(14rem, 46svh, 34rem) clamp(2.5rem, 9svh, 5.5rem);
+}
 .launch-label, .launch-note__label {
-  display: flex; align-items: center; gap: .7rem; color: var(--color-accent);
+  display: flex; align-items: center; gap: .7rem; color: var(--color-ink-dim);
   font-family: var(--font-mono); font-size: .78rem; line-height: 1.6;
   letter-spacing: .04em;
 }
 .launch-title {
-  margin: 0;
-  font-size: clamp(3.3rem, 8.5vw, 9.25rem); line-height: .94;
-  letter-spacing: -.038em; font-weight: 480; font-variation-settings: "opsz" 64, "wdth" 100;
+  max-width: 22ch; margin: 0;
+  font-size: clamp(2.25rem, min(4.2vw, 7.4svh), 3.5rem); line-height: 1.02;
+  letter-spacing: -.03em; font-weight: 500; font-variation-settings: "opsz" 48, "wdth" 100;
+  text-wrap: balance;
 }
-.launch-title span { display: block; }
-.launch-title span + span { margin-inline-start: .57em; }
 .launch-hero__intro {
-  max-width: 38rem; margin: clamp(1.35rem, 2.1vw, 2.2rem) 0 0;
-  font-size: clamp(1rem, 1.22vw, 1.2rem); line-height: 1.53; color: var(--color-ink-soft); text-wrap: pretty;
+  max-width: 34rem; margin: clamp(.9rem, 2.2svh, 1.4rem) 0 0;
+  font-size: 1.0625rem; line-height: 1.6; color: var(--color-ink-soft); text-wrap: pretty;
 }
-.launch-actions { display: flex; align-items: center; flex-wrap: wrap; gap: .25rem 1.6rem; margin-top: clamp(.8rem, 1.4vw, 1.3rem); }
+.launch-actions { display: flex; align-items: center; flex-wrap: wrap; gap: .1rem 1.75rem; margin-top: clamp(.5rem, 1.6svh, 1rem); }
+/* No filled control: rose annotates, it never fills. The arrow marks the lead. */
 .launch-button {
-  display: inline-flex; align-items: center; gap: .75rem; min-height: 2.75rem;
-  padding: .55rem .93rem; background: var(--color-accent); color: var(--paper);
-  font-weight: 510; font-size: 1rem; line-height: 1.26; text-decoration: none;
+  display: inline-flex; align-items: center; gap: .6rem; min-height: 2.75rem;
+  color: var(--ink); font-weight: 510; font-size: 1rem; line-height: 1.26;
+  text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: .31em;
 }
-.launch-button:hover { background: #722138; }
+.launch-button:hover { color: var(--color-accent); }
 .launch-text-link, .launch-note__next a, a.launch-note__next {
   display: inline-flex; align-items: center; min-height: 2.75rem; width: fit-content;
   color: var(--ink); font-weight: 510; text-decoration: underline; text-decoration-thickness: 1px;
@@ -88,32 +118,62 @@ button:not(:disabled) { cursor: pointer; }
 }
 .launch-text-link:hover, .launch-note__next a:hover, a.launch-note__next:hover { color: var(--color-accent); text-decoration-color: currentColor; }
 
-/* One exposure across the sheet. The light never sits behind the words. */
-.launch-afterimage {
-  position: relative; overflow: hidden; isolation: isolate; pointer-events: none;
-  height: clamp(9rem, 19vw, 20rem); margin-top: clamp(.8rem, 1.6vw, 1.9rem);
-  mask-image: linear-gradient(to bottom, transparent, black 14%, black 88%, transparent);
-}
-.launch-afterimage__light {
-  position: absolute; inset: -24% -12%;
-  transform: rotate(-4.5deg); opacity: .69;
+/* The exposure. Out-of-focus light, not a drawn band: every layer is a radial
+   gradient, soft on all sides, and grain carries across light and field alike.
+   No `filter: blur()`, which would re-rasterise a screen-sized layer. The light
+   stays upper right so the copy, lower left, sits on calm field. */
+.exposure {
+  position: absolute; inset: 0; z-index: -1; pointer-events: none;
   background:
-    radial-gradient(ellipse 53% 16% at 73% 55%, rgb(255 248 234 / .84), transparent 88%),
-    radial-gradient(ellipse 46% 20% at 14% 66%, rgb(150 42 69 / .53), transparent 88%),
-    linear-gradient(180deg, transparent 14%, rgb(216 169 180 / .12) 25%,
-      rgb(216 169 180 / .48) 39%, rgb(202 123 143 / .76) 49%,
-      rgb(168 67 92 / .83) 57%, rgb(150 42 69 / .92) 61.5%,
-      rgb(160 65 86 / .65) 63%, rgb(216 169 180 / .28) 66%, transparent 74%);
+    radial-gradient(ellipse 62% 58% at 68% 30%, var(--field-deep), transparent 74%),
+    linear-gradient(to top, color-mix(in srgb, var(--field) 72%, var(--paper)), var(--field) 45%);
 }
-/* scripting:none and reduced motion both inherit the finished, static print. */
+.exposure > *, .exposure__core > * { position: absolute; }
+/* Crisp structure under the light, as the tile lines run under reference 1. */
+/* Half an edge outside the text, so no letter sits on a line. */
+.exposure__rules {
+  inset: 0; width: calc(100% - var(--edge)); max-width: calc(var(--measure) + var(--edge)); margin-inline: auto;
+  border-inline: 1px solid color-mix(in srgb, var(--ink) 13%, transparent);
+}
+/* Defocused light is a disc, not a peak: flat to about a third, then a soft rim. */
+.exposure__blob {
+  --a: 1;
+  border-radius: 50%;
+  background: radial-gradient(closest-side,
+    rgb(var(--c) / var(--a)) 34%, rgb(var(--c) / calc(var(--a) * .6)) 62%, rgb(var(--c) / 0));
+}
+.exposure__core { left: 36%; top: 10%; width: 56%; height: 38%; rotate: -7deg; }
+/* Same-size tinted copies nudged either side of the white, so only the rims colour. */
+.exposure__fringe-warm, .exposure__fringe-gold, .exposure__light { inset: 0; }
+.exposure__fringe-warm { --c: var(--fringe-warm); translate: -2.5% -9%; }
+.exposure__fringe-gold { --c: var(--fringe-gold); --a: var(--gold-a); translate: 2.5% 9%; }
+.exposure__light { --c: var(--core); scale: .94; }
+/* Earlier requests, each fainter: capacity going cold. */
+.exposure__echo { --c: var(--echo); rotate: -7deg; }
+.exposure__echo--1 { left: 60%; top: 1%; width: 32%; height: 13%; --a: var(--echo-a1); }
+.exposure__echo--2 { left: 52%; top: 56%; width: 40%; height: 19%; --a: var(--echo-a2); }
+.exposure__echo--3 { left: 86%; top: 34%; width: 24%; height: 22%; --a: var(--echo-a3); }
+.exposure__grain, .exposure__sheen {
+  inset: 0; background-image: var(--noise); background-size: 200px 200px;
+}
+.exposure__grain { mix-blend-mode: multiply; opacity: var(--grain); }
+/* A second pass in soft-light so the grain shows inside the highlights too. */
+.exposure__sheen { mix-blend-mode: soft-light; opacity: .7; }
+
+/* scripting:none and reduced motion both get the finished, static print. */
 @media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
-  .launch-afterimage__light { animation: afterimage-pass 4s cubic-bezier(.24,.65,.32,1) 1; }
+  .exposure__core { animation: exposure-core 4.2s cubic-bezier(.24,.65,.32,1) both; }
+  .exposure__echo { animation: exposure-echo 2.4s ease-out both; }
+  .exposure__echo--1 { animation-delay: .5s; }
+  .exposure__echo--2 { animation-delay: 1s; }
+  .exposure__echo--3 { animation-delay: 1.5s; }
 }
-@keyframes afterimage-pass {
-  0%   { transform: translate(-2.6%, 7%) rotate(-3.1deg); opacity: .4; }
-  37%  { opacity: .94; }
-  100% { transform: rotate(-4.5deg); opacity: .69; }
+@keyframes exposure-core {
+  0%   { opacity: .2; scale: .9; }
+  38%  { opacity: 1; }
+  100% { opacity: 1; scale: 1; }
 }
+@keyframes exposure-echo { from { opacity: 0; } }
 
 .launch-focus {
   display: grid; grid-template-columns: minmax(10rem, .52fr) minmax(0, 1.48fr);
@@ -124,17 +184,17 @@ button:not(:disabled) { cursor: pointer; }
   font-size: clamp(1.9rem, 3.55vw, 3.65rem); font-weight: 510; line-height: 1.06;
   letter-spacing: -.04em; font-variation-settings: "opsz" 60;
 }
+.launch-focus h2, .launch-updates h2 { font-size: clamp(1.75rem, 2.6vw, 2.25rem); letter-spacing: -.03em; }
 .launch-focus__body { max-width: 53rem; }
 .launch-focus__body > p, .launch-updates__inner > div > p:not(.launch-privacy) {
   max-width: 40rem; margin-top: 1.35rem; font-size: 1.12rem; line-height: 1.62; color: var(--color-ink-soft);
 }
 .launch-focus .launch-text-link { margin-top: .65rem; }
-.launch-updates { background-color: #eae5dd; border-block: 1px solid var(--color-rule); }
+.launch-updates { background-color: var(--tint); border-block: 1px solid var(--color-rule); }
 .launch-updates__inner {
   display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .92fr); align-items: start;
   gap: 2.75rem clamp(2rem, 8vw, 9rem); padding-block: clamp(3rem, 5.5vw, 5.7rem);
 }
-.launch-updates h2 { font-size: clamp(2rem, 3.25vw, 3.2rem); }
 .launch-form form input:not([tabindex="-1"]), .launch-contact form input:not([tabindex="-1"]) {
   min-width: 8rem; padding-block: .9rem; font-family: var(--font-sans);
 }
@@ -149,51 +209,89 @@ button:not(:disabled) { cursor: pointer; }
 .launch-footer__inner p { font-size: .9rem; color: var(--color-ink-dim); }
 .launch-footer__inner small { margin-left: auto; font: .76rem/1.6 var(--font-mono); color: var(--color-ink-dim); }
 
+/* Inner pages share home's left edge, which leaves the top right for the trace. */
 .launch-note {
+  position: relative; isolation: isolate;
   padding-block: clamp(3.5rem, 7.8vw, 8rem) clamp(3rem, 6vw, 6rem);
+  --trace-w: clamp(15rem, 34vw, 32rem);
 }
 .launch-note__header, .launch-note__section, .launch-contact__form {
-  max-width: 60rem; margin-inline: auto;
+  max-width: 60rem;
 }
 .launch-note__header > h1, h1.launch-note__title {
-  max-width: 16ch; margin: 1.35rem 0 1.5rem; color: var(--ink); text-wrap: balance;
-  font-size: clamp(3rem, 6.15vw, 6.2rem); line-height: 1.01;
-  letter-spacing: -.032em; word-spacing: .016em; font-weight: 510; font-variation-settings: "opsz" 60;
+  max-width: 18ch; margin: 1.1rem 0 1.25rem; color: var(--ink); text-wrap: balance;
+  font-size: clamp(2.25rem, 3.9vw, 3.5rem); line-height: 1.04;
+  letter-spacing: -.03em; font-weight: 500; font-variation-settings: "opsz" 48;
 }
 .launch-note__header p:not(.launch-note__label), .launch-note__intro {
-  max-width: 46rem; font-size: clamp(1.14rem, 1.6vw, 1.45rem); line-height: 1.5; color: var(--color-ink-soft);
+  max-width: 40rem; font-size: clamp(1.0625rem, 1.4vw, 1.25rem); line-height: 1.55; color: var(--color-ink-soft);
 }
+
+/* The trace. Home's blue with the warm core gone: overlapping soft clouds that
+   run off the top and right of the page and thin out into the paper toward the
+   text, the way the ink spreads in reference 4. A faint ember of the fringe
+   stays at the lower rim, and two pale echoes cross it. */
+.trace {
+  position: absolute; z-index: -1; pointer-events: none; overflow: hidden;
+  top: 0; right: calc(var(--edge) * -1);
+  width: var(--trace-w); height: calc(var(--trace-w) * .9);
+  /* Anchored on the page corner, so the box itself never shows: grain included. */
+  mask-image: radial-gradient(ellipse 90% 88% at 82% 14%, #000 32%, rgb(0 0 0 / .5) 56%, transparent 80%);
+}
+.trace > * { position: absolute; }
+/* A cloud has no plateau: dense at the centre, thinning all the way out. */
+.trace__cloud {
+  --a: 1; border-radius: 50%; rotate: -28deg;
+  background: radial-gradient(closest-side,
+    rgb(var(--c) / var(--a)), rgb(var(--c) / calc(var(--a) * .5)) 52%, rgb(var(--c) / 0));
+}
+.trace__cloud--1 { left: 34%; top: -22%; width: 92%; height: 66%; --c: var(--blue-deep); --a: .85; }
+.trace__cloud--2 { left: 14%; top: 4%;   width: 78%; height: 52%; --c: var(--blue); --a: .8; }
+.trace__cloud--3 { left: 46%; top: 26%;  width: 66%; height: 44%; --c: var(--blue-deep); --a: .55; }
+.trace__ember    { left: 30%; top: 52%;  width: 46%; height: 22%; --c: var(--fringe-warm); --a: .5; rotate: -18deg; }
+.trace__echo { --c: var(--echo); rotate: -28deg; }
+.trace__echo--1 { left: 40%; top: 6%;  width: 46%; height: 13%; --a: .5; }
+.trace__echo--2 { left: 30%; top: 30%; width: 38%; height: 10%; --a: .32; }
+.trace__grain { inset: 0; background-image: var(--noise); background-size: 200px 200px; mix-blend-mode: multiply; opacity: .45; }
 .launch-note__section, .launch-contact__form {
   margin-top: clamp(2rem, 3.8vw, 4rem); border-top: 1px solid var(--color-rule); padding-top: clamp(1.5rem, 2.6vw, 2.7rem);
 }
 .launch-note__section h2 { margin-bottom: .95rem; font-size: clamp(1.55rem, 2.35vw, 2.35rem); }
-.launch-note__section p, .launch-note__section li { max-width: 45rem; font-size: 1.1rem; line-height: 1.62; color: var(--color-ink-soft); }
+.launch-note__section p, .launch-note__section li { max-width: 42rem; font-size: 1.0625rem; line-height: 1.62; color: var(--color-ink-soft); }
 .launch-note__section p + p { margin-top: .75rem; }
 .launch-note .launch-note__next { margin-top: 1.5rem; }
-.launch-note__next:not(a) { max-width: 60rem; margin-inline: auto; }
+.launch-note__next:not(a) { max-width: 60rem; }
 .launch-contact__form form { max-width: 42rem; }
 .launch-contact__privacy { margin-top: 1rem; }
 .launch-contact__note { max-width: 36rem; font-size: .95rem; line-height: 1.5; }
 .launch-note + .launch-footer { border-top: 1px solid var(--color-rule); }
 
+/* Below 80rem the text column reaches under the trace, so the page starts
+   beneath its dense part instead. */
+@media (max-width: 80rem) {
+  .launch-note { padding-top: calc(var(--trace-w) * .62); }
+}
 @media (max-width: 54rem) {
   .launch-focus { grid-template-columns: minmax(8rem,.5fr) minmax(0,1.5fr); gap: 1rem; }
 }
 @media (max-width: 45rem) {
-  .launch-hero__copy { padding-inline-start: 0; }
-  .launch-title { font-size: clamp(2.95rem, 11.8vw, 5.3rem); }
-  .launch-title span + span { margin-inline-start: .28em; }
-  .launch-hero__intro { max-width: 32rem; }
+  .launch-hero__sheet { padding-block: clamp(12rem, 38svh, 22rem) clamp(2rem, 6svh, 3rem); }
+  .exposure__rules { display: none; }
+  .exposure__core { left: 4%; top: 3%; width: 108%; height: 34%; }
+  .exposure__echo--1 { left: 48%; top: -9%; width: 70%; height: 16%; }
+  .exposure__echo--2 { left: -22%; top: 30%; width: 64%; height: 14%; }
+  .exposure__echo--3 { left: 74%; top: 28%; width: 46%; height: 18%; }
   .launch-focus, .launch-updates__inner { grid-template-columns: minmax(0,1fr); gap: 1.05rem; }
   .launch-footer__inner { gap: .35rem 1rem; }
   .launch-footer__inner p { order: 3; width: 100%; }
 }
 @media (max-width: 34rem) {
+  /* The header stacks: .55rem + .16rem padding, two 2.75rem rows, its rule. */
+  :root { --header-h: calc(6.21rem + 1px); }
   .launch-header__inner { align-items: start; flex-direction: column; gap: 0; padding-block: .55rem .16rem; }
   .launch-nav { gap: clamp(.88rem, 4.2vw, 1.6rem); }
   .launch-nav a { font-size: .91rem; }
   .launch-actions { gap: .45rem 1rem; }
-  .launch-note__header > h1 { font-size: clamp(2.65rem, 12vw, 4.2rem); }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; }
